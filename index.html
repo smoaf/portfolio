@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Station Model Study</title>
 <style>
-  /* Layout: full-bleed stage for the plaster model, a museum label bottom-left, view controls top-right. */
+  /* Layout: full-bleed stage for the plaster model, view controls top-right, place navigation bottom centre. */
   :root {
     --stage: #d8d3cb;          /* warm grey seamless backdrop */
     --stage-night: #1b1f26;
@@ -31,19 +31,6 @@
   #stage { position: fixed; inset: 0; }
   #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
-  .label {
-    position: fixed; left: 16px; top: calc(16px + env(safe-area-inset-top, 0px));
-    max-width: min(360px, calc(100vw - 32px));
-    background: var(--card); backdrop-filter: blur(6px);
-    border: 1px solid var(--rule); padding: 14px 16px 12px;
-    display: grid; gap: 8px;
-  }
-  .label .eyebrow { font-family: var(--font-data); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
-  .label h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
-  .label p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
-  .label dl { margin: 4px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-family: var(--font-data); font-size: 11.5px; font-variant-numeric: tabular-nums; border-top: 1px solid var(--rule); padding-top: 8px; }
-  .label dt { color: var(--ink-soft); }
-  .label dd { margin: 0; }
 
   .controls {
     position: fixed; right: 16px; top: calc(16px + env(safe-area-inset-top, 0px));
@@ -59,27 +46,27 @@
   button[aria-pressed="true"] { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
   button:disabled { color: var(--ink-soft); opacity: 0.5; cursor: default; box-shadow: none; }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .hint { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); font: 11px var(--font-data); color: var(--ink-soft); letter-spacing: 0.04em; }
   .status { position: fixed; inset: 0; display: grid; place-items: center; font: 12px var(--font-data); color: var(--ink-soft); pointer-events: none; }
-  @media (max-width: 900px) { .label { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
-  @media (max-width: 560px) { .hint { display: none; } .label h1 { font-size: 19px; } .label p { display: none; } }
+
+  /* places: tooltip, optional markers, navigation bar inside a place */
+  .tip { position: fixed; pointer-events: none; font: 500 11px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase;
+         background: var(--card); border: 1px solid var(--rule); padding: 6px 9px; border-radius: 999px; transform: translate(-50%, -50%); white-space: nowrap; }
+  .markers { position: fixed; inset: 0; pointer-events: none; }
+  .marker { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 6px;
+            font: 500 11px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink);
+            background: var(--card); border: 1px solid var(--rule); padding: 6px 9px 6px 7px; border-radius: 999px; }
+  .marker::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+         display: flex; align-items: stretch; border: 1px solid var(--rule); background: var(--card); backdrop-filter: blur(6px); }
+  .nav button { min-width: 44px; min-height: 44px; }
+  .nav button + button, .nav .where, .nav .where + button { border-left: 1px solid var(--rule); }
+  .nav .where { font: 500 12px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase; padding: 0 14px; display: grid; place-items: center; min-width: 110px; }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
 <div id="stage"></div>
 <div class="status" id="status">Loading model…</div>
 
-<section class="label" aria-label="Model label">
-  <span class="eyebrow">Station model · arrangement 07</span>
-  <h1>The whole station, rough layout</h1>
-  <p>Hub, library, office and workshop along the edge of a cliff, the showroom wing behind. Click the showroom to close or open its roof slats and window fins. The next module is under construction.</p>
-  <dl>
-    <dt>Hub</dt><dd>10.8 m across, glass above hip height, glass dome</dd>
-    <dt>Showroom</dt><dd>twelve-sided oval, 11.8 × 19.2 m</dd>
-    <dt>Arms</dt><dd>60° between the two wings</dd>
-    <dt>Modules</dt><dd>10.0 × 5.8 × 3.6 m, library 8.5 m</dd>
-  </dl>
-</section>
 
 <div class="controls">
   <div class="seg" role="group" aria-label="Time of day">
@@ -96,9 +83,17 @@
     <button id="btn-roof-open" aria-pressed="true">Open</button>
     <button id="btn-roof-closed" aria-pressed="false">Closed</button>
   </div>
+  <div class="seg"><button id="btn-places" aria-pressed="false">Places</button></div>
   <div class="seg"><button id="btn-reset">Reset view</button></div>
 </div>
-<div class="hint">Drag to rotate · scroll or pinch to zoom</div>
+<div class="markers" id="markers" hidden></div>
+<div class="tip" id="tip" hidden></div>
+<nav class="nav" id="nav" aria-label="Places" hidden>
+  <button id="nav-prev" aria-label="Previous place">‹</button>
+  <span class="where" id="nav-where"></span>
+  <button id="nav-back">Overview</button>
+  <button id="nav-next" aria-label="Next place">›</button>
+</nav>
 
 <script src="arrangement_v7.js"></script>
 <script type="importmap">
@@ -417,7 +412,8 @@ const onModel = (gltf) => {
     }
     if (m.name === 'lightstrip') { m.emissive = new THREE.Color(0xfff1dc); m.emissiveIntensity = 0; lightstrips.push(m); }
     if (/^propsturbine/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; if (o.name === 'propsturbine_rotor') turbine.rotor = o; }
-    if (/^propsdish_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, false, 0.7); o.castShadow = false; }   // big radio dish on the hill
+    if (/^propsdish_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, false, 0.7); o.castShadow = false;
+      if (m.name === 'dishmesh') { o.material.opacity = 0.55; o.material.side = THREE.DoubleSide; o.material.depthWrite = false; } }   // steerable dish on the hill; open mesh reflector   // big radio dish on the hill
     if (/^propshill_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; }   // boulders, bushes, grass, cacti on the hill
     if (/^propssolar/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.32); o.castShadow = false; }   // on the hill: same haze and fade as the hill under it
     if (m.name === 'ground' || m.name === 'cliff') addFade(m);
@@ -498,29 +494,286 @@ function stepRoof(now) {
 }
 document.getElementById('btn-roof-open').addEventListener('click', () => setRoof(false));
 document.getElementById('btn-roof-closed').addEventListener('click', () => setRoof(true));
-// click on the showroom toggles its roof; a drag to rotate does not count as a click
+// --- places: tap zones, camera views, navigation (Smo, 6 Oct 2026)
+// Content data, one entry per place (three.js coordinates: y is up, the station's open side faces -z).
+//   zone: centre and radius of the invisible tap sphere, bigger than the thing itself
+//   view.type 'cutaway': orbit in front of the open side, limited turning and zoom
+//   view.type 'inside':  stand inside and look all round (hub, showroom)
+//   view.type 'object':  orbit round the thing within limits
+// Order: counterclockwise seen from above (Smo), so 'next' moves to the right along the front.
+const PLACES = [
+  { id: 'hub', name: 'Hub', zone: { c: [-22.9, 5.0, 0.0], r: 6.2 },
+    view: { type: 'inside', eye: [-20.4, 4.65, -2.8], look: [-23.6, 4.3, 0.6], fov: 72 } },
+  { id: 'showroom', name: 'Showroom', zone: { c: [-14.7, 5.5, 14.1], r: 9.5 },
+    view: { type: 'inside', eye: [-14.6, 4.65, 9.6], look: [-14.5, 4.4, 14.3], fov: 72 },
+    onEnter: () => { if (roof.closed) setRoof(false); } },
+  { id: 'future', name: 'Next module', zone: { c: [-7.6, 3.5, 28.7], r: 8.5 },
+    view: { type: 'object', pos: [8.0, 11.0, 14.0], target: [-7.6, 3.5, 28.7], az: 60, polar: [40, 85], dist: [10, 35], fit: 18 } },
+  { id: 'dish', name: 'Radio dish', zone: { c: [15.0, 33.0, 154.0], r: 26 },
+    view: { type: 'object', pos: [1.0, 57.0, 72.0], target: [15.0, 42.0, 150.0], az: 80, polar: [45, 88], dist: [30, 120], fit: 50 } },
+  { id: 'relay', name: 'Relay station', zone: { c: [46.0, 9.0, 31.0], r: 11 },
+    view: { type: 'object', pos: [30.0, 13.0, 4.0], target: [46.0, 8.0, 31.0], az: 80, polar: [40, 86], dist: [15, 50], fit: 22 } },
+  { id: 'camp', name: 'Camp', zone: { c: [25.4, 1.5, -5.4], r: 5.5 },
+    view: { type: 'object', pos: [17.0, 6.5, -19.0], target: [25.2, 1.2, -5.2], az: 70, polar: [40, 86], dist: [8, 28], fit: 12 } },
+  { id: 'workshop', name: 'Workshop', zone: { c: [10.85, 4.4, 0.0], r: 5.6 },
+    view: { type: 'cutaway', pos: [10.85, 6.2, -13.0], target: [10.85, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 } },
+  { id: 'office', name: 'Office', zone: { c: [-0.8, 4.4, 0.0], r: 5.6 },
+    view: { type: 'cutaway', pos: [-0.8, 6.2, -13.0], target: [-0.8, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 } },
+  { id: 'library', name: 'Library', zone: { c: [-11.6, 4.4, 0.0], r: 5.6 },
+    view: { type: 'cutaway', pos: [-11.6, 6.2, -12.5], target: [-11.6, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 17], fit: 10.5 } },
+];
+
+const nav = { place: null, mode: 'overview' };            // mode: overview | cutaway | object | inside
+const tween = { active: false };
+const look = { yaw: 0, pitch: 0, eye: new THREE.Vector3(), pointers: new Map(), pinch: 0, fov0: 0, fov: 72 };
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-let downAt = null;
-function hitShowroom(ev) {
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const portrait = () => host.clientWidth < host.clientHeight;
+function baseFov() {
+  if (nav.mode === 'inside') return look.fov;
+  return portrait() ? 50 : 32;
+}
+// on narrow screens, step back along the view line until `fit` metres of width are in frame
+const HOME_FIT = 64;
+function fitPose(pos, target, fit) {
+  const p = pos.clone(), t = target.clone();
+  if (!fit) return { pos: p, target: t, d: p.distanceTo(t) };
+  const vf = THREE.MathUtils.degToRad(portrait() ? 50 : 32), aspect = host.clientWidth / host.clientHeight;
+  const need = (fit / 2) / Math.tan(Math.atan(Math.tan(vf / 2) * aspect));
+  const off = p.clone().sub(t), d = off.length();
+  if (need > d) p.copy(t).add(off.multiplyScalar(need / d));
+  return { pos: p, target: t, d: p.distanceTo(t) };
+}
+function homePose() { return fitPose(HOME.pos, HOME.target, HOME_FIT); }
+
+// ---- picking: the zone whose centre lies closest to the pointer ray (relative to its size) wins
+const zoneSpheres = PLACES.map((p) => new THREE.Sphere(new THREE.Vector3(...p.zone.c), p.zone.r));
+function setRay(ev) {
   const r = renderer.domElement.getBoundingClientRect();
   ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const hits = ray.intersectObjects(showroomMeshes.filter((m) => m.visible), false);
-  return hits.length > 0;
 }
-renderer.domElement.addEventListener('pointerdown', (ev) => { downAt = [ev.clientX, ev.clientY]; });
-renderer.domElement.addEventListener('pointerup', (ev) => {
-  if (!downAt) return;
-  const moved = Math.hypot(ev.clientX - downAt[0], ev.clientY - downAt[1]);
+function zoneAt(ev) {
+  setRay(ev);
+  let best = null, score = Infinity;
+  PLACES.forEach((p, i) => {
+    const s = zoneSpheres[i];
+    if (!ray.ray.intersectsSphere(s)) return;
+    const k = Math.sqrt(ray.ray.distanceSqToPoint(s.center)) / s.radius;
+    if (k < score) { score = k; best = p; }
+  });
+  return best;
+}
+function hitRoof(ev) {
+  setRay(ev);
+  return ray.intersectObjects(roof.slats.map((s) => s.mesh), false).length > 0;
+}
+
+// ---- camera modes
+function overviewControls() {
+  Object.assign(controls, { enabled: true, enablePan: true, enableZoom: true, zoomToCursor: true, minDistance: 6, maxDistance: 160,
+    minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity, minPolarAngle: 0, maxPolarAngle: Math.PI * 0.47 });
+}
+function placeControls(v) {
+  const off = new THREE.Vector3(...v.pos).sub(new THREE.Vector3(...v.target));
+  const az = Math.atan2(off.x, off.z), r = THREE.MathUtils.degToRad(v.az);
+  const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  Object.assign(controls, { enabled: true, enablePan: false, enableZoom: true, zoomToCursor: false,
+    minDistance: v.dist[0], maxDistance: v.dist[1], minAzimuthAngle: wrap(az - r), maxAzimuthAngle: wrap(az + r),
+    minPolarAngle: THREE.MathUtils.degToRad(v.polar[0]), maxPolarAngle: THREE.MathUtils.degToRad(v.polar[1]) });
+}
+function lookDir(out = new THREE.Vector3()) {
+  return out.set(Math.sin(look.yaw) * Math.cos(look.pitch), Math.sin(look.pitch), Math.cos(look.yaw) * Math.cos(look.pitch));
+}
+
+// ---- flights between views
+const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+function flyTo(pos, target, fov, done) {
+  Object.assign(tween, { active: true, start: performance.now(), ms: reduceMotion() ? 0 : 1200, done,
+    p0: camera.position.clone(), t0: controls.target.clone(), f0: camera.fov, p1: pos, t1: target, f1: fov });
+  controls.enabled = false;
+}
+function stepTween(now) {
+  const u = tween.ms ? Math.min(1, (now - tween.start) / tween.ms) : 1, e = ease(u);
+  camera.position.lerpVectors(tween.p0, tween.p1, e);
+  controls.target.lerpVectors(tween.t0, tween.t1, e);
+  camera.fov = tween.f0 + (tween.f1 - tween.f0) * e;
+  camera.updateProjectionMatrix();
+  camera.lookAt(controls.target);
+  if (u >= 1) { tween.active = false; tween.done && tween.done(); }
+}
+
+function enter(p) {
+  nav.place = p; nav.mode = p.view.type;
+  document.body.classList.add('in-place');
+  setTip(null);
+  showNav(p);
+  if (p.onEnter) p.onEnter();
+  const v = p.view;
+  if (v.type === 'inside') {
+    const eye = new THREE.Vector3(...v.eye), at = new THREE.Vector3(...v.look);
+    const d = at.clone().sub(eye).normalize();
+    look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y); look.fov = portrait() ? v.fov + 8 : v.fov;
+    flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, () => {});
+  } else {
+    const f = fitPose(new THREE.Vector3(...v.pos), new THREE.Vector3(...v.target), v.fit);
+    flyTo(f.pos, f.target, portrait() ? 50 : 32, () => { placeControls(v); controls.maxDistance = Math.max(v.dist[1], f.d * 1.2); });
+  }
+}
+function leave() {
+  nav.place = null; nav.mode = 'overview';
+  document.body.classList.remove('in-place');
+  document.getElementById('nav').hidden = true;
+  const h = homePose();
+  flyTo(h.pos, h.target, portrait() ? 50 : 32, () => overviewControls());
+}
+function showNav(p) {
+  document.getElementById('nav').hidden = false;
+  document.getElementById('nav-where').textContent = p.name;
+}
+
+// ---- routing: every place has its own address (#library); the browser's back button works
+function setRoute(id) {
+  const want = id ? '#' + id : '';
+  try {
+    if (location.hash !== want && !(want === '' && location.hash === '#')) { location.hash = id; return; }
+  } catch (e) { /* hash not writable: route directly */ }
+  route(id);
+}
+function route(id) {
+  const p = PLACES.find((q) => q.id === id) || null;
+  if (p === nav.place && !tween.active) return;
+  if (p) enter(p); else if (nav.place) leave();
+}
+window.addEventListener('hashchange', () => route(location.hash.slice(1)));
+function step(k) {
+  const i = nav.place ? PLACES.indexOf(nav.place) : -1;
+  setRoute(PLACES[(i + k + PLACES.length) % PLACES.length].id);
+}
+document.getElementById('nav-prev').addEventListener('click', () => step(-1));
+document.getElementById('nav-next').addEventListener('click', () => step(1));
+document.getElementById('nav-back').addEventListener('click', () => setRoute(''));
+window.addEventListener('keydown', (ev) => {
+  if (ev.target.closest && ev.target.closest('input, textarea')) return;
+  if (ev.key === 'Escape' && nav.place) setRoute('');
+  if (nav.place && ev.key === 'ArrowRight') step(1);
+  if (nav.place && ev.key === 'ArrowLeft') step(-1);
+});
+
+// ---- pointer: tap to go, drag to rotate (or to look round when inside), pinch to zoom
+let downAt = null;
+const el = renderer.domElement;
+el.addEventListener('pointerdown', (ev) => {
+  downAt = { x: ev.clientX, y: ev.clientY, t: performance.now() };
+  if (nav.mode === 'inside' && !tween.active) {
+    look.pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    el.setPointerCapture(ev.pointerId);
+    if (look.pointers.size === 2) { const [a, b] = [...look.pointers.values()]; look.pinch = Math.hypot(a.x - b.x, a.y - b.y); look.fov0 = look.fov; }
+  }
+});
+el.addEventListener('pointermove', (ev) => {
+  if (nav.mode === 'inside' && look.pointers.has(ev.pointerId)) {
+    const prev = look.pointers.get(ev.pointerId);
+    if (look.pointers.size === 1) {                       // grab the view: it follows the finger
+      const k = THREE.MathUtils.degToRad(camera.fov) / el.clientHeight;
+      look.yaw += (ev.clientX - prev.x) * k;
+      look.pitch = Math.max(-1.1, Math.min(1.1, look.pitch + (ev.clientY - prev.y) * k));
+    }
+    look.pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (look.pointers.size === 2) {
+      const [a, b] = [...look.pointers.values()];
+      look.fov = THREE.MathUtils.clamp(look.fov0 * look.pinch / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), 35, 85);
+    }
+    return;
+  }
+  if (ev.pointerType === 'mouse' && !ev.buttons) hover(ev);
+});
+const endPointer = (ev) => { look.pointers.delete(ev.pointerId); };
+el.addEventListener('pointercancel', endPointer);
+el.addEventListener('pointerup', (ev) => {
+  endPointer(ev);
+  if (!downAt || tween.active) { downAt = null; return; }
+  const tap = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) < 6 && performance.now() - downAt.t < 600;
   downAt = null;
-  if (moved < 5 && hitShowroom(ev)) setRoof(!roof.closed);
+  if (!tap) return;
+  if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }
+  if (nav.place.id === 'showroom' && hitRoof(ev)) setRoof(!roof.closed);
 });
+el.addEventListener('wheel', (ev) => {
+  if (nav.mode !== 'inside') return;
+  ev.preventDefault();
+  look.fov = THREE.MathUtils.clamp(look.fov * Math.exp(ev.deltaY * 0.001), 35, 85);
+}, { passive: false });
+
+// ---- hover tooltip (mouse only) and optional place markers
+const tip = document.getElementById('tip');
+let hovered = null;                                   // the hover label sits still over its place
+function setTip(p) {
+  hovered = p;
+  if (!p) { tip.hidden = true; el.style.cursor = ''; return; }
+  tip.textContent = p.name; tip.hidden = false;
+  el.style.cursor = 'pointer';
+}
+const anchor = (p, out) => out.set(p.zone.c[0], p.zone.c[1] + p.zone.r * 0.45, p.zone.c[2]);
 let hoverPending = false;
-renderer.domElement.addEventListener('pointermove', (ev) => {
-  if (hoverPending || ev.buttons) return;
+function hover(ev) {
+  if (hoverPending) return;
   hoverPending = true;
-  requestAnimationFrame(() => { hoverPending = false; renderer.domElement.style.cursor = hitShowroom(ev) ? 'pointer' : ''; });
+  requestAnimationFrame(() => {
+    hoverPending = false;
+    if (tween.active) return setTip(null);
+    if (!nav.place) return setTip(zoneAt(ev));
+    if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = hitRoof(ev) ? 'pointer' : ''; return; }
+    setTip(null);
+  });
+}
+el.addEventListener('pointerleave', () => setTip(null));
+const markers = document.getElementById('markers');
+const markerEls = PLACES.map((p) => {
+  const m = document.createElement('button');
+  m.className = 'marker'; m.textContent = p.name; m.type = 'button';
+  m.addEventListener('click', () => setRoute(p.id));
+  markers.appendChild(m);
+  return m;
 });
+let showMarkers = false;
+document.getElementById('btn-places').addEventListener('click', () => {
+  showMarkers = !showMarkers;
+  press('btn-places', showMarkers);
+});
+const vTmp = new THREE.Vector3();
+function stepMarkers() {
+  if (hovered && !nav.place && !tween.active) {
+    anchor(hovered, vTmp).project(camera);
+    tip.style.left = ((vTmp.x + 1) / 2 * el.clientWidth) + 'px'; tip.style.top = ((1 - vTmp.y) / 2 * el.clientHeight) + 'px';
+  } else if (hovered) setTip(null);
+  const on = showMarkers && !nav.place && !tween.active;
+  markers.hidden = !on;
+  if (!on) return;
+  const w = el.clientWidth, h = el.clientHeight;
+  PLACES.forEach((p, i) => {
+    anchor(p, vTmp).project(camera);
+    const vis = vTmp.z < 1 && Math.abs(vTmp.x) < 1.05 && Math.abs(vTmp.y) < 1.05;
+    markerEls[i].style.display = vis ? '' : 'none';
+    if (vis) { markerEls[i].style.left = ((vTmp.x + 1) / 2 * w) + 'px'; markerEls[i].style.top = ((1 - vTmp.y) / 2 * h) + 'px'; }
+  });
+}
+
+// ---- per frame
+const dTmp = new THREE.Vector3();
+function stepPlaces(now) {
+  if (tween.active) stepTween(now);
+  else if (nav.mode === 'inside') {
+    camera.position.copy(look.eye);
+    controls.target.copy(look.eye).add(lookDir(dTmp).multiplyScalar(0.5));
+    camera.lookAt(controls.target);
+    if (Math.abs(camera.fov - look.fov) > 0.01) { camera.fov = look.fov; camera.updateProjectionMatrix(); }
+  } else controls.update();
+  stepMarkers();
+}
+overviewControls();
+{ const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update(); }
+if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0);
 
 // --- day / night and sun direction
 let mode = 'day', sunSide = 'front';
@@ -558,7 +811,8 @@ document.getElementById('btn-night').addEventListener('click', () => { mode = 'n
 document.getElementById('btn-front').addEventListener('click', () => { sunSide = 'front'; apply(); });
 document.getElementById('btn-back').addEventListener('click', () => { sunSide = 'back'; apply(); });
 document.getElementById('btn-reset').addEventListener('click', () => {
-  camera.position.copy(HOME.pos); controls.target.copy(HOME.target); controls.update();
+  if (nav.place) { setRoute(''); return; }
+  const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update();
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintBackground);
 new MutationObserver(paintBackground).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -570,13 +824,14 @@ function resize() {
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   camera.aspect = w / h;
-  camera.fov = w < h ? 50 : 32;      // portrait screens: widen so both modules fit
+  if (!tween.active) camera.fov = baseFov();     // portrait screens: wider
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
 resize();
 renderer.setAnimationLoop((now) => {
-  stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); controls.update();
+  stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now);
+  stepPlaces(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
   composer.render();
@@ -585,6 +840,11 @@ renderer.setAnimationLoop((now) => {
 // hooks used for test renders
 window.__set = (s) => { if (s.mode) mode = s.mode; if (s.sun) sunSide = s.sun; if (s.roof) setRoof(s.roof === 'closed', false); apply(); };
 window.__cam = (c) => { camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
+window.__go = (id) => setRoute(id || '');
+window.__look = (yawDeg, pitchDeg) => { look.yaw += yawDeg * Math.PI / 180; look.pitch = Math.max(-1.1, Math.min(1.1, look.pitch + (pitchDeg || 0) * Math.PI / 180)); };
+window.__zoneScreen = (id) => { const p = PLACES.find((q) => q.id === id); const q = new THREE.Vector3(...p.zone.c).project(camera);
+  const r = renderer.domElement.getBoundingClientRect(); return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height]; };
+window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
 
 </body></html>
