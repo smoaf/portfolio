@@ -61,6 +61,18 @@
   .nav button { min-width: 44px; min-height: 44px; }
   .nav button + button, .nav .where, .nav .where + button { border-left: 1px solid var(--rule); }
   .nav .where { font: 500 12px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase; padding: 0 14px; display: grid; place-items: center; min-width: 110px; }
+
+  /* sky lab panel (draft): sliders for the day cycle */
+  .skypanel { position: fixed; right: 16px; top: calc(64px + env(safe-area-inset-top, 0px)); width: 290px; max-height: calc(100vh - 150px);
+              overflow-y: auto; background: var(--card); border: 1px solid var(--rule); padding: 6px 14px 12px; font: 12px var(--font-data); }
+  .sp-head { font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); margin: 12px 0 4px; font-size: 11px; }
+  .sp-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 6px 0; color: var(--ink); }
+  .sp-row output { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+  .sp-row input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .sp-buttons { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .sp-buttons button { border: 1px solid var(--rule); padding: 8px 10px; }
+  .sp-fps { margin-right: auto; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) { .skypanel { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); max-height: 55vh; } }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
@@ -73,19 +85,16 @@
     <button id="btn-day" aria-pressed="true">Day</button>
     <button id="btn-night" aria-pressed="false">Night</button>
   </div>
-  <div class="seg" role="group" aria-label="Sun direction">
-    <span class="tag">Sun</span>
-    <button id="btn-front" aria-pressed="true">Front</button>
-    <button id="btn-back" aria-pressed="false">Back</button>
-  </div>
   <div class="seg" role="group" aria-label="Showroom roof">
     <span class="tag">Roof</span>
     <button id="btn-roof-open" aria-pressed="true">Open</button>
     <button id="btn-roof-closed" aria-pressed="false">Closed</button>
   </div>
   <div class="seg"><button id="btn-places" aria-pressed="false">Places</button></div>
+  <div class="seg"><button id="btn-sky" aria-pressed="false">Sky</button></div>
   <div class="seg"><button id="btn-reset">Reset view</button></div>
 </div>
+<div class="skypanel" id="skypanel" hidden aria-label="Sky settings"></div>
 <div class="markers" id="markers" hidden></div>
 <div class="tip" id="tip" hidden></div>
 <nav class="nav" id="nav" aria-label="Places" hidden>
@@ -290,7 +299,7 @@ function drawProjectors(k) {               // k: 0 folded away, 1 out and projec
 function setProjectors(on, animate = true) {
   PROJ.from = PROJ.t; PROJ.to = on ? 1 : 0;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!animate || reduce) { PROJ.t = PROJ.to; drawProjectors(PROJ.t); PROJ.start = 0; return; }
+  if (!animate || reduce) { PROJ.t = PROJ.to; drawProjectors(PROJ.t); PROJ.start = 0; markShadows(); return; }
   PROJ.start = performance.now();
 }
 function stepProjectors(now) {
@@ -298,7 +307,7 @@ function stepProjectors(now) {
     const u = Math.min(1, (now - PROJ.start) / PROJ.MS);
     PROJ.t = PROJ.from + (PROJ.to - PROJ.from) * u;
     drawProjectors(PROJ.t);
-    if (u >= 1) PROJ.start = 0;
+    if (u >= 1) { PROJ.start = 0; markShadows(); }
   }
   if (PROJ.t > 0.8) drawContent(now);
 }
@@ -384,6 +393,577 @@ function stepFire(now) {
   fire.mesh.scale.set(1, 0.85 + 0.2 * f, 1);
   fire.mesh.rotation.y = Math.sin(t * 1.7) * 0.15;
 }
+// --- the showroom gets dark when its roof slats and window fins are closed (Smo). The closed slats
+// and fins already keep the sun out; this also fades the sky and environment light inside the
+// walls, which three.js would otherwise add everywhere. Inside = above the floor, below the slats,
+// at least 9 cm inside all twelve wall facets (the fins' inner faces count as inside) (outward normal x, z and offset, viewer coordinates).
+const SHOW_WALLS = [[0.64897, -0.76082, -14.0688], [0.22853, -0.97354, -9.2784], [-0.5, -0.86603, 4.425], [-0.95737, -0.28885, 17.8197], [-0.98337, 0.18161, 23.2301], [-0.86603, 0.5, 25.4876], [-0.64897, 0.76082, 26.4724], [-0.22853, 0.97354, 24.8863], [0.5, 0.86603, 14.1208], [0.95737, 0.28885, -2.2117], [0.98337, -0.18161, -10.8266], [0.86603, -0.5, -14.0897]];
+const SHOW_Y = [2.95, 8.46];
+const showDark = { u: { value: 0 }, last: 0 };
+function showDarkMaterial(m) {
+  const c = m.clone();
+  const tests = SHOW_WALLS.map(([x, z, o]) => `in_ = in_ && dot(vec2(${x.toFixed(5)}, ${z.toFixed(5)}), vShowPos.xz) <= ${(o - 0.09).toFixed(4)};`).join('\n');
+  c.customProgramCacheKey = () => 'showdark-' + m.name;
+  c.onBeforeCompile = (sh) => {
+    sh.uniforms.uShowDark = showDark.u;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vShowPos;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvShowPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vShowPos;\nuniform float uShowDark;')
+      .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>
+        {
+          bool in_ = vShowPos.y > ${SHOW_Y[0].toFixed(2)} && vShowPos.y < ${SHOW_Y[1].toFixed(2)};
+          ${tests}
+          float k = in_ ? mix(1.0, 0.04, uShowDark) : 1.0;
+          irradiance *= k; iblIrradiance *= k; radiance *= k;
+        }`);
+  };
+  return c;
+}
+function setupShowDark(root) {
+  const made = new Map();
+  root.traverse((o) => {
+    if (!o.isMesh || !/^(showroom|tube_showroom)/.test(o.name)) return;
+    const m = o.material;
+    if (['ghost', 'lightstrip', 'beacon', 'flame', 'glass'].includes(m.name)) return;
+    if (!made.has(m)) made.set(m, showDarkMaterial(m));
+    o.material = made.get(m);
+  });
+}
+function stepShowDark(now) {
+  const dt = showDark.last ? Math.min(0.1, (now - showDark.last) / 1000) : 0;
+  showDark.last = now;
+  const want = roof.closed ? 1 : 0;
+  showDark.u.value += (want - showDark.u.value) * Math.min(1, dt * 1.4);
+  // the soft fill light casts no shadows, so it would still light the closed room: fade it while
+  // the camera is inside the showroom
+  const inside = nav.place && nav.place.id === 'showroom' && !tween.active ? 1 : 0;
+  showDark.cam = (showDark.cam || 0) + (inside - (showDark.cam || 0)) * Math.min(1, dt * 2);
+  fill.intensity = skyState.fill * (1 - 0.97 * showDark.u.value * showDark.cam);
+}
+// --- a figure at the camp (Smo: him, in the model's plaster style). By day it walks slowly round
+// the van, carries the loose case from the van's far side to the stack by the fire and back, and
+// works at the open case on top of the stack. When night falls it finishes what it carries, walks
+// to the left camping chair (as seen from the camp view) and sits by the fire; at dawn it gets up
+// and goes back to work. It casts no live shadow while moving (a soft contact shadow follows it
+// instead), so the shadow maps never have to be redrawn for it; seated it casts a real one.
+const W2T = (x, y, z = 0) => new THREE.Vector3(x, z, -y);          // model coordinates (z up) -> viewer
+const person = { root: null, j: {}, plan: [], i: 0, cur: null, queue: [], s: 0, t: 0, last: 0, phase: 0, yaw: 0,
+  box: [], boxRel: null, boxAt: 'A', carrying: false, plateau: null, gy: new Map(), wantSit: false, seated: false,
+  blob: null, boxBlob: null };
+const CAMP = {
+  A: W2T(30.4, 2.3), P1: W2T(30.0, 7.8), P2: W2T(25.0, 8.0), P3: W2T(24.9, 4.4), B: W2T(22.7, 3.45), W: W2T(23.95, 3.5),
+  C: W2T(22.31, 7.70),                                               // beside the left chair, on its cliff side
+  faceA: W2T(29.5, 2.3), faceB: W2T(22.7, 2.6), faceW: W2T(23.95, 2.6), view: W2T(30.4, 12.0),
+  boxA: W2T(29.5, 2.3, 0.48), boxB: W2T(22.7, 2.6, 0.0),
+  chair: W2T(23.4 + 1.6 * Math.cos(Math.PI * 0.85), 6.3 + 1.6 * Math.sin(Math.PI * 0.85)), fire: W2T(23.4, 6.3),
+};
+// walking graph round the van: the figure only walks along these legs, so it never cuts through
+// the van, the fire, the chairs or the stack
+const NODES = { A: CAMP.A, P1: CAMP.P1, P2: CAMP.P2, P3: CAMP.P3, B: CAMP.B, W: CAMP.W, C: CAMP.C };
+const EDGES = [['A', 'P1'], ['P1', 'P2'], ['P2', 'P3'], ['P3', 'B'], ['B', 'W'], ['W', 'P3'], ['P2', 'C']];
+const WALK_SPEED = 0.7;                                              // m/s, slow on purpose
+function walkRoute(fromPos, toKey) {
+  // nearest node to the start, then the shortest way through the graph
+  let start = null, best = Infinity;
+  for (const k in NODES) { const d = NODES[k].distanceTo(fromPos); if (d < best) { best = d; start = k; } }
+  const dist = {}, prev = {}, todo = new Set(Object.keys(NODES));
+  for (const k in NODES) dist[k] = Infinity;
+  dist[start] = 0;
+  while (todo.size) {
+    let u = null; for (const k of todo) if (u === null || dist[k] < dist[u]) u = k;
+    todo.delete(u);
+    for (const [a, b] of EDGES) {
+      const v = a === u ? b : b === u ? a : null;
+      if (!v || !todo.has(v)) continue;
+      const nd = dist[u] + NODES[u].distanceTo(NODES[v]);
+      if (nd < dist[v]) { dist[v] = nd; prev[v] = u; }
+    }
+  }
+  const keys = [toKey]; while (keys[0] !== start) keys.unshift(prev[keys[0]]);
+  const pts = [fromPos.clone(), ...keys.map((k) => NODES[k])];
+  return pts.filter((p, i) => i === 0 || p.distanceTo(pts[i - 1]) > 0.05);
+}
+function limb(len, r, mat) {
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, Math.max(0.01, len - 2 * r), 4, 10), mat);
+  m.position.y = -len / 2; m.receiveShadow = true;
+  g.add(m);
+  return g;
+}
+function part(geo, mat, x, y, z) {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.receiveShadow = true; return m;
+}
+function buildPerson(mat) {
+  const j = {};
+  const root = new THREE.Group();
+  j.hips = new THREE.Group(); j.hips.position.y = 0.93; root.add(j.hips);
+  const pelvis = part(new THREE.CapsuleGeometry(0.115, 0.1, 4, 12), mat, 0, 0.02, 0); pelvis.rotation.z = Math.PI / 2; pelvis.scale.set(1, 1, 0.8);
+  j.hips.add(pelvis);
+  j.torso = new THREE.Group(); j.hips.add(j.torso);
+  const chest = part(new THREE.CapsuleGeometry(0.155, 0.3, 4, 14), mat, 0, 0.3, 0); chest.scale.set(1.12, 1, 0.68);
+  j.torso.add(chest);
+  j.head = new THREE.Group(); j.head.position.y = 0.57; j.torso.add(j.head);
+  j.head.add(part(new THREE.CylinderGeometry(0.045, 0.05, 0.1, 10), mat, 0, 0.03, 0));
+  j.head.add(part(new THREE.SphereGeometry(0.105, 18, 14), mat, 0, 0.16, 0.01));
+  for (const s of [-1, 1]) {
+    const k = s < 0 ? 'R' : 'L';
+    const sh = new THREE.Group(); sh.position.set(s * 0.205, 0.5, 0); j.torso.add(sh);
+    const ua = limb(0.29, 0.048, mat); sh.add(ua);
+    const el = new THREE.Group(); el.position.y = -0.29; ua.add(el);
+    const fa = limb(0.26, 0.042, mat); el.add(fa);
+    fa.add(part(new THREE.SphereGeometry(0.046, 10, 8), mat, 0, -0.28, 0.01));
+    j['arm' + k] = ua; j['fore' + k] = el;
+    const hp = new THREE.Group(); hp.position.set(s * 0.095, -0.02, 0); j.hips.add(hp);
+    const th = limb(0.45, 0.068, mat); hp.add(th);
+    const kn = new THREE.Group(); kn.position.y = -0.45; th.add(kn);
+    const shin = limb(0.44, 0.055, mat); kn.add(shin);
+    shin.add(part(new THREE.BoxGeometry(0.095, 0.06, 0.25), mat, 0, -0.45, 0.05));
+    j['thigh' + k] = th; j['knee' + k] = kn;
+  }
+  return { root, j };
+}
+function blobShadow(w, d) {                                          // soft dark disc on the ground, costs one quad
+  if (!blobShadow.tex) {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 4, 32, 32, 32);
+    r.addColorStop(0, 'rgba(0,0,0,0.55)'); r.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+    blobShadow.tex = new THREE.CanvasTexture(c);
+  }
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: blobShadow.tex, transparent: true, depthWrite: false, opacity: 0.8 }));
+  m.rotation.x = -Math.PI / 2; m.renderOrder = 1;
+  scene.add(m);
+  return m;
+}
+function setCast(obj, on) { obj.traverse((o) => { if (o.isMesh) o.castShadow = on; }); markShadows(); }
+function groundY(v) {
+  const key = Math.round(v.x * 4) + ',' + Math.round(v.z * 4);
+  if (person.gy.has(key)) return person.gy.get(key);
+  let y = 0;
+  if (person.plateau) {
+    ray.set(new THREE.Vector3(v.x, 40, v.z), new THREE.Vector3(0, -1, 0));
+    const h = ray.intersectObject(person.plateau, false)[0];
+    if (h) y = h.point.y;
+  }
+  person.gy.set(key, y);
+  return y;
+}
+function setupPerson(root) {
+  let mat = null;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    if (o.name === 'terrainplateau') person.plateau = o;
+    if (o.name === 'campcarry_case' || o.name === 'campcarry_case_black') person.box.push(o);
+    if (!mat && o.material && o.material.name === 'plaster' && /^library/.test(o.name)) mat = o.material;
+  });
+  const { root: r, j } = buildPerson(mat || new THREE.MeshStandardMaterial({ color: 0xede7dc, roughness: 0.92 }));
+  person.root = r; person.j = j;
+  scene.add(r);
+  person.blob = blobShadow(0.75, 0.75);
+  person.boxBlob = blobShadow(0.95, 0.75);
+  const P = CAMP;
+  person.plan = [
+    { act: 'pickup', at: 'A', face: P.faceA, dur: 2.4 },
+    { walk: [P.A, P.P1, P.P2, P.P3, P.B], carry: true },
+    { act: 'putdown', at: 'B', face: P.faceB, dur: 2.4 },
+    { walk: [P.B, P.W] },
+    { act: 'work', face: P.faceW, dur: 9 },
+    { walk: [P.W, P.B] },
+    { act: 'pickup', at: 'B', face: P.faceB, dur: 2.4 },
+    { walk: [P.B, P.P3, P.P2, P.P1, P.A], carry: true },
+    { act: 'putdown', at: 'A', face: P.faceA, dur: 2.4 },
+    { act: 'idle', face: P.view, dur: 5 },
+  ];
+  person.i = 0; person.cur = person.plan[0];
+  person.root.position.copy(P.A); person.root.position.y = groundY(P.A);
+  placeBox(P.boxA);
+  if (mode === 'night') sitNow();
+}
+const qYaw = (a) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a);
+function placeBox(pos) {                                             // the case comes to rest: it may cast a shadow again
+  person.box.forEach((b) => { b.position.copy(pos); if (pos === CAMP.boxB) b.position.y = groundY(CAMP.boxB); });
+  person.box.forEach((b) => { b.castShadow = true; });
+  markShadows();
+}
+function liftBox() { person.box.forEach((b) => { b.castShadow = false; }); markShadows(); }
+function handsPos(out) { return person.root.localToWorld(out.set(0, 0.84, 0.4)); }
+const angTo = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
+function turnTo(target, dt, rate = 3) {
+  let d = target - person.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+  person.yaw += d * Math.min(1, dt * rate);
+  person.root.rotation.y = person.yaw;
+}
+function pose(o) {                                                   // joint angles; forward swing is negative x
+  const j = person.j, z = (v) => v || 0;
+  j.hips.position.y = 0.93 + z(o.hipsY);
+  j.torso.rotation.x = z(o.lean);
+  j.head.rotation.y = z(o.look);
+  j.thighL.rotation.x = z(o.thL); j.thighR.rotation.x = z(o.thR);
+  j.kneeL.rotation.x = z(o.knL); j.kneeR.rotation.x = z(o.knR);
+  j.armL.rotation.x = z(o.arL); j.armR.rotation.x = z(o.arR);
+  j.foreL.rotation.x = z(o.faL); j.foreR.rotation.x = z(o.faR);
+  j.armL.rotation.z = z(o.spread); j.armR.rotation.z = -z(o.spread);
+}
+const SIT = { hipsY: -0.47, lean: -0.12, thL: -1.45, thR: -1.4, knL: 1.45, knR: 1.35, arL: -0.3, arR: -0.3, faL: -1.0, faR: -1.0 };
+const STAND = { arL: 0.05, arR: 0.05, faL: -0.1, faR: -0.1, spread: 0.06 };
+function blendPose(a, b, k) { const o = {}; for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) o[key] = (a[key] || 0) * (1 - k) + (b[key] || 0) * k; return o; }
+function seatPos(out) {
+  const toFire = vA.copy(CAMP.fire).sub(CAMP.chair).normalize();
+  return out.copy(CAMP.chair).addScaledVector(toFire, -0.04).setY(groundY(CAMP.chair));
+}
+function sitNow() {                                                  // straight into the chair (page opened at night)
+  person.queue = []; person.cur = { act: 'sit', dur: Infinity }; person.t = 0; person.seated = true;
+  seatPos(person.root.position);
+  person.yaw = angTo(CAMP.chair, CAMP.fire); person.root.rotation.y = person.yaw;
+  pose(SIT); setCast(person.root, true);
+}
+function nextSegment() {
+  person.s = 0; person.t = 0;
+  if (person.wantSit && !person.carrying && !person.seated && !person.queue.length && person.cur.act !== 'sitdown') {
+    person.queue = [{ walk: walkRoute(person.root.position, 'C') }, { act: 'sitdown', dur: 1.6 }, { act: 'sit', dur: Infinity }];
+  }
+  if (person.queue.length) { person.cur = person.queue.shift(); if (person.cur.resume !== undefined) { person.i = person.cur.resume; person.cur = person.plan[person.i]; } return; }
+  person.i = (person.i + 1) % person.plan.length; person.cur = person.plan[person.i];
+}
+function setNight(night) {
+  person.wantSit = night;
+  if (!person.root) return;
+  if (!night && (person.seated || person.cur.act === 'sitdown' || person.queue.some((q) => q.act === 'sitdown'))) {
+    // back to work: get up if seated, walk to where the loose case lies, carry on from there
+    const at = person.boxAt === 'A' ? 'A' : 'B';
+    const fromSeat = person.seated || person.cur.act === 'sitdown';
+    person.queue = [...(fromSeat ? [{ act: 'standup', dur: 1.6 }] : []),
+      { walk: walkRoute(fromSeat ? CAMP.C : person.root.position, at) }, { resume: at === 'A' ? 0 : 6 }];
+    if (fromSeat) { person.seated = false; setCast(person.root, false); }
+    person.cur = person.queue.shift(); person.s = 0; person.t = 0;
+  }
+}
+const vA = new THREE.Vector3(), vB = new THREE.Vector3();
+function stepPerson(now) {
+  if (!person.root) return;
+  const dt = person.last ? Math.max(0, Math.min(0.1, (now - person.last) / 1000)) : 0;
+  person.last = Math.max(person.last, now);
+  if (person.wantSit !== (mode === 'night')) setNight(mode === 'night');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seg = person.cur;
+  const k = dt * (reduce ? 0 : 1);
+  if (seg.walk) {
+    const pts = seg.walk;
+    let total = 0; const lens = [];
+    for (let i = 0; i < pts.length - 1; i++) { const l = pts[i].distanceTo(pts[i + 1]); lens.push(l); total += l; }
+    person.s = Math.min(total, person.s + WALK_SPEED * k);
+    let s = person.s, i = 0;
+    while (i < lens.length - 1 && s > lens[i]) { s -= lens[i]; i++; }
+    const p = vA.copy(pts[i]).lerp(pts[i + 1] || pts[i], lens[i] ? Math.min(1, s / lens[i]) : 1);
+    person.root.position.set(p.x, groundY(p), p.z);
+    if (lens[i]) turnTo(angTo(pts[i], pts[i + 1]), dt, 5);
+    person.phase += WALK_SPEED * k / 1.35 * Math.PI * 2;
+    const ph = person.phase, sn = Math.sin(ph);
+    const kneeL = 0.7 * Math.max(0, Math.sin(ph - 1.3)), kneeR = 0.7 * Math.max(0, Math.sin(ph + Math.PI - 1.3));
+    const c = seg.carry && person.carrying;
+    pose({ hipsY: -0.012 + 0.018 * Math.abs(Math.cos(ph)), lean: c ? -0.04 : 0.03, thL: -0.4 * sn, thR: 0.4 * sn, knL: kneeL + 0.05, knR: kneeR + 0.05,
+      arL: c ? -0.7 : 0.3 * sn, arR: c ? -0.7 : -0.3 * sn, faL: c ? -0.3 : -0.2, faR: c ? -0.3 : -0.2, spread: c ? 0.22 : 0.04 });
+    if (c) { handsPos(vB); person.box.forEach((b) => { b.position.copy(vB); b.quaternion.copy(qYaw(person.yaw)).multiply(person.boxRel); }); }
+    if (person.s >= total) nextSegment();
+  } else {
+    person.t += k;
+    const u = Math.min(1, person.t / seg.dur);
+    if (seg.face) turnTo(angTo(person.root.position, seg.face), dt, 4);
+    if (seg.act === 'pickup' || seg.act === 'putdown') {
+      const b = Math.sin(Math.PI * u), low = seg.at === 'B' ? 1 : 0.55;
+      pose({ hipsY: -0.2 * b * low, lean: 0.55 * b * (0.6 + 0.4 * low), thL: -0.55 * b * low, thR: -0.55 * b * low, knL: 0.95 * b * low, knR: 0.95 * b * low,
+        arL: -0.5 - 0.5 * b, arR: -0.5 - 0.5 * b, faL: -0.4, faR: -0.4, spread: 0.05 });
+      const spot = seg.at === 'A' ? CAMP.boxA : CAMP.boxB;
+      vA.copy(spot); if (spot === CAMP.boxB) vA.y = groundY(spot);
+      if (seg.act === 'pickup' && !person.carrying && u > 0.5) {
+        person.carrying = true; liftBox();
+        person.boxRel = qYaw(-person.yaw).multiply(person.box[0].quaternion.clone());
+      }
+      if (seg.act === 'pickup' && person.carrying) {
+        handsPos(vB); const kk = THREE.MathUtils.smoothstep(u, 0.5, 1);
+        person.box.forEach((bx) => bx.position.copy(vA).lerp(vB, kk));
+      }
+      if (seg.act === 'putdown' && person.carrying) {
+        if (u < 0.5) { handsPos(vB); const kk = THREE.MathUtils.smoothstep(u, 0, 0.5); person.box.forEach((bx) => bx.position.copy(vB).lerp(vA, kk)); }
+        else { person.carrying = false; person.boxAt = seg.at; placeBox(spot); }
+      }
+    } else if (seg.act === 'work') {
+      const t = now / 1000;
+      pose({ lean: 0.32, hipsY: -0.01, thL: -0.06, thR: 0.02, knL: 0.08, knR: 0.04, arL: -0.85 + 0.12 * Math.sin(t * 2.3), arR: -0.8 + 0.1 * Math.sin(t * 1.7 + 1), faL: -0.75, faR: -0.85 + 0.15 * Math.sin(t * 3.1), look: 0.15 * Math.sin(t * 0.5) });
+    } else if (seg.act === 'sitdown' || seg.act === 'standup') {
+      const kk = THREE.MathUtils.smoothstep(seg.act === 'sitdown' ? u : 1 - u, 0, 1);
+      seatPos(vB); person.root.position.copy(CAMP.C).setY(groundY(CAMP.C)).lerp(vB, kk);
+      turnTo(angTo(CAMP.chair, CAMP.fire), dt, 4);
+      pose(blendPose(STAND, SIT, kk));
+      if (seg.act === 'sitdown' && u >= 1) { person.seated = true; setCast(person.root, true); }
+    } else if (seg.act === 'sit') {
+      const t = now / 1000;
+      pose({ ...SIT, look: 0.25 * Math.sin(t * 0.21) });
+    } else {
+      const t = now / 1000;
+      pose({ ...STAND, look: 0.4 * Math.sin(t * 0.6) });
+    }
+    if (person.t >= seg.dur) nextSegment();
+  }
+  // contact shadows follow the figure and the case
+  person.blob.position.set(person.root.position.x, person.root.position.y + 0.02, person.root.position.z);
+  person.blob.visible = !person.seated;
+  const bx = person.box[0];
+  if (bx) { person.boxBlob.position.set(bx.position.x, groundY(bx.position) + 0.02, bx.position.z); person.boxBlob.visible = person.carrying; }
+}
+
+// --- sky and day cycle (Smo, 6 Oct 2026). Not planet Earth: sun path, day length, moons and colours
+// are settings. Built to cost little:
+//   - colours and light strengths change every frame (a handful of numbers, no extra drawing)
+//   - the sun (or at night the brightest moon) moves in small steps (SKY.shadowStep seconds); only
+//     then are the shadow maps redrawn. Otherwise shadows are redrawn only while something that
+//     casts one moves (roof slats, projector lids), never for the camera
+//   - the sky is one big sphere drawn first: colour gradient, sun glow, moons with phases, stars
+//   - the background and the haze take their colour from the sky, not from the page theme
+const SKY_DEFAULTS = {
+  time: 0.36, playing: true, cycleMin: 6,              // time 0..1 (0.25 sunrise, 0.5 noon, 0.75 sunset); minutes per full day
+  sunFrom: 35, tilt: 52, dayShare: 0.12,                 // noon sun direction (0 = from the front, 90 = from the left), path tilt from overhead, longer days
+  sunHue: 40, duskHue: 18, skyHue: 205, skySat: 0.3,    // colours (hue in degrees)
+  nightHue: 228, nightLevel: 0.1,
+  moons: 2, moonSize: 2.6, moonSpeed: 0.85, moonFrom: 172, moonTilt: 83, moonHue: 205,   // moons peak low over the hills, in view
+  shadowStep: 0.5,                                      // seconds between sun steps (and shadow redraws)
+};
+let SKY = { ...SKY_DEFAULTS };
+try { const saved = JSON.parse(localStorage.getItem('station-sky') || 'null'); if (saved) SKY = { ...SKY, ...saved, playing: true }; } catch (e) { /* no storage */ }
+const skyState = { days: 0, lastStep: -1e9, keyDir: new THREE.Vector3(0, 1, 0), d: 0, night: null, fill: 0.55, last: 0 };
+let shadowDirty = true;
+function markShadows() { shadowDirty = true; }
+renderer.shadowMap.autoUpdate = false;
+
+const UP = new THREE.Vector3(0, 1, 0);
+function pathDir(theta, fromDeg, tiltDeg, lift, out) {
+  // a circle across the sky: rises along R, noon towards N tilted from overhead, lifted by `lift`
+  const a = THREE.MathUtils.degToRad(fromDeg), tl = THREE.MathUtils.degToRad(tiltDeg);
+  const N = new THREE.Vector3(Math.sin(a), 0, -Math.cos(a));       // horizontal direction of the noon sun
+  const R = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));        // where it rises
+  const top = UP.clone().multiplyScalar(Math.cos(tl)).addScaledVector(N, Math.sin(tl));
+  return out.copy(R).multiplyScalar(Math.cos(theta)).addScaledVector(top, Math.sin(theta)).addScaledVector(UP, lift).normalize();
+}
+const sunDir = new THREE.Vector3(), moonDirs = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+function moonInfo(i, total) {
+  // each moon runs at its own speed; started so that it stands high in the first night (moon 1 at
+  // midnight, moon 2 a little earlier), then drifts against the sun from night to night
+  const speed = SKY.moonSpeed * (1 + 0.37 * i), peak = 1.0 - 0.12 * i;
+  const phase0 = Math.PI / 2 - 2 * Math.PI * (peak - 0.25) * speed;
+  pathDir(2 * Math.PI * (total - 0.25) * speed + phase0, SKY.moonFrom + 28 * i, SKY.moonTilt + 2 * i, 0, moonDirs[i]);
+  return { dir: moonDirs[i], size: SKY.moonSize * (1 - 0.28 * i), hue: SKY.moonHue + 25 * i };
+}
+const hsl = (h, s, l) => new THREE.Color().setHSL(((h % 360) + 360) % 360 / 360, s, l);
+const smooth = THREE.MathUtils.smoothstep;
+
+// sky sphere
+const skyUniforms = {
+  uZenith: { value: new THREE.Color() }, uHorizon: { value: new THREE.Color() }, uGround: { value: new THREE.Color() },
+  uSunDir: { value: new THREE.Vector3() }, uSunColor: { value: new THREE.Color() }, uGlow: { value: new THREE.Color() }, uGlowAmt: { value: 0 },
+  uSunVis: { value: 1 }, uMoonDir: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
+  uMoonCos: { value: [1, 1, 1] }, uMoonColor: { value: [new THREE.Color(), new THREE.Color(), new THREE.Color()] },
+  uMoonCount: { value: 0 }, uNight: { value: 0 },
+};
+const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), new THREE.ShaderMaterial({
+  uniforms: skyUniforms, side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false,
+  vertexShader: `varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    varying vec3 vDir;
+    uniform vec3 uZenith, uHorizon, uGround, uSunDir, uSunColor, uGlow;
+    uniform float uGlowAmt, uSunVis, uNight;
+    uniform vec3 uMoonDir[3]; uniform float uMoonCos[3]; uniform vec3 uMoonColor[3]; uniform int uMoonCount;
+    void main() {
+      vec3 d = normalize(vDir);
+      float h = d.y;
+      vec3 col = h > 0.0 ? mix(uHorizon, uZenith, pow(clamp(h, 0.0, 1.0), 0.55)) : mix(uHorizon, uGround, smoothstep(0.0, -0.25, h));
+      float s = max(dot(d, uSunDir), 0.0);
+      col += uGlow * uGlowAmt * (pow(s, 6.0) * 0.6 + pow(s, 40.0) * 0.6) * (1.0 - smoothstep(0.0, 0.5, h) * 0.5);
+      col = mix(col, uSunColor * 1.6, smoothstep(0.99955, 0.99975, s) * uSunVis);          // sun disc
+      for (int i = 0; i < 3; i++) {
+        if (i >= uMoonCount) break;
+        vec3 m = uMoonDir[i];
+        float c = dot(d, m);
+        if (c > uMoonCos[i] && m.y > -0.05) {
+          float sinR = sqrt(1.0 - uMoonCos[i] * uMoonCos[i]);
+          vec3 q = (d - m * c) / sinR;                       // position on the disc, length 0..1
+          float z = sqrt(max(0.0, 1.0 - dot(q, q)));
+          vec3 n = normalize(q - m * z);                       // sphere normal facing us
+          float lit = smoothstep(-0.08, 0.12, dot(n, uSunDir));
+          float edge = smoothstep(uMoonCos[i], uMoonCos[i] + (1.0 - uMoonCos[i]) * 0.08, c);
+          vec3 mc = uMoonColor[i] * (0.07 + 0.93 * lit) * (0.45 + 0.55 * uNight) * (0.62 + 0.38 * z);   // darker towards the rim
+          col = mix(col, mc + col * 0.15, edge * (0.55 + 0.45 * uNight));
+        }
+      }
+      gl_FragColor = vec4(col, 1.0);
+      #include <colorspace_fragment>
+    }`,
+}));
+skyMesh.renderOrder = -1000; skyMesh.frustumCulled = false;
+scene.add(skyMesh);
+// stars: fixed points on the upper sky, fade in at night
+const stars = (() => {
+  const n = 900, pos = new Float32Array(n * 3), rng = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const r = rng(7);
+  for (let i = 0; i < n; i++) {
+    const y = Math.pow(r(), 0.7) * 0.98 + 0.02, a = r() * Math.PI * 2, rr = Math.sqrt(1 - y * y);
+    pos.set([Math.cos(a) * rr * 480, y * 480, Math.sin(a) * rr * 480], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+  p.renderOrder = -999; p.frustumCulled = false;
+  scene.add(p);
+  return p;
+})();
+
+let envMats = null;
+function collectEnvMats() {
+  envMats = [];
+  const seen = new Set();
+  scene.traverse((o) => {
+    if (!o.isMesh || !o.material || seen.has(o.material) || o.material.name === 'ghost' || o === skyMesh) return;
+    seen.add(o.material);
+    const n = o.material.name;
+    envMats.push({ m: o.material, day: n === 'glass' ? 1.4 : n === 'linework' ? 0.9 : 0.45, night: n === 'glass' ? 0.3 : 0.08 });
+  });
+}
+
+function stepSky(now) {
+  const dt = skyState.last ? Math.max(0, Math.min(0.25, (now - skyState.last) / 1000)) : 0;
+  skyState.last = now;
+  if (SKY.playing) {
+    SKY.time += dt / (SKY.cycleMin * 60);
+    if (SKY.time >= 1) { SKY.time -= 1; skyState.days += 1; }
+    if (timeInput && document.activeElement !== timeInput) { timeInput.value = SKY.time; timeLabel.textContent = clock(SKY.time); }
+  }
+  const total = skyState.days + SKY.time;
+  pathDir(2 * Math.PI * (SKY.time - 0.25), SKY.sunFrom, SKY.tilt, SKY.dayShare, sunDir);
+  const el = sunDir.y;                                              // sine of the sun's height
+  const day = smooth(el, -0.07, 0.12), d = 1 - day;
+  const dusk = Math.max(0, 1 - Math.abs(el + 0.01) / 0.3);
+  skyState.d = d;
+
+  // colours
+  const zenDay = hsl(SKY.skyHue, SKY.skySat, 0.72), horDay = hsl(38, 0.14, 0.85);
+  const duskC = hsl(SKY.duskHue, 0.6, 0.62);
+  const zenNight = hsl(SKY.nightHue, 0.4, SKY.nightLevel * 0.5), horNight = hsl(SKY.nightHue, 0.28, SKY.nightLevel);
+  const zen = zenNight.clone().lerp(zenDay, day).lerp(hsl(SKY.duskHue + 15, 0.35, 0.5), dusk * 0.22);
+  const hor = horNight.clone().lerp(horDay, day).lerp(duskC, dusk * (0.45 + 0.3 * day));
+  skyUniforms.uZenith.value.copy(zen); skyUniforms.uHorizon.value.copy(hor);
+  skyUniforms.uGround.value.copy(hor).multiplyScalar(0.8);
+  skyUniforms.uSunDir.value.copy(sunDir);
+  const sunCol = hsl(SKY.duskHue, 0.9, 0.56).lerp(hsl(SKY.sunHue, 0.5, 0.86), smooth(el, 0.05, 0.6));
+  skyUniforms.uSunColor.value.copy(sunCol);
+  skyUniforms.uGlow.value.copy(duskC); skyUniforms.uGlowAmt.value = 0.25 + dusk * 0.9;
+  skyUniforms.uSunVis.value = smooth(el, -0.02, 0.01);
+  skyUniforms.uNight.value = d;
+  scene.fog.color.copy(hor);
+  stars.material.opacity = smooth(d, 0.55, 0.95) * 0.9;
+
+  // moons: positions, colours; the brightest one above the horizon lights the night
+  const nm = Math.round(SKY.moons);
+  skyUniforms.uMoonCount.value = nm;
+  let moonKey = null, moonW = 0;
+  for (let i = 0; i < nm; i++) {
+    const mi = moonInfo(i, total);
+    skyUniforms.uMoonDir.value[i].copy(mi.dir);
+    skyUniforms.uMoonCos.value[i] = Math.cos(THREE.MathUtils.degToRad(mi.size));
+    skyUniforms.uMoonColor.value[i].copy(hsl(mi.hue, 0.18, 0.86));
+    const litFrac = (1 - mi.dir.dot(sunDir)) / 2;
+    const w = mi.size * mi.size * litFrac * smooth(mi.dir.y, 0.0, 0.15);
+    if (w > moonW) { moonW = w; moonKey = mi; }
+  }
+
+  // lights: one key light is the sun by day and the brightest moon by night
+  const sunI = 3.2 * smooth(el, -0.02, 0.1);
+  const moonI = moonKey ? 0.25 * Math.min(1, moonW / 4) * smooth(-el, 0.03, 0.12) : 0;
+  const wantDir = sunI >= moonI ? sunDir : moonKey.dir;
+  sun.intensity = Math.max(sunI, moonI);
+  sun.color.copy(sunI >= moonI ? sunCol : hsl(moonKey.hue, 0.25, 0.78));
+  if (now - skyState.lastStep > SKY.shadowStep * 1000 && wantDir.angleTo(skyState.keyDir) > 0.002) {
+    skyState.keyDir.copy(wantDir); skyState.lastStep = now;
+    sun.position.copy(wantDir).multiplyScalar(80);
+    markShadows();
+  }
+  hemi.color.copy(hsl(SKY.nightHue, 0.35, 0.3).lerp(zenDay.clone().lerp(new THREE.Color(1, 1, 1), 0.4), day).lerp(duskC, dusk * 0.45));
+  hemi.groundColor.copy(new THREE.Color(0x15171c).lerp(new THREE.Color(0xcbbfae), day));
+  hemi.intensity = 0.26 + 0.24 * day - 0.12 * dusk * day;   // a little less sky light in the golden hour: the low sun reads stronger
+  skyState.fill = 0.06 + 0.49 * day;
+  renderer.toneMappingExposure = 1.0 + 0.1 * d;
+  // lamps come on in the dusk and fade out in the dawn
+  const lamps = smooth(d, 0.35, 0.8);
+  nightLights.forEach((l) => { l.intensity = l.userData.power * lamps; });
+  lightstrips.forEach((m) => { m.emissiveIntensity = 1.6 * lamps; });
+  if (envMats && (now - (skyState.envAt || 0) > 400)) { skyState.envAt = now; envMats.forEach((e) => { e.m.envMapIntensity = e.day + (e.night - e.day) * d; }); }
+  // night switches (fire, projectors, beacons, the figure) with a little hysteresis
+  const night = skyState.night ? d > 0.4 : d > 0.6;
+  if (night !== skyState.night) { skyState.night = night; mode = night ? 'night' : 'day'; apply(); }
+  // the sky follows the camera, so it never gets closer or clips
+  skyMesh.position.copy(camera.position); stars.position.copy(camera.position);
+}
+
+// ---- lab panel: sliders for the draft
+const clock = (t) => { const m = Math.round(t * 24 * 60) % (24 * 60); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const SLIDERS = [
+  ['Time', [['time', 'Time of day', 0, 1, 0.001], ['cycleMin', 'Minutes per day', 2, 20, 0.5]]],
+  ['Sun', [['sunFrom', 'Noon sun from (°)', -180, 180, 1], ['tilt', 'Path tilt (°)', 0, 80, 1], ['dayShare', 'Longer days', -0.3, 0.4, 0.01],
+           ['sunHue', 'Sun hue', 0, 360, 1], ['duskHue', 'Dusk hue', 0, 360, 1]]],
+  ['Sky', [['skyHue', 'Sky hue', 0, 360, 1], ['skySat', 'Sky saturation', 0, 1, 0.01], ['nightHue', 'Night hue', 0, 360, 1], ['nightLevel', 'Night brightness', 0.02, 0.4, 0.01]]],
+  ['Moons', [['moons', 'Number', 0, 3, 1], ['moonSize', 'Size (°)', 0.4, 6, 0.1], ['moonSpeed', 'Speed', 0.1, 3, 0.05], ['moonFrom', 'Highest towards (°)', -180, 180, 1], ['moonTilt', 'Path tilt (°)', 0, 85, 1], ['moonHue', 'Hue', 0, 360, 1]]],
+  ['Cost', [['shadowStep', 'Sun step (s)', 0.1, 3, 0.1]]],
+];
+let timeInput = null, timeLabel = null;
+function saveSky() { try { localStorage.setItem('station-sky', JSON.stringify(SKY)); } catch (e) { /* no storage */ } }
+function buildSkyPanel() {
+  const panel = document.getElementById('skypanel');
+  panel.innerHTML = '';
+  for (const [title, rows] of SLIDERS) {
+    const h = document.createElement('div'); h.className = 'sp-head'; h.textContent = title; panel.appendChild(h);
+    for (const [key, label, min, max, step] of rows) {
+      const row = document.createElement('label'); row.className = 'sp-row';
+      const name = document.createElement('span'); name.textContent = label;
+      const val = document.createElement('output');
+      const inp = document.createElement('input'); Object.assign(inp, { type: 'range', min, max, step, value: SKY[key] });
+      const show = () => { val.textContent = key === 'time' ? clock(+inp.value) : (+inp.value).toFixed(step < 1 ? (step < 0.1 ? 2 : 1) : 0); };
+      inp.addEventListener('input', () => { SKY[key] = +inp.value; show(); if (key === 'time') skyState.lastStep = -1e9; saveSky(); });
+      show();
+      row.append(name, val, inp); panel.appendChild(row);
+      if (key === 'time') { timeInput = inp; timeLabel = val; }
+    }
+    if (title === 'Time') {
+      const b = document.createElement('div'); b.className = 'sp-buttons';
+      const play = document.createElement('button'); play.textContent = SKY.playing ? 'Pause' : 'Play';
+      play.addEventListener('click', () => { SKY.playing = !SKY.playing; play.textContent = SKY.playing ? 'Pause' : 'Play'; });
+      b.appendChild(play); panel.appendChild(b);
+    }
+  }
+  const foot = document.createElement('div'); foot.className = 'sp-buttons';
+  const fps = document.createElement('span'); fps.id = 'sp-fps'; fps.className = 'sp-fps'; fps.textContent = '– fps';
+  const copy = document.createElement('button'); copy.textContent = 'Copy settings';
+  copy.addEventListener('click', async () => {
+    const txt = JSON.stringify(SKY);
+    try { await navigator.clipboard.writeText(txt); copy.textContent = 'Copied'; } catch (e) { prompt('Settings', txt); }
+    setTimeout(() => { copy.textContent = 'Copy settings'; }, 1500);
+  });
+  const reset = document.createElement('button'); reset.textContent = 'Reset';
+  reset.addEventListener('click', () => { SKY = { ...SKY_DEFAULTS }; saveSky(); buildSkyPanel(); skyState.lastStep = -1e9; });
+  foot.append(fps, copy, reset); panel.appendChild(foot);
+}
+buildSkyPanel();
+document.getElementById('btn-sky').addEventListener('click', () => {
+  const p = document.getElementById('skypanel'); p.hidden = !p.hidden; press('btn-sky', !p.hidden);
+});
+const fpsState = { n: 0, t0: 0 };
+function stepFps(now) {
+  fpsState.n++;
+  if (now - fpsState.t0 > 1000) {
+    const el = document.getElementById('sp-fps');
+    if (el && !document.getElementById('skypanel').hidden) el.textContent = Math.round(fpsState.n * 1000 / (now - fpsState.t0)) + ' fps';
+    fpsState.n = 0; fpsState.t0 = now;
+  }
+}
+
 const onModel = (gltf) => {
   gltf.scene.traverse((o) => {
     if (!o.isMesh) return;
@@ -417,11 +997,14 @@ const onModel = (gltf) => {
     if (/^propshill_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; }   // boulders, bushes, grass, cacti on the hill
     if (/^propssolar/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.32); o.castShadow = false; }   // on the hill: same haze and fade as the hill under it
     if (m.name === 'ground' || m.name === 'cliff') addFade(m);
-    o.castShadow = m.name !== 'ground' && m.name !== 'cliff' && m.name !== 'lightstrip';
+    o.castShadow = m.name !== 'ground' && m.name !== 'cliff' && m.name !== 'lightstrip' && !/^propsturbine/.test(o.name);
     o.receiveShadow = true;
     m.envMapIntensity = m.name === 'linework' ? 0.9 : 0.45;
   });
+  setupShowDark(gltf.scene);
   scene.add(gltf.scene);
+  setupPerson(gltf.scene);
+  collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
   setupFire();
   setupBeacon();
@@ -476,7 +1059,7 @@ function setRoof(closed, animate = true) {
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   roof.slats.forEach((s) => { s.from = s.angle; s.to = closed ? 0 : s.open; });
-  if (!animate || reduce) { roof.slats.forEach((s) => turn(s, s.to)); roof.start = 0; return; }
+  if (!animate || reduce) { roof.slats.forEach((s) => turn(s, s.to)); roof.start = 0; markShadows(); return; }
   roof.start = performance.now();
 }
 function stepRoof(now) {
@@ -490,7 +1073,7 @@ function stepRoof(now) {
     const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
     turn(s, s.from + (s.to - s.from) * e);
   });
-  if (done) roof.start = 0;
+  if (done) { roof.start = 0; markShadows(); }
 }
 document.getElementById('btn-roof-open').addEventListener('click', () => setRoof(false));
 document.getElementById('btn-roof-closed').addEventListener('click', () => setRoof(true));
@@ -507,7 +1090,7 @@ const PLACES = [
   { id: 'showroom', name: 'Showroom', zone: { c: [-14.7, 5.5, 14.1], r: 9.5 },
     view: { type: 'inside', eye: [-14.6, 4.65, 9.6], look: [-14.5, 4.4, 14.3], fov: 72 },
     onEnter: () => { if (roof.closed) setRoof(false); } },
-  { id: 'future', name: 'Next module', zone: { c: [-7.6, 3.5, 28.7], r: 8.5 },
+  { id: 'new-module', name: 'New module', zone: { c: [-7.6, 3.5, 28.7], r: 8.5 },
     view: { type: 'object', pos: [8.0, 11.0, 14.0], target: [-7.6, 3.5, 28.7], az: 60, polar: [40, 85], dist: [10, 35], fit: 18 } },
   { id: 'dish', name: 'Radio dish', zone: { c: [15.0, 33.0, 154.0], r: 26 },
     view: { type: 'object', pos: [1.0, 57.0, 72.0], target: [15.0, 42.0, 150.0], az: 80, polar: [45, 88], dist: [30, 120], fit: 50 } },
@@ -707,13 +1290,16 @@ el.addEventListener('wheel', (ev) => {
 
 // ---- hover tooltip (mouse only) and optional place markers
 const tip = document.getElementById('tip');
-let hovered = null;                                   // the hover label sits still over its place
+// the hover label sits still over its place and only shows after the pointer has rested on the
+// same place for a moment (Smo: labels were jumpy); the pointer cursor changes at once
+const HOVER_DELAY = 650;
+let hovered = null, hoverCand = null, hoverSince = 0;
 function setTip(p) {
-  hovered = p;
-  if (!p) { tip.hidden = true; el.style.cursor = ''; return; }
-  tip.textContent = p.name; tip.hidden = false;
-  el.style.cursor = 'pointer';
+  if (p !== hoverCand) { hoverCand = p; hoverSince = performance.now(); hovered = null; tip.hidden = true; }
+  el.style.cursor = p ? 'pointer' : '';
+  if (!p) { hovered = null; tip.hidden = true; }
 }
+function showTip(p) { hovered = p; tip.textContent = p.name; tip.hidden = false; }
 const anchor = (p, out) => out.set(p.zone.c[0], p.zone.c[1] + p.zone.r * 0.45, p.zone.c[2]);
 let hoverPending = false;
 function hover(ev) {
@@ -743,6 +1329,7 @@ document.getElementById('btn-places').addEventListener('click', () => {
 });
 const vTmp = new THREE.Vector3();
 function stepMarkers() {
+  if (hoverCand && !hovered && !nav.place && !tween.active && performance.now() - hoverSince > HOVER_DELAY) showTip(hoverCand);
   if (hovered && !nav.place && !tween.active) {
     anchor(hovered, vTmp).project(camera);
     tip.style.left = ((vTmp.x + 1) / 2 * el.clientWidth) + 'px'; tip.style.top = ((1 - vTmp.y) / 2 * el.clientHeight) + 'px';
@@ -775,47 +1362,29 @@ overviewControls();
 { const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update(); }
 if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0);
 
-// --- day / night and sun direction
-let mode = 'day', sunSide = 'front';
+// --- day / night: the sky cycle (stepSky) sets the light continuously and switches `mode` at dusk
+// and dawn; apply() handles the switches that are either on or off
+let mode = 'day';
 const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', String(on));
 function apply() {
   const night = mode === 'night';
   press('btn-day', !night); press('btn-night', night);
-  press('btn-front', sunSide === 'front'); press('btn-back', sunSide === 'back');
-  document.getElementById('btn-front').disabled = night;
-  document.getElementById('btn-back').disabled = night;
-  sun.position.copy(SUN[sunSide]);
-  sun.intensity = night ? 0 : 3.2;
-  fill.intensity = night ? 0.06 : 0.55;
-  hemi.color.set(night ? 0x5b6b82 : 0xe6edf5);
-  hemi.groundColor.set(night ? 0x23262c : 0xcbbfae);
-  hemi.intensity = night ? 0.45 : 0.5;
-  nightLights.forEach((l) => { l.intensity = night ? l.userData.power : 0; });
-  lightstrips.forEach((m) => { m.emissiveIntensity = night ? 1.6 : 0; });
   if (PROJ.units.length && (PROJ.to === 1) !== night) setProjectors(night);
   if (fire.mesh) { fire.mesh.visible = night; if (fire.light) fire.light.intensity = night ? 9 : 0; }
-  renderer.toneMappingExposure = night ? 1.15 : 1.0;
-  scene.traverse((o) => {
-    if (o.isMesh && o.material.name !== 'ghost') {
-      o.material.envMapIntensity = o.material.name === 'glass' ? (night ? 0.3 : 1.4) : night ? 0.08 : (o.material.name === 'linework' ? 0.9 : 0.45);
-    }
-  });
-  paintBackground();
 }
-function paintBackground() {
-  scene.background = new THREE.Color(css(mode === 'night' ? '--stage-night' : '--stage') || '#d8d3cb');
-  scene.fog.color.copy(scene.background);
+function paintBackground() { scene.background = null; }           // the sky sphere is the backdrop now
+function jumpTo(t) {
+  SKY.time = t; skyState.lastStep = -1e9;
+  if (timeInput) { timeInput.value = t; timeLabel.textContent = clock(t); }
+  saveSky();
 }
-document.getElementById('btn-day').addEventListener('click', () => { mode = 'day'; apply(); });
-document.getElementById('btn-night').addEventListener('click', () => { mode = 'night'; apply(); });
-document.getElementById('btn-front').addEventListener('click', () => { sunSide = 'front'; apply(); });
-document.getElementById('btn-back').addEventListener('click', () => { sunSide = 'back'; apply(); });
+document.getElementById('btn-day').addEventListener('click', () => jumpTo(0.42));
+document.getElementById('btn-night').addEventListener('click', () => jumpTo(0.93));
 document.getElementById('btn-reset').addEventListener('click', () => {
   if (nav.place) { setRoute(''); return; }
   const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update();
 });
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintBackground);
-new MutationObserver(paintBackground).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+paintBackground();
 apply();
 
 // --- size and loop
@@ -831,16 +1400,21 @@ window.addEventListener('resize', resize);
 resize();
 renderer.setAnimationLoop((now) => {
   stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now);
-  stepPlaces(now);
+  stepPlaces(now); stepSky(now); stepShowDark(now); stepPerson(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
+  if (roof.start || PROJ.start) markShadows();                      // things that cast shadows are moving
+  if (shadowDirty) { renderer.shadowMap.needsUpdate = true; shadowDirty = false; }
   composer.render();
 });
 
 // hooks used for test renders
-window.__set = (s) => { if (s.mode) mode = s.mode; if (s.sun) sunSide = s.sun; if (s.roof) setRoof(s.roof === 'closed', false); apply(); };
-window.__cam = (c) => { camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
+window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
+window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days, SKY.moonFrom, SKY.moonTilt, SKY.moonSpeed]); return out; };
+window.__sky = (o) => { Object.assign(SKY, o || {}); skyState.lastStep = -1e9; return { ...SKY, d: skyState.d, night: skyState.night }; };
+window.__cam = (c) => { if (c.free) { controls.maxPolarAngle = Math.PI; controls.minDistance = 0.01; } camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
 window.__go = (id) => setRoute(id || '');
+window.__personRun = (sec) => { let t = person.last || performance.now(); for (let k = 0; k < sec * 20; k++) { t += 50; stepPerson(t); } return { i: person.i, pos: person.root.position.toArray().map((n) => +n.toFixed(2)), boxAt: person.boxAt, carrying: person.carrying }; };
 window.__look = (yawDeg, pitchDeg) => { look.yaw += yawDeg * Math.PI / 180; look.pitch = Math.max(-1.1, Math.min(1.1, look.pitch + (pitchDeg || 0) * Math.PI / 180)); };
 window.__zoneScreen = (id) => { const p = PLACES.find((q) => q.id === id); const q = new THREE.Vector3(...p.zone.c).project(camera);
   const r = renderer.domElement.getBoundingClientRect(); return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height]; };
