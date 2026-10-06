@@ -1,0 +1,590 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Station Model Study</title>
+<style>
+  /* Layout: full-bleed stage for the plaster model, a museum label bottom-left, view controls top-right. */
+  :root {
+    --stage: #d8d3cb;          /* warm grey seamless backdrop */
+    --stage-night: #1b1f26;
+    --ink: #1d1b18;            /* label text, near-black like the etched linework */
+    --ink-soft: #5e5850;
+    --card: rgba(246, 243, 238, 0.86);
+    --rule: rgba(29, 27, 24, 0.16);
+    --accent: #b3602d;         /* warm lamp amber, used for the active state */
+    --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --stage: #2b2925; --stage-night: #14171c; --ink: #efebe4; --ink-soft: #b2aba0;
+      --card: rgba(30, 28, 25, 0.82); --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --stage: #2b2925; --stage-night: #14171c; --ink: #efebe4; --ink-soft: #b2aba0;
+    --card: rgba(30, 28, 25, 0.82); --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--stage); color: var(--ink); font-family: var(--font-display); overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  .label {
+    position: fixed; left: 16px; top: calc(16px + env(safe-area-inset-top, 0px));
+    max-width: min(360px, calc(100vw - 32px));
+    background: var(--card); backdrop-filter: blur(6px);
+    border: 1px solid var(--rule); padding: 14px 16px 12px;
+    display: grid; gap: 8px;
+  }
+  .label .eyebrow { font-family: var(--font-data); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+  .label h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+  .label p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
+  .label dl { margin: 4px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-family: var(--font-data); font-size: 11.5px; font-variant-numeric: tabular-nums; border-top: 1px solid var(--rule); padding-top: 8px; }
+  .label dt { color: var(--ink-soft); }
+  .label dd { margin: 0; }
+
+  .controls {
+    position: fixed; right: 16px; top: calc(16px + env(safe-area-inset-top, 0px));
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 32px);
+  }
+  .seg { display: flex; align-items: stretch; border: 1px solid var(--rule); background: var(--card); backdrop-filter: blur(6px); }
+  .seg .tag { font: 500 11px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); padding: 10px 4px 10px 12px; align-self: center; }
+  button {
+    font: 500 12px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink); background: transparent; border: 0; padding: 10px 12px; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--rule); }
+  button[aria-pressed="true"] { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+  button:disabled { color: var(--ink-soft); opacity: 0.5; cursor: default; box-shadow: none; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .hint { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); font: 11px var(--font-data); color: var(--ink-soft); letter-spacing: 0.04em; }
+  .status { position: fixed; inset: 0; display: grid; place-items: center; font: 12px var(--font-data); color: var(--ink-soft); pointer-events: none; }
+  @media (max-width: 900px) { .label { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
+  @media (max-width: 560px) { .hint { display: none; } .label h1 { font-size: 19px; } .label p { display: none; } }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div id="stage"></div>
+<div class="status" id="status">Loading model…</div>
+
+<section class="label" aria-label="Model label">
+  <span class="eyebrow">Station model · arrangement 07</span>
+  <h1>The whole station, rough layout</h1>
+  <p>Hub, library, office and workshop along the edge of a cliff, the showroom wing behind. Click the showroom to close or open its roof slats and window fins. The next module is under construction.</p>
+  <dl>
+    <dt>Hub</dt><dd>10.8 m across, glass above hip height, glass dome</dd>
+    <dt>Showroom</dt><dd>twelve-sided oval, 11.8 × 19.2 m</dd>
+    <dt>Arms</dt><dd>60° between the two wings</dd>
+    <dt>Modules</dt><dd>10.0 × 5.8 × 3.6 m, library 8.5 m</dd>
+  </dl>
+</section>
+
+<div class="controls">
+  <div class="seg" role="group" aria-label="Time of day">
+    <button id="btn-day" aria-pressed="true">Day</button>
+    <button id="btn-night" aria-pressed="false">Night</button>
+  </div>
+  <div class="seg" role="group" aria-label="Sun direction">
+    <span class="tag">Sun</span>
+    <button id="btn-front" aria-pressed="true">Front</button>
+    <button id="btn-back" aria-pressed="false">Back</button>
+  </div>
+  <div class="seg" role="group" aria-label="Showroom roof">
+    <span class="tag">Roof</span>
+    <button id="btn-roof-open" aria-pressed="true">Open</button>
+    <button id="btn-roof-closed" aria-pressed="false">Closed</button>
+  </div>
+  <div class="seg"><button id="btn-reset">Reset view</button></div>
+</div>
+<div class="hint">Drag to rotate · scroll or pinch to zoom</div>
+
+<script src="arrangement_v7.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
+const host = document.getElementById('stage');
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 1200);
+// haze: the distant hills sit in it; near and far follow the camera distance so the station stays clear
+scene.fog = new THREE.Fog(0xd8d3cb, 140, 420);
+const HOME = { pos: new THREE.Vector3(37, 24, -75), target: new THREE.Vector3(-5, 12, 20) };   // lower (Smo): the hills, the dish and part of the turbine in view
+camera.position.copy(HOME.pos);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(HOME.target);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.zoomSpeed = 7;            // three r160 divides scroll by 100 x pixel ratio, so retina Macs zoomed very slowly
+controls.zoomToCursor = true;       // zoom towards what the pointer is over
+controls.minDistance = 6;
+controls.maxDistance = 160;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.update();
+
+// --- light
+const hemi = new THREE.HemisphereLight(0xe6edf5, 0xcbbfae, 0.5);
+scene.add(hemi);
+const SUN = { front: new THREE.Vector3(40, 25, -22), back: new THREE.Vector3(34, 30, 34) };
+const sun = new THREE.DirectionalLight(0xffdcb9, 3.2);
+sun.position.copy(SUN.front);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, { left: -52, right: 52, top: 52, bottom: -52, near: 1, far: 160 });
+sun.shadow.bias = -0.0003;
+sun.shadow.normalBias = 0.025;
+sun.shadow.camera.layers.enable(GHOST_LAYER);
+scene.add(sun);
+// soft studio fill from the viewer's side, no shadows: keeps the opened rooms readable
+const fill = new THREE.DirectionalLight(0xf3efe8, 0.55);
+fill.position.set(-6, 7, -16);
+scene.add(fill);
+
+// night lights: placed from the model's named parts, so new modules light up by themselves
+const nightLights = [];
+function warm(color, pos, power, dist, shadow) {
+  const l = new THREE.PointLight(color, 0, dist, 1.6);
+  l.position.copy(pos);
+  l.userData.power = power;
+  if (shadow) {
+    l.castShadow = true;
+    l.shadow.mapSize.set(1024, 1024);
+    l.shadow.bias = -0.002;
+    l.shadow.camera.layers.enable(GHOST_LAYER);
+  }
+  scene.add(l); nightLights.push(l);
+  return l;
+}
+function placeNightLights(root) {
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3(), c = new THREE.Vector3();
+  let shadows = 2;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const n = o.name;
+    box.setFromObject(o); box.getCenter(c);
+    if (/shell$/.test(n) && !/ghost|^tube/.test(n)) {   // glTF drops the '/' from names: 'libraryshell'
+      // ceiling glow towards the back of the room, plus a spill onto the ground in front
+      warm(0xffc48a, new THREE.Vector3(c.x, box.max.y - 0.9, c.z + 0.8), 13, 12, shadows-- > 0);
+    } else if (/lamp$/.test(n)) {
+      warm(0xffb36b, new THREE.Vector3(c.x, box.max.y - 0.2, c.z), 7, 7, false);
+    } else if (/screens?$|computer_screen$|laptop$/.test(n)) {
+      warm(0xd8e4ff, new THREE.Vector3(c.x, box.max.y + 0.2, c.z), 1.8, 4, false);
+    } else if (/servers$/.test(n)) {
+      warm(0xc9dcff, new THREE.Vector3(box.min.x - 0.6, c.y, c.z), 6, 6, false);
+    }
+  });
+  apply();
+}
+
+// --- post: ambient occlusion makes plain plaster read
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+try {
+  const gtao = new GTAOPass(scene, camera, 1, 1);
+  gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.2, scale: 1.0, samples: 16 });
+  gtao.blendIntensity = 0.85;
+  composer.addPass(gtao);
+} catch (e) { /* runs without AO */ }
+composer.addPass(new OutputPass());
+
+// --- model
+const status = document.getElementById('status');
+const lightstrips = [];
+const turbine = { rotor: null, q0: null, angle: 0, last: 0 };
+function stepTurbine(now) {
+  const r = turbine.rotor;
+  if (!r) return;
+  if (!turbine.q0) turbine.q0 = r.quaternion.clone();
+  const dt = turbine.last ? Math.min(0.1, (now - turbine.last) / 1000) : 0;
+  turbine.last = now;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  turbine.angle += dt * 1.1;                    // about 10 turns a minute
+  r.quaternion.copy(turbine.q0).multiply(qTmp.setFromAxisAngle(xAxis, turbine.angle));
+}
+// --- projection mapping: three projectors fold out of ground boxes at night and light the
+// showroom wall. One wide piece of content is split across the three beams.
+const PROJ = { units: [], t: 0, from: 0, to: 0, start: 0, RISE: 1.0, MS: 2200 };
+const CONTENT = (() => {                     // placeholder content, 3 × 512 px wide, drawn every frame
+  const c = document.createElement('canvas'); c.width = 1536; c.height = 512;
+  return { canvas: c, ctx: c.getContext('2d') };
+})();
+function drawContent(now) {
+  const { ctx, canvas } = CONTENT, W = canvas.width, H = canvas.height, t = now / 1000;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createLinearGradient(0, 0, W, 0);
+  const s = (Math.sin(t * 0.25) + 1) / 2;
+  g.addColorStop(0, `hsl(${200 + 40 * s}, 70%, 45%)`);
+  g.addColorStop(0.5, `hsl(${30 + 20 * s}, 85%, 55%)`);
+  g.addColorStop(1, `hsl(${280 - 40 * s}, 60%, 45%)`);
+  ctx.globalAlpha = 0.85; ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(0, H);
+  for (let x = 0; x <= W; x += 16) ctx.lineTo(x, H * 0.55 + Math.sin(x / 140 + t * 0.9) * H * 0.18 + Math.sin(x / 57 - t * 1.7) * H * 0.05);
+  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 0.5; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  for (let x = ((t * 40) % 64); x < W; x += 64) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 32; y < H; y += 64) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  PROJ.units.forEach((u, i) => {           // each beam takes its third, edges feathered for blending
+    const p = u.ctx;
+    p.drawImage(CONTENT.canvas, i * 512, 0, 512, 512, 0, 0, 512, 512);
+    const fade = p.createRadialGradient(256, 256, 150, 256, 256, 256);
+    fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,1)');
+    p.fillStyle = fade; p.fillRect(0, 0, 512, 512);
+    u.tex.needsUpdate = true;
+  });
+}
+function setupProjectors(root) {
+  const byName = {};
+  root.traverse((o) => { if (o.isMesh) byName[o.name] = o; });
+  for (let i = 0; i < 3; i++) {
+    const head = byName['showroomprojector_head_' + i], lid = byName['showroomprojector_lid_' + i];
+    const target = byName['showroomprojector_target_' + i];
+    if (!head || !lid || !target) continue;
+    const c = document.createElement('canvas'); c.width = c.height = 512;
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const spot = new THREE.SpotLight(0xffffff, 0, 16, 0.5, 0.25, 1.2);
+    spot.map = tex;
+    spot.castShadow = true;                 // three needs a shadow map to project a texture
+    spot.shadow.mapSize.set(512, 512);
+    spot.shadow.bias = -0.002;
+    const tp = new THREE.Vector3(); new THREE.Box3().setFromObject(target).getCenter(tp);
+    spot.target.position.copy(tp);
+    scene.add(spot, spot.target);
+    PROJ.units.push({ head, lid, spot, tex, ctx: c.getContext('2d'), y0: head.position.y, q0: lid.quaternion.clone() });
+  }
+  drawProjectors(0);
+}
+function drawProjectors(k) {               // k: 0 folded away, 1 out and projecting
+  const lidK = Math.min(1, k / 0.35), liftK = Math.min(1, Math.max(0, (k - 0.3) / 0.5)), beamK = Math.max(0, (k - 0.82) / 0.18);
+  const ease = (u) => u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+  PROJ.units.forEach((u) => {
+    u.lid.quaternion.copy(u.q0).multiply(qTmp.setFromAxisAngle(xAxis, -1.95 * ease(lidK)));
+    u.head.position.y = u.y0 + PROJ.RISE * ease(liftK);
+    u.spot.position.copy(u.head.position);
+    u.spot.intensity = 60 * beamK;
+    u.head.visible = k > 0.01;
+  });
+}
+function setProjectors(on, animate = true) {
+  PROJ.from = PROJ.t; PROJ.to = on ? 1 : 0;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!animate || reduce) { PROJ.t = PROJ.to; drawProjectors(PROJ.t); PROJ.start = 0; return; }
+  PROJ.start = performance.now();
+}
+function stepProjectors(now) {
+  if (PROJ.start) {
+    const u = Math.min(1, (now - PROJ.start) / PROJ.MS);
+    PROJ.t = PROJ.from + (PROJ.to - PROJ.from) * u;
+    drawProjectors(PROJ.t);
+    if (u >= 1) PROJ.start = 0;
+  }
+  if (PROJ.t > 0.8) drawContent(now);
+}
+// red aviation lights (relay tower, wind turbine): dim red by day, blinking together at night
+const beacons = [];
+function setupBeacon() {
+  beacons.forEach((b) => {
+    const c = new THREE.Vector3();
+    new THREE.Box3().setFromObject(b.mesh).getCenter(c);
+    b.light = new THREE.PointLight(0xff2010, 0, 14, 1.8);
+    b.light.position.copy(c);
+    scene.add(b.light);
+  });
+}
+function stepBeacon(now) {
+  const on = mode === 'night' ? (Math.sin(now / 1000 * Math.PI * 1.0) > 0.3 ? 1 : 0.08) : 0.6;
+  beacons.forEach((b) => {
+    b.mesh.material.emissiveIntensity = mode === 'night' ? 3.2 * on : 0.6;
+    if (b.light) b.light.intensity = mode === 'night' ? 6 * on : 0;
+  });
+}
+
+// terrain fades out at its outer edges and towards the bottom of the cliff, into the backdrop
+const FADE = { centre: new THREE.Vector2(-5, 18), radii: new THREE.Vector2(88, 64), cliffTop: -3.0, cliffBottom: -24.0 };
+// hills and what stands on them: fade at the sides, and (hills only) fade out at their base
+function hazeFade(m, base = false, strength = 0.75) {
+  m.transparent = true;
+  m.customProgramCacheKey = () => `haze-${base}-${strength}`;
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vHazePos;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvHazePos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vHazePos;')
+      .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+        float side = 1.0 - smoothstep(110.0, 230.0, abs(vHazePos.x + 5.0));
+        float foot = ${base ? 'smoothstep(-2.0, 12.0, vHazePos.y)' : '1.0'};
+        gl_FragColor.a *= side * foot * ${strength.toFixed(2)};`);
+  };
+  m.needsUpdate = true;
+}
+
+function addFade(m, reach = 1) {      // reach > 1 lets an object fade out further away than the ground
+  m.transparent = true;
+  m.depthWrite = true;
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uFadeC = { value: FADE.centre };
+    sh.uniforms.uFadeR = { value: FADE.radii.clone().multiplyScalar(reach) };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vFadePos;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvFadePos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vFadePos;\nuniform vec2 uFadeC;\nuniform vec2 uFadeR;')
+      .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+        float fadeEdge = 1.0 - smoothstep(0.55, 1.0, length((vFadePos.xz - uFadeC) / uFadeR));
+        float fadeDown = smoothstep(${FADE.cliffBottom.toFixed(1)}, ${FADE.cliffTop.toFixed(1)}, vFadePos.y);
+        gl_FragColor.a *= fadeEdge * fadeDown;`);
+  };
+  m.needsUpdate = true;
+}
+// fire in the pit: flames and a flickering light, only at night
+const fire = { mesh: null, light: null };
+function setupFire() {
+  if (!fire.mesh) return;
+  const b = new THREE.Box3().setFromObject(fire.mesh), c = new THREE.Vector3();
+  b.getCenter(c);
+  fire.mesh.geometry.computeBoundingBox();
+  const g = fire.mesh.geometry, gc = new THREE.Vector3();
+  g.boundingBox.getCenter(gc); gc.y = g.boundingBox.min.y;            // grow from the ground up
+  g.translate(-gc.x, -gc.y, -gc.z); fire.mesh.position.add(gc);
+  fire.light = new THREE.PointLight(0xff8a3d, 0, 11, 1.7);
+  fire.light.position.set(c.x, b.max.y + 0.3, c.z);
+  fire.light.castShadow = true;
+  fire.light.shadow.mapSize.set(512, 512);
+  fire.light.shadow.bias = -0.003;
+  scene.add(fire.light);
+}
+function stepFire(now) {
+  if (!fire.mesh || !fire.mesh.visible) return;
+  const t = now / 1000;
+  const f = 0.75 + 0.15 * Math.sin(t * 7.3) + 0.1 * Math.sin(t * 13.1 + 1.3) + 0.06 * Math.sin(t * 23.7);
+  fire.light.intensity = 9 * f;
+  fire.mesh.scale.set(1, 0.85 + 0.2 * f, 1);
+  fire.mesh.rotation.y = Math.sin(t * 1.7) * 0.15;
+}
+const onModel = (gltf) => {
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const m = o.material;
+    if (m.name === 'ghost') {
+      o.layers.set(GHOST_LAYER);      // invisible to the camera, still blocks light
+      o.castShadow = true;
+      o.receiveShadow = false;
+      return;
+    }
+    if (m.name === 'hills') { o.castShadow = false; o.receiveShadow = false; m.envMapIntensity = 0.3; hazeFade(m, true); return; }
+    if (m.name === 'beacon') {
+      o.material = m.clone(); o.material.emissive = new THREE.Color(0xff1a10); o.material.emissiveIntensity = 0.6; beacons.push({ mesh: o, light: null });
+      o.castShadow = false;
+      return;
+    }
+    if (m.name === 'flame') {
+      m.emissive = new THREE.Color(0xff7a2a); m.emissiveIntensity = 2.2; m.color.set(0xffb066);
+      o.castShadow = false; o.visible = false; fire.mesh = o;
+      return;
+    }
+    if (m.name === 'glass') {
+      m.transparent = true; m.opacity = 0.16; m.depthWrite = false; m.roughness = 0.05; m.metalness = 0;
+      m.envMapIntensity = 1.4; o.castShadow = false; o.receiveShadow = false; o.renderOrder = 2;
+      return;
+    }
+    if (m.name === 'lightstrip') { m.emissive = new THREE.Color(0xfff1dc); m.emissiveIntensity = 0; lightstrips.push(m); }
+    if (/^propsturbine/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; if (o.name === 'propsturbine_rotor') turbine.rotor = o; }
+    if (/^propsdish_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, false, 0.7); o.castShadow = false; }   // big radio dish on the hill
+    if (/^propshill_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; }   // boulders, bushes, grass, cacti on the hill
+    if (/^propssolar/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.32); o.castShadow = false; }   // on the hill: same haze and fade as the hill under it
+    if (m.name === 'ground' || m.name === 'cliff') addFade(m);
+    o.castShadow = m.name !== 'ground' && m.name !== 'cliff' && m.name !== 'lightstrip';
+    o.receiveShadow = true;
+    m.envMapIntensity = m.name === 'linework' ? 0.9 : 0.45;
+  });
+  scene.add(gltf.scene);
+  placeNightLights(gltf.scene);
+  setupFire();
+  setupBeacon();
+  setupProjectors(gltf.scene);
+  setProjectors(mode === 'night', false);
+  setupRoof(gltf.scene);
+  status.hidden = true;
+};
+const onFail = () => { status.textContent = 'The model could not be loaded.'; };
+const loader = new GLTFLoader();
+if (window.MODULE_GLB_GZ) {             // preview: gzipped model packed as base64, unpacked in the browser
+  const gz = Uint8Array.from(atob(window.MODULE_GLB_GZ), (c) => c.charCodeAt(0));
+  new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
+    .then((buf) => loader.parse(buf, '', onModel, onFail)).catch(onFail);
+} else if (window.MODULE_GLB) {
+  const bin = Uint8Array.from(atob(window.MODULE_GLB), (c) => c.charCodeAt(0));
+  loader.parse(bin.buffer, '', onModel, onFail);
+} else {
+  loader.load('arrangement_v7.glb', onModel, undefined, onFail);
+}
+
+// --- showroom roof: a jalousie of slats that turn open and closed in a wave
+const OPEN_ANGLE = Math.PI * 0.45, SLAT_MS = 900;
+const roof = { slats: [], closed: false, start: 0 };
+let showroomMeshes = [];
+const qTmp = new THREE.Quaternion(), xAxis = new THREE.Vector3(1, 0, 0), zAxis = new THREE.Vector3(0, 0, 1);
+function setupRoof(root) {
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    if (/^showroom/.test(o.name)) showroomMeshes.push(o);
+    // roof slats turn on their long axis, window fins on their vertical axis
+    const m = o.name.match(/^showroom(louver|fin)_(\d+)/);
+    if (m) {
+      const fin = m[1] === 'fin';
+      roof.slats.push({ mesh: o, fin, i: +m[2], axis: fin ? zAxis : xAxis, open: fin ? Math.PI * 0.42 : OPEN_ANGLE,
+                        q0: o.quaternion.clone(), angle: 0, from: 0, to: 0 });
+    }
+  });
+  roof.slats.sort((a, b) => (a.fin - b.fin) || (a.i - b.i));
+  roof.slats.forEach((s) => { s.angle = s.from = s.to = s.open; });
+  const nl = roof.slats.filter((s) => !s.fin).length, nf = roof.slats.length - nl;
+  roof.slats.forEach((s) => { s.order = s.fin ? s.i / Math.max(1, nf - 1) : s.i / Math.max(1, nl - 1); });
+  roof.slats.forEach((s) => turn(s, s.angle));
+}
+function turn(s, angle) {                 // rotate a slat around its own long axis
+  s.angle = angle;
+  s.mesh.quaternion.copy(s.q0).multiply(qTmp.setFromAxisAngle(s.axis, angle));
+}
+function setRoof(closed, animate = true) {
+  roof.closed = closed;
+  press('btn-roof-open', !closed); press('btn-roof-closed', closed);
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  roof.slats.forEach((s) => { s.from = s.angle; s.to = closed ? 0 : s.open; });
+  if (!animate || reduce) { roof.slats.forEach((s) => turn(s, s.to)); roof.start = 0; return; }
+  roof.start = performance.now();
+}
+function stepRoof(now) {
+  if (!roof.start) return;
+  let done = true;
+  const SPREAD = 1200;                                  // the wave runs over 1.2 s, slats and fins together
+  roof.slats.forEach((s) => {
+    const order = roof.closed ? s.order : 1 - s.order;  // close from one end, open from the other
+    const u = Math.min(1, Math.max(0, (now - roof.start - order * SPREAD) / SLAT_MS));
+    if (u < 1) done = false;
+    const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    turn(s, s.from + (s.to - s.from) * e);
+  });
+  if (done) roof.start = 0;
+}
+document.getElementById('btn-roof-open').addEventListener('click', () => setRoof(false));
+document.getElementById('btn-roof-closed').addEventListener('click', () => setRoof(true));
+// click on the showroom toggles its roof; a drag to rotate does not count as a click
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let downAt = null;
+function hitShowroom(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(showroomMeshes.filter((m) => m.visible), false);
+  return hits.length > 0;
+}
+renderer.domElement.addEventListener('pointerdown', (ev) => { downAt = [ev.clientX, ev.clientY]; });
+renderer.domElement.addEventListener('pointerup', (ev) => {
+  if (!downAt) return;
+  const moved = Math.hypot(ev.clientX - downAt[0], ev.clientY - downAt[1]);
+  downAt = null;
+  if (moved < 5 && hitShowroom(ev)) setRoof(!roof.closed);
+});
+let hoverPending = false;
+renderer.domElement.addEventListener('pointermove', (ev) => {
+  if (hoverPending || ev.buttons) return;
+  hoverPending = true;
+  requestAnimationFrame(() => { hoverPending = false; renderer.domElement.style.cursor = hitShowroom(ev) ? 'pointer' : ''; });
+});
+
+// --- day / night and sun direction
+let mode = 'day', sunSide = 'front';
+const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', String(on));
+function apply() {
+  const night = mode === 'night';
+  press('btn-day', !night); press('btn-night', night);
+  press('btn-front', sunSide === 'front'); press('btn-back', sunSide === 'back');
+  document.getElementById('btn-front').disabled = night;
+  document.getElementById('btn-back').disabled = night;
+  sun.position.copy(SUN[sunSide]);
+  sun.intensity = night ? 0 : 3.2;
+  fill.intensity = night ? 0.06 : 0.55;
+  hemi.color.set(night ? 0x5b6b82 : 0xe6edf5);
+  hemi.groundColor.set(night ? 0x23262c : 0xcbbfae);
+  hemi.intensity = night ? 0.45 : 0.5;
+  nightLights.forEach((l) => { l.intensity = night ? l.userData.power : 0; });
+  lightstrips.forEach((m) => { m.emissiveIntensity = night ? 1.6 : 0; });
+  if (PROJ.units.length && (PROJ.to === 1) !== night) setProjectors(night);
+  if (fire.mesh) { fire.mesh.visible = night; if (fire.light) fire.light.intensity = night ? 9 : 0; }
+  renderer.toneMappingExposure = night ? 1.15 : 1.0;
+  scene.traverse((o) => {
+    if (o.isMesh && o.material.name !== 'ghost') {
+      o.material.envMapIntensity = o.material.name === 'glass' ? (night ? 0.3 : 1.4) : night ? 0.08 : (o.material.name === 'linework' ? 0.9 : 0.45);
+    }
+  });
+  paintBackground();
+}
+function paintBackground() {
+  scene.background = new THREE.Color(css(mode === 'night' ? '--stage-night' : '--stage') || '#d8d3cb');
+  scene.fog.color.copy(scene.background);
+}
+document.getElementById('btn-day').addEventListener('click', () => { mode = 'day'; apply(); });
+document.getElementById('btn-night').addEventListener('click', () => { mode = 'night'; apply(); });
+document.getElementById('btn-front').addEventListener('click', () => { sunSide = 'front'; apply(); });
+document.getElementById('btn-back').addEventListener('click', () => { sunSide = 'back'; apply(); });
+document.getElementById('btn-reset').addEventListener('click', () => {
+  camera.position.copy(HOME.pos); controls.target.copy(HOME.target); controls.update();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintBackground);
+new MutationObserver(paintBackground).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+apply();
+
+// --- size and loop
+function resize() {
+  const w = host.clientWidth, h = host.clientHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.fov = w < h ? 50 : 32;      // portrait screens: widen so both modules fit
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+renderer.setAnimationLoop((now) => {
+  stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); controls.update();
+  const d = camera.position.distanceTo(controls.target);
+  scene.fog.near = d + 50; scene.fog.far = d + 300;
+  composer.render();
+});
+
+// hooks used for test renders
+window.__set = (s) => { if (s.mode) mode = s.mode; if (s.sun) sunSide = s.sun; if (s.roof) setRoof(s.roof === 'closed', false); apply(); };
+window.__cam = (c) => { camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
+</script>
+
+</body></html>
