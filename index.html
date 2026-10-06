@@ -85,9 +85,12 @@
           background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
           padding-top: env(safe-area-inset-top, 0px); transition: background 0.6s; }
   .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
-  .name { font: 700 22px/0.92 var(--font-display); letter-spacing: 0.01em; text-transform: uppercase; color: inherit; text-decoration: none; }
+  /* name after Smo's reference: bold, a little extended, two lines set to the same width */
+  .name { font: 700 23px/0.9 var(--font-display); font-stretch: 116%; font-variation-settings: 'wdth' 116; letter-spacing: 0.02em; text-transform: uppercase;
+          color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .name span { display: inline-block; width: max-content; white-space: nowrap; }
   .menu { display: flex; gap: 6px; }
-  .menu button, .menu-toggle { font: 500 12px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: inherit;
+  .menu button, .menu-toggle { font: 400 12px/1 var(--font-display); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
           padding: 12px 12px; min-height: 44px; position: relative; }
   .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
   .menu-toggle { display: none; }
@@ -110,14 +113,8 @@
   .nav button { color: inherit; }
   .tip, .marker { background: var(--glass-strong); border-color: var(--glass-line); color: var(--glass-ink); }
   /* content: a small card when you arrive, a large panel when you read (the 3D pauses then) */
-  .peek, .panel { box-sizing: border-box; }
-  .peek { position: fixed; left: 40px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 19; width: min(360px, calc(100vw - 32px));
-          background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
-          color: var(--glass-ink); padding: 16px 18px 14px; transform: translateY(12px); opacity: 0; transition: opacity .35s, transform .35s; pointer-events: none; }
-  .peek.show { opacity: 1; transform: none; pointer-events: auto; }
+  .panel { box-sizing: border-box; }
   .kicker { font: 500 11px/1 var(--font-data); letter-spacing: 0.12em; text-transform: uppercase; color: var(--glass-soft); }
-  .peek h2 { font: 600 22px/1.15 var(--font-display); margin: 8px 0 6px; }
-  .peek p { margin: 0 0 12px; font: 400 14px/1.45 var(--font-display); color: var(--glass-soft); }
   .btn { font: 500 12px/1 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: inherit; border: 1px solid currentColor; padding: 12px 14px; min-height: 44px; }
   .btn.ghost { border-color: transparent; }
   .panel { position: fixed; z-index: 19; top: var(--hh, 77px); right: 0; bottom: 0; width: min(560px, 50vw); overflow-y: auto; color: var(--glass-ink);
@@ -142,8 +139,7 @@
     .menu-toggle { display: block; padding-right: 0; }
     .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; }
     .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
-    .peek { left: 16px; right: 16px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
-    .drop-list { max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+      .drop-list { max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
     .panel { width: 100vw; top: auto; height: calc(100% - var(--hh, 70px)); border-left: 0; border-top: 1px solid var(--glass-line); padding: 26px 18px 40px;
              transform: translateY(100%); }
     .panel.open { transform: none; }
@@ -152,13 +148,44 @@
     .gear { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
     .skypanel { top: auto !important; }
   }
+
+  /* ---- every GUI element in the site style (Smo): glass, Archivo, spaced capitals ---- */
+  :root { --font-data: "Archivo", "Helvetica Neue", Arial, sans-serif; }
+  .ui-caps, .nav .where, .nav button, .seg button, .seg .tag, .tip, .marker, .kicker, .sp-head, .btn, .gear {
+    font-family: var(--font-display); font-stretch: 108%; font-variation-settings: 'wdth' 108; text-transform: uppercase; letter-spacing: 0.16em; }
+  .nav { border-radius: 0; border: 1px solid var(--glass-line) !important; background: var(--glass) !important; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  .nav button, .nav .where { font-size: 11px; font-weight: 400; color: var(--glass-ink); }
+  .nav button { font-size: 11px; font-weight: 400; }
+  #nav-prev, #nav-next { font-size: 18px; letter-spacing: 0; min-width: 52px; }
+  .nav .where { cursor: pointer; background: none; border: 0; padding: 0 22px; min-width: 150px; }
+  .nav .where:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .nav button + button, .nav .where, .nav .where + button { border-left: 1px solid var(--glass-line) !important; }
+  .tip, .marker { font-size: 10.5px; font-weight: 500; padding: 8px 12px; border-radius: 0; background: var(--glass-strong); border: 1px solid var(--glass-line);
+                  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--glass-ink); }
+  .marker::before { width: 6px; height: 6px; background: currentColor; }
+  .seg { border-radius: 0; background: var(--glass-strong) !important; border-color: var(--glass-line) !important; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  .seg button, .seg .tag { font-size: 11px; font-weight: 400; color: var(--glass-ink); }
+  .seg .tag { color: var(--glass-soft); }
+  .seg button + button { border-left-color: var(--glass-line) !important; }
+  button[aria-pressed="true"] { color: var(--glass-ink) !important; box-shadow: inset 0 -1px 0 currentColor; }
+  .skypanel { background: var(--glass-strong) !important; border-color: var(--glass-line) !important; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+              color: var(--glass-ink); font-family: var(--font-display) !important; }
+  .sp-head { color: var(--glass-soft); font-size: 10.5px; }
+  .sp-row { color: var(--glass-ink); font-size: 12.5px; }
+  .sp-row output, .sp-fps { color: var(--glass-soft); }
+  .sp-row input { accent-color: var(--glass-ink); }
+  .sp-buttons button { border-color: var(--glass-line); color: var(--glass-ink); font-family: var(--font-display); letter-spacing: 0.14em; }
+  .kicker { font-size: 10.5px; font-weight: 500; letter-spacing: 0.18em; }
+  .panel .note { font-family: var(--font-display); }
+  .status { font-family: var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; font-size: 11px; }
+  @media (max-width: 720px) { .panel { height: 62% !important; } }
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
 <div id="stage"></div>
 <header class="site" id="site">
   <div class="bar">
-    <a class="name" href="#" id="home-link">Simon<br>Winkler</a>
+    <a class="name" href="#" id="home-link" aria-label="Simon Winkler"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
     <nav class="menu" id="menu" aria-label="Main">
       <button data-cat="work" aria-expanded="false">Work</button>
       <button data-cat="play" aria-expanded="false">Play</button>
@@ -172,12 +199,6 @@
 <button class="gear" id="gear" aria-label="Settings" aria-expanded="false">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg>
 </button>
-<div class="peek" id="peek" aria-live="polite">
-  <div class="kicker" id="peek-kicker"></div>
-  <h2 id="peek-title"></h2>
-  <p id="peek-line"></p>
-  <div class="panel-actions"><button class="btn" id="peek-read">Read</button></div>
-</div>
 <aside class="panel" id="panel" aria-hidden="true" aria-label="Content">
   <button class="btn ghost panel-close" id="panel-close" aria-label="Close">Close ✕</button>
   <div id="panel-body"></div>
@@ -204,7 +225,7 @@
 <div class="tip" id="tip" hidden></div>
 <nav class="nav" id="nav" aria-label="Places" hidden>
   <button id="nav-prev" aria-label="Previous place">‹</button>
-  <span class="where" id="nav-where"></span>
+  <button class="where" id="nav-where" aria-label="Open the content of this place"></button>
   <button id="nav-back">Overview</button>
   <button id="nav-next" aria-label="Next place">›</button>
 </nav>
@@ -1125,7 +1146,9 @@ function stepSky(now) {
   // colours
   const zenDay = hsl(SKY.skyHue, SKY.skySat, 0.72), horDay = hsl(38, 0.14, 0.85);
   const duskC = hsl(SKY.duskHue, 0.6, 0.62);
-  const zenNight = hsl(SKY.nightHue, 0.4, SKY.nightLevel * 0.5), horNight = hsl(SKY.nightHue, 0.28, SKY.nightLevel);
+  // Smo: the darkest night colour stays the turquoise of the backdrop (zenith as bright as the horizon, never near black)
+  const nl = Math.max(SKY.nightLevel, 0.1);
+  const zenNight = hsl(SKY.nightHue, 0.3, nl * 1.25 + 0.02), horNight = hsl(SKY.nightHue, 0.27, nl * 1.25 + 0.03);
   const zen = zenNight.clone().lerp(zenDay, day).lerp(hsl(SKY.duskHue + 15, 0.35, 0.5), dusk * 0.22);
   const hor = horNight.clone().lerp(horDay, day).lerp(duskC, dusk * (0.45 + 0.3 * day));
   skyUniforms.uZenith.value.copy(zen); skyUniforms.uHorizon.value.copy(hor);
@@ -1167,7 +1190,7 @@ function stepSky(now) {
     markSun();
   }
   hemi.color.copy(hsl(SKY.nightHue, 0.35, 0.3).lerp(zenDay.clone().lerp(new THREE.Color(1, 1, 1), 0.4), day).lerp(duskC, dusk * 0.45));
-  hemi.groundColor.copy(new THREE.Color(0x15171c).lerp(new THREE.Color(0xcbbfae), day));
+  hemi.groundColor.copy(hsl(SKY.nightHue, 0.22, 0.13).lerp(new THREE.Color(0xcbbfae), day));
   hemi.intensity = 0.26 + 0.24 * day - 0.12 * dusk * day;   // a little less sky light in the golden hour: the low sun reads stronger
   skyState.fill = 0.06 + 0.49 * day;
   renderer.toneMappingExposure = 1.0 + 0.1 * d;
@@ -1522,7 +1545,7 @@ function stepTween(now) {
 
 function enter(p) {
   nav.place = p; nav.mode = p.view.type;
-  hidePeek(); closePanel();
+  closePanel();
   document.body.classList.add('in-place');
   setTip(null);
   showNav(p);
@@ -1532,15 +1555,15 @@ function enter(p) {
     const eye = new THREE.Vector3(...v.eye), at = new THREE.Vector3(...v.look);
     const d = at.clone().sub(eye).normalize();
     look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y); look.fov = portrait() ? v.fov + 8 : v.fov;
-    flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, () => showPeek(p.id));
+    flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, () => openPanel(p.id));
   } else {
     const f = fitPose(new THREE.Vector3(...v.pos), new THREE.Vector3(...v.target), v.fit);
-    flyTo(f.pos, f.target, portrait() ? 50 : 32, () => { placeControls(v); controls.maxDistance = Math.max(v.dist[1], f.d * 1.2); showPeek(p.id); });
+    flyTo(f.pos, f.target, portrait() ? 50 : 32, () => { placeControls(v); controls.maxDistance = Math.max(v.dist[1], f.d * 1.2); openPanel(p.id); });
   }
 }
 function leave() {
   nav.place = null; nav.mode = 'overview';
-  hidePeek(); closePanel();
+  closePanel();
   document.body.classList.remove('in-place');
   document.getElementById('nav').hidden = true;
   const h = homePose();
@@ -1572,6 +1595,7 @@ function step(k) {
 document.getElementById('nav-prev').addEventListener('click', () => step(-1));
 document.getElementById('nav-next').addEventListener('click', () => step(1));
 document.getElementById('nav-back').addEventListener('click', () => setRoute(''));
+document.getElementById('nav-where').addEventListener('click', () => { if (nav.place) openPanel(nav.place.id); });
 window.addEventListener('keydown', (ev) => {
   if (ev.target.closest && ev.target.closest('input, textarea')) return;
   if (ev.key === 'Escape' && nav.place) setRoute('');
@@ -1730,6 +1754,14 @@ const PAGES = {
   station: { kicker: 'About', title: 'The station', line: '', lead: 'Placeholder: a station that moves and gains modules over time, like a career across several fields. Each building holds one kind of work; the camp, the dish and the relay hold the person.', cards: 0 },
 };
 const site = document.getElementById('site'), drop = document.getElementById('drop'), dropList = document.getElementById('drop-list');
+function fitName() {
+  const a = document.getElementById('name-1'), b = document.getElementById('name-2');
+  a.style.letterSpacing = ''; b.style.letterSpacing = '';
+  const [s, l] = a.offsetWidth < b.offsetWidth ? [a, b] : [b, a];
+  const n = s.textContent.length - 1, extra = (l.offsetWidth - s.offsetWidth) / n;
+  s.style.letterSpacing = `calc(0.02em + ${extra}px)`; s.style.marginRight = `-${extra}px`;   // no extra space after the last letter
+}
+fitName(); document.fonts && document.fonts.ready.then(fitName); window.addEventListener('resize', fitName);
 const measureHeader = () => document.documentElement.style.setProperty('--hh', document.querySelector('.site .bar').offsetHeight + 1 + 'px');
 measureHeader(); window.addEventListener('resize', measureHeader); document.fonts && document.fonts.ready.then(measureHeader);
 let dropCat = null, dropTimer = 0;
@@ -1771,23 +1803,11 @@ site.addEventListener('mouseenter', () => clearTimeout(dropTimer));
 document.getElementById('menu-toggle').addEventListener('click', () => (dropCat ? closeDrop() : openDrop('all')));
 document.getElementById('home-link').addEventListener('click', (e) => { e.preventDefault(); closeDrop(); closePanel(); setRoute(''); });
 function go(it) {
-  if (it.place) { pendingPanel = false; if (nav.place && nav.place.id === it.place) showPeek(it.place); else setRoute(it.place); }
+  if (it.place) { if (nav.place && nav.place.id === it.place) openPanel(it.place); else setRoute(it.place); }
   else if (it.content) openPanel(it.content);
 }
-// content: small card on arrival, the big panel on "Read"; while the panel is open the 3D pauses
-const peek = document.getElementById('peek'), panel = document.getElementById('panel');
-let peekId = null, pendingPanel = false;
-function showPeek(id) {
-  const c = PAGES[id];
-  if (!c) return hidePeek();
-  peekId = id;
-  document.getElementById('peek-kicker').textContent = c.kicker;
-  document.getElementById('peek-title').textContent = c.title;
-  document.getElementById('peek-line').textContent = c.line;
-  peek.classList.add('show');
-}
-function hidePeek() { peek.classList.remove('show'); peekId = null; }
-document.getElementById('peek-read').addEventListener('click', () => peekId && openPanel(peekId));
+// content: the panel opens when the camera arrives (Smo: no small card first); while it is open the 3D pauses
+const panel = document.getElementById('panel');
 function openPanel(id) {
   const c = PAGES[id]; if (!c) return;
   const n = c.cards === 0 ? 0 : 3;
@@ -1796,14 +1816,13 @@ function openPanel(id) {
     <p class="note">Placeholder content. Real texts, images and videos follow.</p><div class="cards">${cards}</div>
     <div class="panel-actions"><a class="btn" href="#" onclick="return false">Open as page ↗</a></div>`;
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false'); panel.scrollTop = 0; document.body.classList.add('panel-open');
-  hidePeek(); closeDrop();
-  setTimeout(() => setPaused(true), 470);              // pause once the panel has slid in
+  closeDrop();
+  setTimeout(() => { if (panel.classList.contains('open')) setPaused(true); }, 470);              // pause once the panel has slid in
 }
 function closePanel() {
   if (!panel.classList.contains('open')) return;
   setPaused(false);
   panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); document.body.classList.remove('panel-open');
-  if (nav.place) showPeek(nav.place.id);
 }
 document.getElementById('panel-close').addEventListener('click', closePanel);
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) { e.stopImmediatePropagation(); closePanel(); } }, true);
@@ -1878,7 +1897,7 @@ window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moon
 window.__sky = (o) => { Object.assign(SKY, o || {}); applyAccents(); skyState.lastStep = -1e9; return { ...SKY, d: skyState.d, night: skyState.night }; };
 window.__cam = (c) => { if (c.free) { controls.maxPolarAngle = Math.PI; controls.minDistance = 0.01; } camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
 window.__go = (id) => setRoute(id || '');
-window.__gui = { openDrop, closeDrop, openPanel, closePanel, state: () => ({ drop: dropCat, peek: peekId, panel: panel.classList.contains('open'), paused }) };
+window.__gui = { openDrop, closeDrop, openPanel, closePanel, state: () => ({ drop: dropCat, panel: panel.classList.contains('open'), paused }) };
 window.__print = (u) => { PRN.t = u * PRN.printS; };
 window.__lights = () => { const c = {}; scene.traverse((o) => { if (o.isLight) { const k = o.type + (o.castShadow ? '+shadow' : ''); c[k] = (c[k] || 0) + 1; } }); return JSON.stringify(c); };
 window.__quality = (l) => { if (l !== undefined) setQuality(l); return quality.level; };
