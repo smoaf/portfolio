@@ -36,7 +36,8 @@
     position: fixed; right: 16px; top: calc(16px + env(safe-area-inset-top, 0px));
     display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 32px);
   }
-  .seg { display: flex; align-items: stretch; border: 1px solid var(--rule); background: var(--card); backdrop-filter: blur(6px); }
+  .seg { display: flex; align-items: stretch; border: 1px solid var(--glass-line, var(--rule)); background: var(--glass-strong, var(--card)); color: var(--glass-ink, inherit); }
+  .seg button { color: inherit; }
   .seg .tag { font: 500 11px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); padding: 10px 4px 10px 12px; align-self: center; }
   button {
     font: 500 12px/1 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase;
@@ -73,10 +74,114 @@
   .sp-buttons button { border: 1px solid var(--rule); padding: 8px 10px; }
   .sp-fps { margin-right: auto; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
   @media (max-width: 560px) { .skypanel { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); max-height: 55vh; } }
+  /* ---- site GUI (Smo, 6 Oct 2026): name top left, menu top right on a see-through strip; the
+     categories roll down inside the same strip; settings behind a small icon; content in a
+     see-through panel over the scene. Light glass by day, dark glass at night. */
+  :root { --glass: rgba(246, 243, 238, 0.58); --glass-strong: rgba(246, 243, 238, 0.86); --glass-line: rgba(255, 255, 255, 0.55);
+          --glass-ink: #1d1b18; --glass-soft: #5e5850; --blur: blur(10px) saturate(1.15); }
+  body.is-night { --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12);
+                  --glass-ink: #f1ede6; --glass-soft: #b8b1a6; }
+  .site { position: fixed; left: 0; right: 0; top: 0; z-index: 20; color: var(--glass-ink);
+          background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          padding-top: env(safe-area-inset-top, 0px); transition: background 0.6s; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
+  .name { font: 700 22px/0.92 var(--font-display); letter-spacing: 0.01em; text-transform: uppercase; color: inherit; text-decoration: none; }
+  .menu { display: flex; gap: 6px; }
+  .menu button, .menu-toggle { font: 500 12px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: inherit;
+          padding: 12px 12px; min-height: 44px; position: relative; }
+  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu-toggle { display: none; }
+  .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
+  .drop.open { grid-template-rows: 1fr; }
+  .drop-inner { overflow: hidden; }
+  .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
+  .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-transform: none; letter-spacing: 0; font: inherit; }
+  .drop-item .t { display: block; font: 600 17px/1.2 var(--font-display); }
+  .drop-item .s { display: block; font: 400 13px/1.4 var(--font-display); color: var(--glass-soft); margin-top: 3px; }
+  .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
+  .drop-cat { display: none; }
+  .gear { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 21; width: 44px; height: 44px; padding: 0;
+          border-radius: 50%; background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          color: var(--glass-ink); display: grid; place-items: center; }
+  .gear svg { width: 20px; height: 20px; }
+  .controls { top: auto !important; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); z-index: 21; flex-direction: column; align-items: flex-end; }
+  .skypanel { top: calc(96px + env(safe-area-inset-top, 0px)) !important; z-index: 21; }
+  .nav { z-index: 19; background: var(--glass) !important; border-color: var(--glass-line) !important; color: var(--glass-ink); -webkit-backdrop-filter: var(--blur); }
+  .nav button { color: inherit; }
+  .tip, .marker { background: var(--glass-strong); border-color: var(--glass-line); color: var(--glass-ink); }
+  /* content: a small card when you arrive, a large panel when you read (the 3D pauses then) */
+  .peek, .panel { box-sizing: border-box; }
+  .peek { position: fixed; left: 40px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 19; width: min(360px, calc(100vw - 32px));
+          background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          color: var(--glass-ink); padding: 16px 18px 14px; transform: translateY(12px); opacity: 0; transition: opacity .35s, transform .35s; pointer-events: none; }
+  .peek.show { opacity: 1; transform: none; pointer-events: auto; }
+  .kicker { font: 500 11px/1 var(--font-data); letter-spacing: 0.12em; text-transform: uppercase; color: var(--glass-soft); }
+  .peek h2 { font: 600 22px/1.15 var(--font-display); margin: 8px 0 6px; }
+  .peek p { margin: 0 0 12px; font: 400 14px/1.45 var(--font-display); color: var(--glass-soft); }
+  .btn { font: 500 12px/1 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: inherit; border: 1px solid currentColor; padding: 12px 14px; min-height: 44px; }
+  .btn.ghost { border-color: transparent; }
+  .panel { position: fixed; z-index: 19; top: var(--hh, 77px); right: 0; bottom: 0; width: min(560px, 50vw); overflow-y: auto; color: var(--glass-ink);
+           background: var(--glass-strong); border-left: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+           padding: 28px 40px 40px; transform: translateX(100%); transition: transform .45s cubic-bezier(.2,.7,.2,1); }
+  .panel.open { transform: none; }
+  body.panel-open .nav, body.panel-open .gear, body.panel-open .controls, body.panel-open .skypanel { display: none !important; }
+  .panel h2 { font: 700 34px/1.05 var(--font-display); margin: 10px 0 14px; text-wrap: balance; }
+  .panel .lead { font: 400 17px/1.5 var(--font-display); margin: 0 0 22px; }
+  .panel .note { font: 400 12px/1.4 var(--font-data); color: var(--glass-soft); border-left: 2px solid currentColor; padding-left: 10px; margin: 0 0 24px; }
+  .cards { display: grid; gap: 12px; margin-bottom: 26px; }
+  .card { border-top: 1px solid var(--glass-line); padding-top: 12px; }
+  .card .ph { aspect-ratio: 16 / 9; background: repeating-linear-gradient(135deg, rgba(127,127,127,.14) 0 10px, rgba(127,127,127,.06) 10px 20px); margin-bottom: 10px; }
+  .card h3 { font: 600 17px/1.25 var(--font-display); margin: 0 0 4px; }
+  .card p { font: 400 14px/1.45 var(--font-display); margin: 0; color: var(--glass-soft); }
+  .panel-close { position: absolute; right: 24px; top: 14px; }
+  .panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; }
+    .name { font-size: 19px; }
+    .menu { display: none; }
+    .menu-toggle { display: block; padding-right: 0; }
+    .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; }
+    .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
+    .peek { left: 16px; right: 16px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+    .drop-list { max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+    .panel { width: 100vw; top: auto; height: calc(100% - var(--hh, 70px)); border-left: 0; border-top: 1px solid var(--glass-line); padding: 26px 18px 40px;
+             transform: translateY(100%); }
+    .panel.open { transform: none; }
+    .panel-close { top: 14px; right: 10px; }
+    .panel h2 { font-size: 28px; }
+    .gear { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+    .skypanel { top: auto !important; }
+  }
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
 <div id="stage"></div>
+<header class="site" id="site">
+  <div class="bar">
+    <a class="name" href="#" id="home-link">Simon<br>Winkler</a>
+    <nav class="menu" id="menu" aria-label="Main">
+      <button data-cat="work" aria-expanded="false">Work</button>
+      <button data-cat="play" aria-expanded="false">Play</button>
+      <button data-cat="about" aria-expanded="false">About</button>
+      <button data-cat="contact" aria-expanded="false">Contact</button>
+    </nav>
+    <button class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
+  </div>
+  <div class="drop" id="drop"><div class="drop-inner"><div class="drop-list" id="drop-list"></div></div></div>
+</header>
+<button class="gear" id="gear" aria-label="Settings" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg>
+</button>
+<div class="peek" id="peek" aria-live="polite">
+  <div class="kicker" id="peek-kicker"></div>
+  <h2 id="peek-title"></h2>
+  <p id="peek-line"></p>
+  <div class="panel-actions"><button class="btn" id="peek-read">Read</button></div>
+</div>
+<aside class="panel" id="panel" aria-hidden="true" aria-label="Content">
+  <button class="btn ghost panel-close" id="panel-close" aria-label="Close">Close ✕</button>
+  <div id="panel-body"></div>
+</aside>
 <div class="status" id="status">Loading model…</div>
 
 
@@ -126,9 +231,11 @@ const host = document.getElementById('stage');
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// quality (Smo saw 8 fps): never more than 1.5 device pixels per CSS pixel; the adaptive step
+// further down lowers this and switches effects off when the frame rate stays low
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;        // was PCFSoft: soft filtering of the lamps' cube shadows cost the most at night
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 host.appendChild(renderer.domElement);
 
@@ -159,7 +266,7 @@ const SUN = { front: new THREE.Vector3(40, 25, -22), back: new THREE.Vector3(34,
 const sun = new THREE.DirectionalLight(0xffdcb9, 3.2);
 sun.position.copy(SUN.front);
 sun.castShadow = true;
-sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.mapSize.set(2048, 2048);                 // was 4096: a quarter of the work per redraw
 Object.assign(sun.shadow.camera, { left: -52, right: 52, top: 52, bottom: -52, near: 1, far: 160 });
 sun.shadow.bias = -0.0003;
 sun.shadow.normalBias = 0.025;
@@ -198,8 +305,6 @@ function placeNightLights(root) {
       warm(0xffc48a, new THREE.Vector3(c.x, box.max.y - 0.9, c.z + 0.8), 13, 12, shadows-- > 0);
     } else if (/lamp$/.test(n)) {
       warm(0xffb36b, new THREE.Vector3(c.x, box.max.y - 0.2, c.z), 7, 7, false);
-    } else if (/screens?$|computer_screen$|laptop$/.test(n)) {
-      warm(0xd8e4ff, new THREE.Vector3(c.x, box.max.y + 0.2, c.z), 1.8, 4, false);
     } else if (/servers$/.test(n)) {
       warm(0xc9dcff, new THREE.Vector3(box.min.x - 0.6, c.y, c.z), 6, 6, false);
     }
@@ -210,8 +315,9 @@ function placeNightLights(root) {
 // --- post: ambient occlusion makes plain plaster read
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
+let gtao = null;
 try {
-  const gtao = new GTAOPass(scene, camera, 1, 1);
+  gtao = new GTAOPass(scene, camera, 1, 1);
   gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.2, scale: 1.0, samples: 16 });
   gtao.blendIntensity = 0.85;
   composer.addPass(gtao);
@@ -714,6 +820,68 @@ function stepPerson(now) {
   if (bx) { person.boxBlob.position.set(bx.position.x, groundY(bx.position) + 0.02, bx.position.z); person.boxBlob.visible = person.carrying; }
 }
 
+// --- colour touches (Smo: rooms looked stale by day). The model stays plaster; chosen pieces take a
+// colour from a palette: fabrics, wood, book spines, a few signal-coloured objects, screens that glow
+// faintly by day. Strength and palette are on the Sky panel ("Colour").
+const PALETTES = [
+  { name: 'Field', signal: '#d8642b', fabric1: '#4d6e68', fabric2: '#b8875c', wood: '#a47b55', rug: '#8c4a3b', screen: '#7fb2d0',
+    books: ['#a3423a', '#2f5a6b', '#c99a3e', '#5d6e47', '#7a4e6e', '#d9cfbd', '#3d3f52'] },
+  { name: 'Mid-century', signal: '#c9562c', fabric1: '#56704a', fabric2: '#d3a245', wood: '#8a5a3b', rug: '#b5502f', screen: '#9cc7b4',
+    books: ['#b5502f', '#d3a245', '#56704a', '#2e4a5c', '#e2d6bd', '#7d3b2b', '#a88d5f'] },
+  { name: 'Lab', signal: '#ff6a2b', fabric1: '#30508f', fabric2: '#7fb8a4', wood: '#c4ad8f', rug: '#3d5a80', screen: '#8fd1ff',
+    books: ['#30508f', '#ff6a2b', '#7fb8a4', '#e8e4da', '#2b2f3a', '#f2b13c', '#9b6fb3'] },
+];
+const ACCENT_ROLES = {
+  libraryreading_chair: 'fabric1', libraryrug: 'rug', libraryside_table_book: 'signal', librarybooks: 'books',
+  officechairs: 'wood', officesofa: 'fabric1', officelounge_chair: 'fabric2', officecoffee_cups: 'signal',
+  workshopcrates: 'wood', workshopcable_spools: 'signal', workshopprinter_toy: 'signal', workshopprinter_spool: 'signal',
+  hubstools: 'fabric2', hubbench: 'fabric1', showroombench: 'fabric1',
+  firepitchair_fabric: 'fabric1', campcarry_case: 'signal',
+  librarycomputer_screen: 'screen', officemeeting_screen: 'screen', workshopdevice_screens: 'screen', workshoplaptop: 'screen',
+};
+const accents = [];
+function setupAccents(root) {
+  root.traverse((o) => {
+    const role = o.isMesh && ACCENT_ROLES[o.name];
+    if (!role) return;
+    o.material = o.material.clone();
+    const rec = { o, role, base: o.material.color.clone(), emissive: o.material.emissive ? o.material.emissive.clone() : null };
+    if (role === 'books') {
+      // one colour per book: group the vertices of each separate box by shared positions
+      const g = o.geometry, pos = g.attributes.position, n = pos.count;
+      const key = (i) => `${pos.getX(i).toFixed(4)},${pos.getY(i).toFixed(4)},${pos.getZ(i).toFixed(4)}`;
+      const parent = new Int32Array(n).map((_, i) => i);
+      const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+      const join = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[a] = b; };
+      const seen = new Map();
+      for (let i = 0; i < n; i++) { const k = key(i); if (seen.has(k)) join(i, seen.get(k)); else seen.set(k, i); }
+      if (g.index) { const ix = g.index.array; for (let f = 0; f < ix.length; f += 3) { join(ix[f], ix[f + 1]); join(ix[f], ix[f + 2]); } }
+      const label = new Map(); rec.book = new Uint16Array(n);
+      for (let i = 0; i < n; i++) { const r = find(i); if (!label.has(r)) label.set(r, label.size); rec.book[i] = label.get(r); }
+      g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+      o.material.vertexColors = true; o.material.color.set(1, 1, 1); o.material.needsUpdate = true;
+    }
+    accents.push(rec);
+  });
+  applyAccents();
+}
+function applyAccents() {
+  const p = PALETTES[Math.round(SKY.palette) || 0] || PALETTES[0], k = SKY.accent;
+  const c = new THREE.Color();
+  accents.forEach((r) => {
+    const m = r.o.material;
+    if (r.role === 'books') {
+      const col = r.o.geometry.attributes.color, bc = p.books.map((h) => new THREE.Color(h));
+      for (let i = 0; i < r.book.length; i++) { c.copy(r.base).lerp(bc[(r.book[i] * 5 + 3) % bc.length], k); col.setXYZ(i, c.r, c.g, c.b); }
+      col.needsUpdate = true;
+    } else if (r.role === 'screen') {
+      m.emissive = new THREE.Color(p.screen); m.emissiveIntensity = 0.32 * k;   // a faint glow, by day too
+    } else {
+      m.color.copy(r.base).lerp(new THREE.Color(p[r.role]), k);
+    }
+  });
+}
+
 // --- sky and day cycle (Smo, 6 Oct 2026). Not planet Earth: sun path, day length, moons and colours
 // are settings. Built to cost little:
 //   - colours and light strengths change every frame (a handful of numbers, no extra drawing)
@@ -723,19 +891,62 @@ function stepPerson(now) {
 //   - the sky is one big sphere drawn first: colour gradient, sun glow, moons with phases, stars
 //   - the background and the haze take their colour from the sky, not from the page theme
 const SKY_DEFAULTS = {
-  time: 0.36, playing: true, cycleMin: 6,              // time 0..1 (0.25 sunrise, 0.5 noon, 0.75 sunset); minutes per full day
-  sunFrom: 35, tilt: 52, dayShare: 0.12,                 // noon sun direction (0 = from the front, 90 = from the left), path tilt from overhead, longer days
-  sunHue: 40, duskHue: 18, skyHue: 205, skySat: 0.3,    // colours (hue in degrees)
-  nightHue: 228, nightLevel: 0.1,
-  moons: 2, moonSize: 2.6, moonSpeed: 0.85, moonFrom: 172, moonTilt: 83, moonHue: 205,   // moons peak low over the hills, in view
-  shadowStep: 0.5,                                      // seconds between sun steps (and shadow redraws)
+  time: 0.36, playing: true, cycleMin: 4,              // time 0..1 (0.25 sunrise, 0.5 noon, 0.75 sunset); minutes per full day
+  sunFrom: -120, tilt: 47, dayShare: -0.3,                 // noon sun direction (0 = from the front, 90 = from the left), path tilt from overhead, longer days
+  sunHue: 138, duskHue: 31, skyHue: 214, skySat: 0.78,    // colours (hue in degrees)
+  nightHue: 156, nightLevel: 0.1,
+  // two moons (Smo: the blue one removed), each on its own orbit: size, speed, start, where it stands
+  // highest and how steep its path is are separate per moon. Moon 2 is smaller, faster and climbs
+  // from the other side on a steeper path, so the two drift apart and meet only now and then.
+  moons: 2,
+  m1Size: 1.2, m1Speed: 0.1, m1Peak: 1.0, m1From: -180, m1Tilt: 76, m1Swing: 0, moon1Hue: 48, moon1Hue2: 22,
+  m2Size: 0.8, m2Speed: 0.43, m2Peak: 0.83, m2From: 135, m2Tilt: 58, m2Swing: 0.5, moon2Hue: 16, moon2Hue2: 350,
+  // Swing (Smo): an oval orbit; the moon looks up to that much bigger at its closest point and as
+  // much smaller at its farthest. Moon 2's closest point is a quarter orbit after it stands highest.
+  moonSat: 0.75, moonGlow: 1.0, moonPhase: 0.35, moonDetail: 0.45,   // shared: colour strength, glow, phase shadow, surface detail
+  accent: 0.7, palette: 0,                               // colour touches: strength, palette (0 Field, 1 Mid-century, 2 Lab)
+  shadowStep: 0.1,                                      // seconds between sun steps (and shadow redraws)
 };
 let SKY = { ...SKY_DEFAULTS };
-try { const saved = JSON.parse(localStorage.getItem('station-sky') || 'null'); if (saved) SKY = { ...SKY, ...saved, playing: true }; } catch (e) { /* no storage */ }
+try { const saved = JSON.parse(localStorage.getItem('station-sky') || 'null'); if (saved) {
+  // settings saved before the moons got their own orbits: the old shared values go to moon 1
+  if (saved.moonSize !== undefined && saved.m1Size === undefined) Object.assign(saved, { m1Size: saved.moonSize, m1Speed: saved.moonSpeed, m1From: saved.moonFrom, m1Tilt: saved.moonTilt });
+  ['moonHue', 'moonSize', 'moonSpeed', 'moonFrom', 'moonTilt', 'moon3Hue', 'moon3Hue2'].forEach((k) => delete saved[k]);
+  saved.moons = Math.min(2, saved.moons ?? 2); delete saved.moonDetail;
+  SKY = { ...SKY, ...saved, playing: true };
+} } catch (e) { /* no storage */ }
 const skyState = { days: 0, lastStep: -1e9, keyDir: new THREE.Vector3(0, 1, 0), d: 0, night: null, fill: 0.55, last: 0 };
-let shadowDirty = true;
-function markShadows() { shadowDirty = true; }
+// shadow maps are redrawn only when needed, and per light: a sun step redraws only the sun's map;
+// moving shadow casters (roof slats, lids, the seated figure, the case) redraw all of them once.
+// The lamps' shadows (6 views each for point lights) no longer follow every sun step.
+let shadowDirty = 'all';
+function markShadows() { shadowDirty = 'all'; }
+function markSun() { if (shadowDirty !== 'all') shadowDirty = 'sun'; }
 renderer.shadowMap.autoUpdate = false;
+function flushShadows() {
+  if (!shadowDirty) return;
+  scene.traverse((o) => { if (o.isLight && o.shadow) { o.shadow.autoUpdate = false; if (shadowDirty === 'all' || o === sun) o.shadow.needsUpdate = true; } });
+  renderer.shadowMap.needsUpdate = true; shadowDirty = false;
+}
+// adaptive quality: if the page keeps running below 40 fps it steps down, once per 3 s window:
+// 1 = no ambient occlusion pass, 2 = also fewer pixels and a smaller sun shadow map
+const quality = { level: 0, n: 0, t0: 0, settle: 0 };
+function setQuality(level) {
+  quality.level = level;
+  if (gtao) gtao.enabled = level < 1;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, level < 1 ? 1.5 : level < 2 ? 1.25 : 1));
+  if (level >= 2 && sun.shadow.mapSize.x > 1024) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } markShadows(); }
+  resize();
+}
+function stepQuality(now) {
+  if (!quality.settle) quality.settle = now + 5000;                // let loading and the first frames pass
+  if (now < quality.settle || tween.active) { quality.n = 0; quality.t0 = now; return; }
+  quality.n++;
+  if (now - quality.t0 < 3000) return;
+  const fps = quality.n * 1000 / (now - quality.t0);
+  quality.n = 0; quality.t0 = now;
+  if (fps < 40 && quality.level < 2) setQuality(quality.level + 1);
+}
 
 const UP = new THREE.Vector3(0, 1, 0);
 function pathDir(theta, fromDeg, tiltDeg, lift, out) {
@@ -746,14 +957,18 @@ function pathDir(theta, fromDeg, tiltDeg, lift, out) {
   const top = UP.clone().multiplyScalar(Math.cos(tl)).addScaledVector(N, Math.sin(tl));
   return out.copy(R).multiplyScalar(Math.cos(theta)).addScaledVector(top, Math.sin(theta)).addScaledVector(UP, lift).normalize();
 }
-const sunDir = new THREE.Vector3(), moonDirs = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+const vSky = new THREE.Vector3(), sunDir = new THREE.Vector3(), moonDirs = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
 function moonInfo(i, total) {
-  // each moon runs at its own speed; started so that it stands high in the first night (moon 1 at
-  // midnight, moon 2 a little earlier), then drifts against the sun from night to night
-  const speed = SKY.moonSpeed * (1 + 0.37 * i), peak = 1.0 - 0.12 * i;
+  // each moon has its own orbit; `Peak` is the time of the first day at which it stands highest
+  const p = 'm' + (i + 1), speed = SKY[p + 'Speed'], peak = SKY[p + 'Peak'];
   const phase0 = Math.PI / 2 - 2 * Math.PI * (peak - 0.25) * speed;
-  pathDir(2 * Math.PI * (total - 0.25) * speed + phase0, SKY.moonFrom + 28 * i, SKY.moonTilt + 2 * i, 0, moonDirs[i]);
-  return { dir: moonDirs[i], size: SKY.moonSize * (1 - 0.28 * i), hue: SKY.moonHue + 25 * i };
+  const theta = 2 * Math.PI * (total - 0.25) * speed + phase0;
+  pathDir(theta, SKY[p + 'From'], SKY[p + 'Tilt'], 0, moonDirs[i]);
+  const near = Math.cos(theta - Math.PI);                         // 1 at the closest point of its orbit, -1 at the farthest
+  const sizeNow = SKY[p + 'Size'] * (1 + (SKY[p + 'Swing'] || 0) * near);
+  const hue = SKY['moon' + (i + 1) + 'Hue'], hue2 = SKY['moon' + (i + 1) + 'Hue2'];
+  const light = [0.68, 0.58][i];                                                         // each moon its own colour
+  return { dir: moonDirs[i], size: sizeNow, hue, hue2, sat: SKY.moonSat * (0.6 + 0.2 * i), light };
 }
 const hsl = (h, s, l) => new THREE.Color().setHSL(((h % 360) + 360) % 360 / 360, s, l);
 const smooth = THREE.MathUtils.smoothstep;
@@ -764,7 +979,8 @@ const skyUniforms = {
   uSunDir: { value: new THREE.Vector3() }, uSunColor: { value: new THREE.Color() }, uGlow: { value: new THREE.Color() }, uGlowAmt: { value: 0 },
   uSunVis: { value: 1 }, uMoonDir: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
   uMoonCos: { value: [1, 1, 1] }, uMoonColor: { value: [new THREE.Color(), new THREE.Color(), new THREE.Color()] },
-  uMoonCount: { value: 0 }, uNight: { value: 0 },
+  uMoonCount: { value: 0 }, uNight: { value: 0 }, uMoonGlow: { value: 1 }, uMoonPhase: { value: 0.35 },
+  uMoonColor2: { value: [new THREE.Color(), new THREE.Color(), new THREE.Color()] }, uMoonTex: { value: null }, uMoonDetail: { value: 0.8 },
 };
 const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), new THREE.ShaderMaterial({
   uniforms: skyUniforms, side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false,
@@ -773,7 +989,8 @@ const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), new THREE.
     varying vec3 vDir;
     uniform vec3 uZenith, uHorizon, uGround, uSunDir, uSunColor, uGlow;
     uniform float uGlowAmt, uSunVis, uNight;
-    uniform vec3 uMoonDir[3]; uniform float uMoonCos[3]; uniform vec3 uMoonColor[3]; uniform int uMoonCount;
+    uniform vec3 uMoonDir[3]; uniform float uMoonCos[3]; uniform vec3 uMoonColor[3]; uniform int uMoonCount; uniform float uMoonGlow, uMoonPhase;
+    uniform vec3 uMoonColor2[3]; uniform sampler2D uMoonTex; uniform float uMoonDetail;
     void main() {
       vec3 d = normalize(vDir);
       float h = d.y;
@@ -785,21 +1002,82 @@ const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), new THREE.
         if (i >= uMoonCount) break;
         vec3 m = uMoonDir[i];
         float c = dot(d, m);
-        if (c > uMoonCos[i] && m.y > -0.05) {
-          float sinR = sqrt(1.0 - uMoonCos[i] * uMoonCos[i]);
-          vec3 q = (d - m * c) / sinR;                       // position on the disc, length 0..1
+        float cr = uMoonCos[i];
+        float rad = acos(clamp(cr, -1.0, 1.0));
+        float ang = acos(clamp(c, -1.0, 1.0));
+        float low = 1.0 - smoothstep(-0.02, 0.3, m.y);          // near the horizon: redder and dimmer
+        vec3 mcol = mix(uMoonColor[i], uMoonColor[i] * vec3(1.0, 0.55, 0.38), low * 0.8);
+        // by day (Smo) a moon cannot keep its colour: it washes out towards a pale, sky-tinted white
+        float dayK = (1.0 - uNight) * 0.85;
+        vec3 pale = mix(vec3(0.97, 0.96, 0.94), col, 0.35) + mcol * 0.06;   // whiter than the sky behind it, a trace of its colour
+        mcol = mix(mcol, pale, dayK);
+        float vis = (0.72 + 0.28 * uNight) * (1.0 - 0.35 * low) * smoothstep(-0.06, 0.0, m.y);
+        // soft glow round the disc
+        float gw = min(rad, 0.012);                                // glow width does not grow with big moons
+        float glow = exp(-max(ang - rad, 0.0) / (gw * 1.3)) * 0.28 + exp(-max(ang - rad, 0.0) / (gw * 5.0)) * 0.08;
+        col += mcol * glow * vis * uMoonGlow * (1.0 + 0.8 * low) * (0.12 + 0.88 * uNight);   // hardly any glow against a day sky          // the haze near the horizon spreads the glow
+        if (ang < rad * 1.04) {
+          float sinR = sqrt(max(1.0 - cr * cr, 1e-6));
+          vec3 q = (d - m * c) / sinR;
           float z = sqrt(max(0.0, 1.0 - dot(q, q)));
-          vec3 n = normalize(q - m * z);                       // sphere normal facing us
-          float lit = smoothstep(-0.08, 0.12, dot(n, uSunDir));
-          float edge = smoothstep(uMoonCos[i], uMoonCos[i] + (1.0 - uMoonCos[i]) * 0.08, c);
-          vec3 mc = uMoonColor[i] * (0.07 + 0.93 * lit) * (0.45 + 0.55 * uNight) * (0.62 + 0.38 * z);   // darker towards the rim
-          col = mix(col, mc + col * 0.15, edge * (0.55 + 0.45 * uNight));
+          vec3 n = normalize(q - m * z);
+          float lit = mix(1.0, smoothstep(-0.25, 0.3, dot(n, uSunDir)), uMoonPhase);
+          float edge = 1.0 - smoothstep(rad * 0.94, rad * 1.04, ang);
+          // surface: craters and patches from a texture made in the page (one 256 px tile per moon),
+          // mixing the moon's two colours; seen face-on, so the tile is laid flat across the disc
+          vec3 rgt = normalize(cross(m, vec3(0.0, 1.0, 0.0)) + vec3(1e-4, 0.0, 0.0));
+          vec3 upv = cross(rgt, m);
+          vec2 uv = vec2(dot(q, rgt), dot(q, upv)) * 0.48 + 0.5;
+          vec4 tx = texture2D(uMoonTex, vec2((uv.x + float(i)) / 3.0, uv.y));
+          vec3 mcol2 = mix(uMoonColor2[i], uMoonColor2[i] * vec3(1.0, 0.55, 0.38), low * 0.8);
+          mcol2 = mix(mcol2, pale * 0.9, dayK);
+          vec3 surf = mix(mcol, mcol2, tx.g * uMoonDetail * 0.7) * mix(1.0, 0.62 + 0.62 * tx.r, uMoonDetail);   // spots kept light
+          vec3 disc = surf * (0.82 + 0.18 * z) * 1.25;               // bright core, slight darkening at the rim
+          vec3 shade = mix(col, mcol * 0.35, 0.55);                   // the unlit part stays faintly coloured
+          col = mix(col, mix(shade, disc, lit), edge * vis);
         }
       }
       gl_FragColor = vec4(col, 1.0);
       #include <colorspace_fragment>
     }`,
 }));
+// moon surfaces, drawn once into a canvas when the page loads (3 tiles of 256 px): mottled patches,
+// craters with dark floors and bright rims, a few with rings. Red channel = brightness, green =
+// how much of the moon's second colour shows. Generic, made up here; no image is copied.
+function makeMoonTex() {
+  const S = 256, c = document.createElement('canvas'); c.width = S * 3; c.height = S;
+  const g = c.getContext('2d');
+  for (let i = 0; i < 3; i++) {
+    let seed = 1234 + i * 977; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const ox = i * S;
+    g.save(); g.beginPath(); g.rect(ox, 0, S, S); g.clip();
+    g.fillStyle = 'rgb(150,90,0)'; g.fillRect(ox, 0, S, S);
+    const blob = (x, y, rad, R, G, a) => {
+      const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+      gr.addColorStop(0, `rgba(${R},${G},0,${a})`); gr.addColorStop(1, `rgba(${R},${G},0,0)`);
+      g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    };
+    for (let k = 0; k < 260; k++) blob(ox + r() * S, r() * S, 8 + r() * 60, 95 + r() * 130, r() < 0.5 ? r() * 70 : 150 + r() * 105, 0.18);
+    for (let k = 0; k < 900; k++) blob(ox + r() * S, r() * S, 1 + r() * 5, 60 + r() * 170, r() * 255, 0.35);   // fine grain
+    for (let k = 0; k < 70; k++) {                                   // craters: many small, a few large
+      const rad = 2 + Math.pow(r(), 3.2) * 38, x = ox + r() * S, y = r() * S, G = 60 + r() * 195;
+      const fl = g.createRadialGradient(x + rad * 0.15, y + rad * 0.15, 0, x, y, rad);   // dark floor, shadowed on the lit side
+      fl.addColorStop(0, `rgba(105,${G | 0},0,0.3)`); fl.addColorStop(0.75, `rgba(95,${G | 0},0,0.32)`); fl.addColorStop(1, 'rgba(95,0,0,0)');
+      g.fillStyle = fl; g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(225,60,0,0.5)'; g.lineWidth = Math.max(0.8, rad * 0.14);   // bright rim on the far side only
+      g.beginPath(); g.arc(x, y, rad * 0.95, Math.PI * 0.05, Math.PI * 1.0); g.stroke();
+      if (rad > 16 && r() < 0.5) {                                   // a few large ones with a faint inner ring
+        g.lineWidth = Math.max(1, rad * 0.05); g.strokeStyle = 'rgba(170,220,0,0.28)';
+        g.beginPath(); g.arc(x, y, rad * 0.62, 0, Math.PI * 2); g.stroke();
+      }
+    }
+    g.restore();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.NoColorSpace; t.minFilter = THREE.LinearMipmapLinearFilter; t.anisotropy = 4;
+  return t;
+}
+skyUniforms.uMoonTex.value = makeMoonTex();
 skyMesh.renderOrder = -1000; skyMesh.frustumCulled = false;
 scene.add(skyMesh);
 // stars: fixed points on the upper sky, fade in at night
@@ -864,12 +1142,14 @@ function stepSky(now) {
   // moons: positions, colours; the brightest one above the horizon lights the night
   const nm = Math.round(SKY.moons);
   skyUniforms.uMoonCount.value = nm;
+  skyUniforms.uMoonGlow.value = SKY.moonGlow; skyUniforms.uMoonPhase.value = SKY.moonPhase; skyUniforms.uMoonDetail.value = SKY.moonDetail;
   let moonKey = null, moonW = 0;
   for (let i = 0; i < nm; i++) {
     const mi = moonInfo(i, total);
     skyUniforms.uMoonDir.value[i].copy(mi.dir);
     skyUniforms.uMoonCos.value[i] = Math.cos(THREE.MathUtils.degToRad(mi.size));
-    skyUniforms.uMoonColor.value[i].copy(hsl(mi.hue, 0.18, 0.86));
+    skyUniforms.uMoonColor.value[i].copy(hsl(mi.hue, mi.sat, mi.light));
+    skyUniforms.uMoonColor2.value[i].copy(hsl(mi.hue2, mi.sat * 0.9, mi.light * 0.6));
     const litFrac = (1 - mi.dir.dot(sunDir)) / 2;
     const w = mi.size * mi.size * litFrac * smooth(mi.dir.y, 0.0, 0.15);
     if (w > moonW) { moonW = w; moonKey = mi; }
@@ -880,11 +1160,11 @@ function stepSky(now) {
   const moonI = moonKey ? 0.25 * Math.min(1, moonW / 4) * smooth(-el, 0.03, 0.12) : 0;
   const wantDir = sunI >= moonI ? sunDir : moonKey.dir;
   sun.intensity = Math.max(sunI, moonI);
-  sun.color.copy(sunI >= moonI ? sunCol : hsl(moonKey.hue, 0.25, 0.78));
+  sun.color.copy(sunI >= moonI ? sunCol : hsl(moonKey.hue, moonKey.sat * 0.4, 0.78));
   if (now - skyState.lastStep > SKY.shadowStep * 1000 && wantDir.angleTo(skyState.keyDir) > 0.002) {
     skyState.keyDir.copy(wantDir); skyState.lastStep = now;
     sun.position.copy(wantDir).multiplyScalar(80);
-    markShadows();
+    markSun();
   }
   hemi.color.copy(hsl(SKY.nightHue, 0.35, 0.3).lerp(zenDay.clone().lerp(new THREE.Color(1, 1, 1), 0.4), day).lerp(duskC, dusk * 0.45));
   hemi.groundColor.copy(new THREE.Color(0x15171c).lerp(new THREE.Color(0xcbbfae), day));
@@ -892,12 +1172,15 @@ function stepSky(now) {
   skyState.fill = 0.06 + 0.49 * day;
   renderer.toneMappingExposure = 1.0 + 0.1 * d;
   // lamps come on in the dusk and fade out in the dawn
-  const lamps = smooth(d, 0.35, 0.8);
+  // evening (Smo): lamps, fire and projectors come on 30 minutes later than the darkness alone would
+  // say; in the morning they go off as before. dE = darkness 30 minutes earlier in the day.
+  const dE = SKY.time > 0.5 ? 1 - smooth(pathDir(2 * Math.PI * (SKY.time - 30 / 1440 - 0.25), SKY.sunFrom, SKY.tilt, SKY.dayShare, vSky).y, -0.07, 0.12) : d;
+  const lamps = smooth(dE, 0.35, 0.8);
   nightLights.forEach((l) => { l.intensity = l.userData.power * lamps; });
   lightstrips.forEach((m) => { m.emissiveIntensity = 1.6 * lamps; });
   if (envMats && (now - (skyState.envAt || 0) > 400)) { skyState.envAt = now; envMats.forEach((e) => { e.m.envMapIntensity = e.day + (e.night - e.day) * d; }); }
   // night switches (fire, projectors, beacons, the figure) with a little hysteresis
-  const night = skyState.night ? d > 0.4 : d > 0.6;
+  const night = skyState.night ? dE > 0.4 : dE > 0.6;
   if (night !== skyState.night) { skyState.night = night; mode = night ? 'night' : 'day'; apply(); }
   // the sky follows the camera, so it never gets closer or clips
   skyMesh.position.copy(camera.position); stars.position.copy(camera.position);
@@ -910,7 +1193,12 @@ const SLIDERS = [
   ['Sun', [['sunFrom', 'Noon sun from (°)', -180, 180, 1], ['tilt', 'Path tilt (°)', 0, 80, 1], ['dayShare', 'Longer days', -0.3, 0.4, 0.01],
            ['sunHue', 'Sun hue', 0, 360, 1], ['duskHue', 'Dusk hue', 0, 360, 1]]],
   ['Sky', [['skyHue', 'Sky hue', 0, 360, 1], ['skySat', 'Sky saturation', 0, 1, 0.01], ['nightHue', 'Night hue', 0, 360, 1], ['nightLevel', 'Night brightness', 0.02, 0.4, 0.01]]],
-  ['Moons', [['moons', 'Number', 0, 3, 1], ['moonSize', 'Size (°)', 0.4, 6, 0.1], ['moonSpeed', 'Speed', 0.1, 3, 0.05], ['moonFrom', 'Highest towards (°)', -180, 180, 1], ['moonTilt', 'Path tilt (°)', 0, 85, 1], ['moonHue', 'Hue', 0, 360, 1]]],
+  ['Moons', [['moons', 'Number', 0, 2, 1], ['moonSat', 'Colour strength', 0, 1, 0.01], ['moonDetail', 'Surface detail', 0, 1, 0.01],
+             ['moonGlow', 'Glow', 0, 3, 0.05], ['moonPhase', 'Phase shadow', 0, 1, 0.01]]],
+  ...[1, 2].map((n) => ['Moon ' + n, [['m' + n + 'Size', 'Size (°)', 0.4, 6, 0.1], ['m' + n + 'Speed', 'Speed', 0.02, 2, 0.01], ['m' + n + 'Peak', 'Highest at (time)', 0, 1.5, 0.01],
+             ['m' + n + 'From', 'Highest towards (°)', -180, 180, 1], ['m' + n + 'Tilt', 'Path tilt (°)', 0, 85, 1], ['m' + n + 'Swing', 'Size change on orbit', 0, 0.8, 0.01],
+             ['moon' + n + 'Hue', 'Hue', 0, 360, 1], ['moon' + n + 'Hue2', 'Surface hue', 0, 360, 1]]]),
+  ['Colour', [['accent', 'Colour touches', 0, 1, 0.01], ['palette', 'Palette', 0, 2, 1]]],
   ['Cost', [['shadowStep', 'Sun step (s)', 0.1, 3, 0.1]]],
 ];
 let timeInput = null, timeLabel = null;
@@ -925,8 +1213,8 @@ function buildSkyPanel() {
       const name = document.createElement('span'); name.textContent = label;
       const val = document.createElement('output');
       const inp = document.createElement('input'); Object.assign(inp, { type: 'range', min, max, step, value: SKY[key] });
-      const show = () => { val.textContent = key === 'time' ? clock(+inp.value) : (+inp.value).toFixed(step < 1 ? (step < 0.1 ? 2 : 1) : 0); };
-      inp.addEventListener('input', () => { SKY[key] = +inp.value; show(); if (key === 'time') skyState.lastStep = -1e9; saveSky(); });
+      const show = () => { val.textContent = key === 'palette' ? PALETTES[+inp.value].name : key === 'time' ? clock(+inp.value) : (+inp.value).toFixed(step < 1 ? (step < 0.1 ? 2 : 1) : 0); };
+      inp.addEventListener('input', () => { SKY[key] = +inp.value; show(); if (key === 'accent' || key === 'palette') applyAccents(); if (key === 'time') skyState.lastStep = -1e9; saveSky(); });
       show();
       row.append(name, val, inp); panel.appendChild(row);
       if (key === 'time') { timeInput = inp; timeLabel = val; }
@@ -947,7 +1235,7 @@ function buildSkyPanel() {
     setTimeout(() => { copy.textContent = 'Copy settings'; }, 1500);
   });
   const reset = document.createElement('button'); reset.textContent = 'Reset';
-  reset.addEventListener('click', () => { SKY = { ...SKY_DEFAULTS }; saveSky(); buildSkyPanel(); skyState.lastStep = -1e9; });
+  reset.addEventListener('click', () => { SKY = { ...SKY_DEFAULTS }; saveSky(); buildSkyPanel(); skyState.lastStep = -1e9; applyAccents(); });
   foot.append(fps, copy, reset); panel.appendChild(foot);
 }
 buildSkyPanel();
@@ -959,9 +1247,53 @@ function stepFps(now) {
   fpsState.n++;
   if (now - fpsState.t0 > 1000) {
     const el = document.getElementById('sp-fps');
-    if (el && !document.getElementById('skypanel').hidden) el.textContent = Math.round(fpsState.n * 1000 / (now - fpsState.t0)) + ' fps';
+    if (el && !document.getElementById('skypanel').hidden) el.textContent = Math.round(fpsState.n * 1000 / (now - fpsState.t0)) + ' fps · quality ' + ['high', 'medium', 'low'][quality.level];
     fpsState.n = 0; fpsState.t0 = now;
   }
+}
+
+// --- 3D printer in the workshop (Smo): prints a small toy robot from the bottom up, then shows it a
+// moment, clears the bed and starts again. The toy is cut off above the current layer with a clip
+// plane; bed, X bar and head move like a bed-slinger printer. Only moves while the workshop could
+// be seen up close (cheap anyway: a few transforms per frame).
+const PRN = { bed: null, toy: null, xbar: null, head: null, b0: null, x0: null, h0: null, plane: new THREE.Plane(new THREE.Vector3(0, -1, 0), 0),
+  printS: 48, holdS: 7, t: 0, last: 0, toyBottom: 0, toyH: 0.2 };
+function setupPrinter(root) {
+  root.traverse((o) => {
+    if (o.name === 'workshopprinter_bed') PRN.bed = o;
+    if (o.name === 'workshopprinter_toy') PRN.toy = o;
+    if (o.name === 'workshopprinter_xbar') PRN.xbar = o;
+    if (o.name === 'workshopprinter_head') PRN.head = o;
+  });
+  if (!PRN.toy) return;
+  renderer.localClippingEnabled = true;
+  PRN.toy.material.clippingPlanes = [PRN.plane];        // the accent setup already gave the toy its own material
+  PRN.toy.material.side = THREE.DoubleSide;           // the cut shows the inside instead of nothing
+  PRN.toy.castShadow = false;
+  [PRN.bed, PRN.xbar, PRN.head].forEach((o) => { if (o) o.castShadow = false; });
+  PRN.b0 = PRN.bed.position.clone(); PRN.x0 = PRN.xbar.position.clone(); PRN.h0 = PRN.head.position.clone();
+  PRN.toyBottom = PRN.toy.position.y; PRN.toyH = 0.2;
+}
+function stepPrinter(now) {
+  if (!PRN.toy) return;
+  const dt = PRN.last ? Math.min(0.1, (now - PRN.last) / 1000) : 0; PRN.last = now;
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) PRN.t = (PRN.t + dt) % (PRN.printS + PRN.holdS);
+  else PRN.t = PRN.printS * 0.6;
+  const printing = PRN.t < PRN.printS;
+  const u = printing ? PRN.t / PRN.printS : 1;
+  const layer = PRN.toyH * u;                         // height printed so far
+  const t = now / 1000;
+  // the toy's width changes with height: legs, body with arms, neck, head (roughly)
+  const half = layer < 0.055 ? 0.035 : layer < 0.12 ? 0.065 : layer < 0.13 ? 0.01 : 0.037;
+  const hx = printing ? Math.sin(t * 5.3) * half : 0.12;           // head darts over the part, parks to the side when done
+  const by = printing ? Math.sin(t * 3.1 + 1.3) * half * 0.7 : -0.06;
+  PRN.bed.position.set(PRN.b0.x, PRN.b0.y, PRN.b0.z + by);
+  PRN.toy.position.copy(PRN.bed.position);
+  const z = layer + (printing ? 0.002 : 0.05);
+  PRN.xbar.position.set(PRN.x0.x, PRN.x0.y + z, PRN.x0.z);
+  PRN.head.position.set(PRN.h0.x + hx, PRN.h0.y + z, PRN.h0.z);
+  PRN.plane.constant = PRN.toyBottom + layer;          // keep what lies below the current layer
+  PRN.toy.visible = u > 0.002;
 }
 
 const onModel = (gltf) => {
@@ -1004,6 +1336,7 @@ const onModel = (gltf) => {
   setupShowDark(gltf.scene);
   scene.add(gltf.scene);
   setupPerson(gltf.scene);
+  setupAccents(gltf.scene); setupPrinter(gltf.scene);   // accents first: cloning a material copies its clip planes
   collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
   setupFire();
@@ -1099,7 +1432,8 @@ const PLACES = [
   { id: 'camp', name: 'Camp', zone: { c: [25.4, 1.5, -5.4], r: 5.5 },
     view: { type: 'object', pos: [17.0, 6.5, -19.0], target: [25.2, 1.2, -5.2], az: 70, polar: [40, 86], dist: [8, 28], fit: 12 } },
   { id: 'workshop', name: 'Workshop', zone: { c: [10.85, 4.4, 0.0], r: 5.6 },
-    view: { type: 'cutaway', pos: [10.85, 6.2, -13.0], target: [10.85, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 } },
+    view: { type: 'cutaway', pos: [10.85, 6.2, -13.0], target: [10.85, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 },
+    onEnter: () => { PRN.t = 0; } },               // a new print starts when you arrive
   { id: 'office', name: 'Office', zone: { c: [-0.8, 4.4, 0.0], r: 5.6 },
     view: { type: 'cutaway', pos: [-0.8, 6.2, -13.0], target: [-0.8, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 } },
   { id: 'library', name: 'Library', zone: { c: [-11.6, 4.4, 0.0], r: 5.6 },
@@ -1188,6 +1522,7 @@ function stepTween(now) {
 
 function enter(p) {
   nav.place = p; nav.mode = p.view.type;
+  hidePeek(); closePanel();
   document.body.classList.add('in-place');
   setTip(null);
   showNav(p);
@@ -1197,14 +1532,15 @@ function enter(p) {
     const eye = new THREE.Vector3(...v.eye), at = new THREE.Vector3(...v.look);
     const d = at.clone().sub(eye).normalize();
     look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y); look.fov = portrait() ? v.fov + 8 : v.fov;
-    flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, () => {});
+    flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, () => showPeek(p.id));
   } else {
     const f = fitPose(new THREE.Vector3(...v.pos), new THREE.Vector3(...v.target), v.fit);
-    flyTo(f.pos, f.target, portrait() ? 50 : 32, () => { placeControls(v); controls.maxDistance = Math.max(v.dist[1], f.d * 1.2); });
+    flyTo(f.pos, f.target, portrait() ? 50 : 32, () => { placeControls(v); controls.maxDistance = Math.max(v.dist[1], f.d * 1.2); showPeek(p.id); });
   }
 }
 function leave() {
   nav.place = null; nav.mode = 'overview';
+  hidePeek(); closePanel();
   document.body.classList.remove('in-place');
   document.getElementById('nav').hidden = true;
   const h = homePose();
@@ -1248,6 +1584,7 @@ let downAt = null;
 const el = renderer.domElement;
 el.addEventListener('pointerdown', (ev) => {
   downAt = { x: ev.clientX, y: ev.clientY, t: performance.now() };
+  setTip(null);                                      // Smo: no names while grabbing and dragging
   if (nav.mode === 'inside' && !tween.active) {
     look.pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     el.setPointerCapture(ev.pointerId);
@@ -1362,12 +1699,130 @@ overviewControls();
 { const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update(); }
 if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0);
 
+// --- site GUI (Smo): menu with categories that roll down, content card and panel, settings icon.
+// Placeholder texts until the real content is written (marked as such in the page).
+const MENU = {
+  work: [
+    { place: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
+    { place: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
+    { place: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
+    { place: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
+    { place: 'new-module', t: 'New: museum & curation', s: 'Work in progress' },
+  ],
+  play: [
+    { place: 'workshop', t: '3D printer', s: 'Watch a toy being printed' },
+  ],
+  about: [
+    { place: 'hub', t: 'About Simon', s: 'Who builds this station' },
+    { content: 'cv', t: 'CV', s: 'Download as PDF' },
+    { content: 'station', t: 'The station', s: 'Why a research station' },
+  ],
+};
+const PAGES = {
+  library: { kicker: 'Work · Research', title: 'Research', line: 'Thesis, publications and talks.', lead: 'Placeholder: a short introduction to the research, the thesis on non-human communication and related publications.' },
+  office: { kicker: 'Work · Products', title: 'Products', line: 'Product management and case studies.', lead: 'Placeholder: how products were shaped, with whom, and what came of it.' },
+  workshop: { kicker: 'Work · Technology & AI', title: 'Technology & AI', line: 'Prototypes, devices and AI work.', lead: 'Placeholder: technical projects, prototypes and work with machine learning.' },
+  showroom: { kicker: 'Work · Media & installations', title: 'Media & installations', line: 'Immersive sound, projection and exhibitions.', lead: 'Placeholder: media works, installations and exhibitions.' },
+  'new-module': { kicker: 'Work · In progress', title: 'Museum & curation', line: 'The module being built.', lead: 'Placeholder: what is being built next.' },
+  hub: { kicker: 'About', title: 'Simon Winkler', line: 'Research, products, technology and media.', lead: 'Placeholder: a short bio, what connects the fields, and what is next.' },
+  relay: { kicker: 'Contact', title: 'Get in touch', line: 'Email and links.', lead: 'Placeholder: email address, profiles and where to find more.', cards: 0 },
+  cv: { kicker: 'About', title: 'CV', line: '', lead: 'Placeholder: the CV as a page and as a PDF download.', cards: 0 },
+  station: { kicker: 'About', title: 'The station', line: '', lead: 'Placeholder: a station that moves and gains modules over time, like a career across several fields. Each building holds one kind of work; the camp, the dish and the relay hold the person.', cards: 0 },
+};
+const site = document.getElementById('site'), drop = document.getElementById('drop'), dropList = document.getElementById('drop-list');
+const measureHeader = () => document.documentElement.style.setProperty('--hh', document.querySelector('.site .bar').offsetHeight + 1 + 'px');
+measureHeader(); window.addEventListener('resize', measureHeader); document.fonts && document.fonts.ready.then(measureHeader);
+let dropCat = null, dropTimer = 0;
+const phoneMenu = () => matchMedia('(max-width: 720px)').matches;
+function renderDrop(cat) {
+  const cats = cat === 'all' ? ['work', 'play', 'about', 'contact'] : [cat];
+  dropList.innerHTML = '';
+  cats.forEach((c) => {
+    if (cat === 'all') { const h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = c; dropList.appendChild(h); }
+    const items = c === 'contact' ? [{ place: 'relay', t: 'Get in touch', s: 'Email and links' }] : MENU[c];
+    items.forEach((it) => {
+      const b = document.createElement('button'); b.className = 'drop-item';
+      b.innerHTML = `<span class="t">${it.t}</span><span class="s">${it.s}</span>`;
+      b.addEventListener('click', () => { closeDrop(); go(it); });
+      b.addEventListener('mouseenter', () => { const p = it.place && PLACES.find((q) => q.id === it.place); if (p && !nav.place) showTip(p); });
+      b.addEventListener('mouseleave', () => setTip(null));
+      dropList.appendChild(b);
+    });
+  });
+}
+function openDrop(cat) {
+  clearTimeout(dropTimer);
+  if (dropCat !== cat) renderDrop(cat);
+  dropCat = cat; drop.classList.add('open');
+  document.querySelectorAll('#menu button').forEach((b) => b.setAttribute('aria-expanded', String(b.dataset.cat === cat)));
+  document.getElementById('menu-toggle').setAttribute('aria-expanded', String(cat === 'all'));
+}
+function closeDrop() {
+  drop.classList.remove('open'); dropCat = null; setTip(null);
+  document.querySelectorAll('#menu button').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  document.getElementById('menu-toggle').setAttribute('aria-expanded', 'false');
+}
+document.querySelectorAll('#menu button').forEach((b) => {
+  b.addEventListener('mouseenter', () => { if (matchMedia('(hover: hover)').matches) openDrop(b.dataset.cat); });
+  b.addEventListener('click', () => (dropCat === b.dataset.cat ? closeDrop() : openDrop(b.dataset.cat)));
+});
+site.addEventListener('mouseleave', () => { dropTimer = setTimeout(closeDrop, 250); });
+site.addEventListener('mouseenter', () => clearTimeout(dropTimer));
+document.getElementById('menu-toggle').addEventListener('click', () => (dropCat ? closeDrop() : openDrop('all')));
+document.getElementById('home-link').addEventListener('click', (e) => { e.preventDefault(); closeDrop(); closePanel(); setRoute(''); });
+function go(it) {
+  if (it.place) { pendingPanel = false; if (nav.place && nav.place.id === it.place) showPeek(it.place); else setRoute(it.place); }
+  else if (it.content) openPanel(it.content);
+}
+// content: small card on arrival, the big panel on "Read"; while the panel is open the 3D pauses
+const peek = document.getElementById('peek'), panel = document.getElementById('panel');
+let peekId = null, pendingPanel = false;
+function showPeek(id) {
+  const c = PAGES[id];
+  if (!c) return hidePeek();
+  peekId = id;
+  document.getElementById('peek-kicker').textContent = c.kicker;
+  document.getElementById('peek-title').textContent = c.title;
+  document.getElementById('peek-line').textContent = c.line;
+  peek.classList.add('show');
+}
+function hidePeek() { peek.classList.remove('show'); peekId = null; }
+document.getElementById('peek-read').addEventListener('click', () => peekId && openPanel(peekId));
+function openPanel(id) {
+  const c = PAGES[id]; if (!c) return;
+  const n = c.cards === 0 ? 0 : 3;
+  const cards = Array.from({ length: n }, (_, i) => `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`).join('');
+  document.getElementById('panel-body').innerHTML = `<div class="kicker">${c.kicker}</div><h2>${c.title}</h2><p class="lead">${c.lead}</p>
+    <p class="note">Placeholder content. Real texts, images and videos follow.</p><div class="cards">${cards}</div>
+    <div class="panel-actions"><a class="btn" href="#" onclick="return false">Open as page ↗</a></div>`;
+  panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false'); panel.scrollTop = 0; document.body.classList.add('panel-open');
+  hidePeek(); closeDrop();
+  setTimeout(() => setPaused(true), 470);              // pause once the panel has slid in
+}
+function closePanel() {
+  if (!panel.classList.contains('open')) return;
+  setPaused(false);
+  panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); document.body.classList.remove('panel-open');
+  if (nav.place) showPeek(nav.place.id);
+}
+document.getElementById('panel-close').addEventListener('click', closePanel);
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) { e.stopImmediatePropagation(); closePanel(); } }, true);
+// settings icon: the old buttons (day/night, roof, places, sky, reset)
+const settingsBox = document.querySelector('.controls');
+settingsBox.hidden = true;
+document.getElementById('gear').addEventListener('click', () => {
+  settingsBox.hidden = !settingsBox.hidden;
+  document.getElementById('gear').setAttribute('aria-expanded', String(!settingsBox.hidden));
+  if (settingsBox.hidden) { document.getElementById('skypanel').hidden = true; press('btn-sky', false); }
+});
+
 // --- day / night: the sky cycle (stepSky) sets the light continuously and switches `mode` at dusk
 // and dawn; apply() handles the switches that are either on or off
 let mode = 'day';
 const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', String(on));
 function apply() {
   const night = mode === 'night';
+  document.body.classList.toggle('is-night', night);
   press('btn-day', !night); press('btn-night', night);
   if (PROJ.units.length && (PROJ.to === 1) !== night) setProjectors(night);
   if (fire.mesh) { fire.mesh.visible = night; if (fire.light) fire.light.intensity = night ? 9 : 0; }
@@ -1398,22 +1853,35 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
-renderer.setAnimationLoop((now) => {
+function frame(now) {
   stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now);
-  stepPlaces(now); stepSky(now); stepShowDark(now); stepPerson(now); stepFps(now);
+  stepPlaces(now); stepSky(now); stepShowDark(now); stepPerson(now); stepPrinter(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
   if (roof.start || PROJ.start) markShadows();                      // things that cast shadows are moving
-  if (shadowDirty) { renderer.shadowMap.needsUpdate = true; shadowDirty = false; }
+  flushShadows(); stepQuality(now);
   composer.render();
-});
+}
+// the 3D only pauses while a text or content panel is open (Smo); everything else keeps running
+let paused = false;
+function setPaused(on) {
+  if (on === paused) return;
+  paused = on;
+  renderer.setAnimationLoop(on ? null : frame);
+  if (!on) { quality.settle = performance.now() + 3000; }      // no quality step from the gap
+}
+renderer.setAnimationLoop(frame);
 
 // hooks used for test renders
 window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
-window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days, SKY.moonFrom, SKY.moonTilt, SKY.moonSpeed]); return out; };
-window.__sky = (o) => { Object.assign(SKY, o || {}); skyState.lastStep = -1e9; return { ...SKY, d: skyState.d, night: skyState.night }; };
+window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days]); return out; };
+window.__sky = (o) => { Object.assign(SKY, o || {}); applyAccents(); skyState.lastStep = -1e9; return { ...SKY, d: skyState.d, night: skyState.night }; };
 window.__cam = (c) => { if (c.free) { controls.maxPolarAngle = Math.PI; controls.minDistance = 0.01; } camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
 window.__go = (id) => setRoute(id || '');
+window.__gui = { openDrop, closeDrop, openPanel, closePanel, state: () => ({ drop: dropCat, peek: peekId, panel: panel.classList.contains('open'), paused }) };
+window.__print = (u) => { PRN.t = u * PRN.printS; };
+window.__lights = () => { const c = {}; scene.traverse((o) => { if (o.isLight) { const k = o.type + (o.castShadow ? '+shadow' : ''); c[k] = (c[k] || 0) + 1; } }); return JSON.stringify(c); };
+window.__quality = (l) => { if (l !== undefined) setQuality(l); return quality.level; };
 window.__personRun = (sec) => { let t = person.last || performance.now(); for (let k = 0; k < sec * 20; k++) { t += 50; stepPerson(t); } return { i: person.i, pos: person.root.position.toArray().map((n) => +n.toFixed(2)), boxAt: person.boxAt, carrying: person.carrying }; };
 window.__look = (yawDeg, pitchDeg) => { look.yaw += yawDeg * Math.PI / 180; look.pitch = Math.max(-1.1, Math.min(1.1, look.pitch + (pitchDeg || 0) * Math.PI / 180)); };
 window.__zoneScreen = (id) => { const p = PLACES.find((q) => q.id === id); const q = new THREE.Vector3(...p.zone.c).project(camera);
