@@ -211,6 +211,9 @@
   .msg-status { margin: 0; min-height: 1.4em; font: 400 13px/1.4 var(--font-display); color: var(--glass-soft); }
   .msg-status[data-kind="error"] { color: #b3402d; }
   body.is-night .msg-status[data-kind="error"] { color: #f08a72; }
+  /* the safari owns the screen: its HUD is the only GUI while a run is on */
+  body.safari-on .site, body.safari-on .gear, body.safari-on .controls, body.safari-on .skypanel,
+  body.safari-on .nav, body.safari-on .markers, body.safari-on .campback, body.safari-on .camp-hint, body.safari-on .tip { display: none !important; }
   .fade { position: fixed; inset: 0; z-index: 30; background: #0d0c0a; opacity: 0; pointer-events: none; transition: opacity .28s; }
   .fade.on { opacity: 1; }
   /* the album: a travel scrapbook over the paused scene; it never grows past the photos' own pixels */
@@ -1828,7 +1831,7 @@ if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0)
 //   figure: it stops, turns to the camera and asks for a message (the form is camp/message.js)
 //   van:    step inside (camp/van.js, loaded on first use): the start screen, the album, the camera
 const camp = { view: null, seq: 0, home: null, hover: null, armed: null, fov: 50, last: 0, van: null, vanLoading: null, index: null,
-  vanMeshes: [], fireMeshes: [], fireLit: false, stick: null, jab: null, album: null, msgOpen: false };
+  vanMeshes: [], fireMeshes: [], fireLit: false, stick: null, jab: null, album: null, msgOpen: false, safari: null, safariStarting: false };
 const VAN = { x: 27.0, y: 4.2, heading: THREE.MathUtils.degToRad(80) };       // where vehicle.py stands the van (model coordinates)
 const vanAt = (x, y, z, out = new THREE.Vector3()) => {                      // van coordinates (x forward, y left, z up) -> viewer
   const c = Math.cos(VAN.heading), s = Math.sin(VAN.heading);
@@ -1951,7 +1954,7 @@ function campBack() {
 }
 campEls.back.addEventListener('click', campBack);
 window.addEventListener('keydown', (e) => {
-  if (!camp.view || camp.view === 'leaving') return;
+  if (!camp.view || camp.view === 'leaving' || camp.safari) return;        // the safari takes its own keys
   const typing = e.target.closest && e.target.closest('input, textarea');
   if (camp.album && !typing && camp.album.key(e)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
   if (e.key === 'Escape') { e.stopImmediatePropagation(); campBack(); return; }
@@ -1959,6 +1962,11 @@ window.addEventListener('keydown', (e) => {
 }, true);
 // leaving the camp some other way (menu, browser back): put everything back at once
 function campReset() {
+  if (camp.safari) {
+    const s = camp.safari; camp.safari = null; s.dispose();
+    document.body.classList.remove('safari-on');
+    station.resume(); markShadows(); resize();
+  }
   if (!camp.view && !camp.fireLit) return;
   camp.seq++;
   person.talk = null;
@@ -2265,8 +2273,41 @@ function closeAlbum() {
   setPaused(false);
   backInVan();
 }
-// the start screen picks a route; the safari itself is Phase 2 (until then the screen says COMING SOON)
-function startExploration(route, tod) { /* Phase 2: fade out, station.pause(), import('./safari/…'), build the route for `tod` */ }
+// ---- the start screen picks a route, and the Photo Safari takes over (Phase 2). The station keeps
+// its scene in memory, paused, while the safari runs on the same renderer; leaving disposes the
+// safari and the station picks up exactly where it stood, with the visitor back in the van.
+async function startExploration(route, tod) {
+  if (camp.safari || camp.safariStarting) return;
+  camp.safariStarting = true;
+  const tok = ++camp.seq;
+  await fade(true);
+  try {
+    const { startSafari } = await import('./safari/index.js');
+    if (tok !== camp.seq) { camp.safariStarting = false; fade(false); return; }
+    station.pause();
+    document.body.classList.add('safari-on');
+    camp.safari = await startSafari({ renderer, route, tod, host, onExit: endSafari });
+  } catch (err) {
+    console.error('The safari could not start', err);
+    document.body.classList.remove('safari-on');
+    station.resume();
+  }
+  camp.safariStarting = false;
+  fade(false);
+}
+async function endSafari(opts = {}) {
+  const s = camp.safari;
+  if (!s) return;
+  const again = opts.again ? { route: s.route.id, tod: s.tod } : null;
+  await fade(true);
+  camp.safari = null;
+  s.dispose();
+  document.body.classList.remove('safari-on');
+  station.resume(); markShadows(); resize();
+  if (again) { await startExploration(again.route, again.tod); return; }
+  if (camp.van) camp.van.screen.reset();
+  fade(false);
+}
 
 function stepCamp(now) {
   const dt = camp.last ? Math.min(0.1, (now - camp.last) / 1000) : 0; camp.last = now;
@@ -2500,6 +2541,7 @@ const campScreen = (id) => {                           // tests: where on screen
   return [r.left + (c.x + 1) / 2 * r.width, r.top + (1 - c.y) / 2 * r.height];
 };
 window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => camp.armed, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
+window.__safari = () => camp.safari;
 window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
 

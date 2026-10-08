@@ -9,9 +9,12 @@
 // ground at z = 0, the body floor at z = 0.95. The page places the group on the van in the model.
 import * as THREE from 'three';
 
+// `ready` says whether the route has its terrain yet; the screen shows COMING SOON for the others.
+// The test range is the placeholder Phase 2 drives on and goes once the canyon and the jungle land.
 export const ROUTES = [
   { id: 'canyon', name: 'CANYON', line: 'RIVER · CLIFF PATH · DEEP POOL', ready: false },
   { id: 'jungle', name: 'JUNGLE', line: 'CANOPY · BRACKISH RIVER CROSSING', ready: false },
+  { id: 'test', name: 'TEST RANGE', line: 'ENGINE TEST · PLACEHOLDER GROUND', ready: true },
 ];
 export const VIEWS = {
   seat: { eye: [-0.95, 0.0, 2.42], look: [1.35, 0.12, 2.08] },     // on the rear bench, looking forward
@@ -244,8 +247,8 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
       item('start', '> START EXPLORATION', 400, 56);
     } else if (UI.state === 'routes') {
       text('SELECT ROUTE', 72, 165, 38, dim, 600);
-      ROUTES.forEach((r, i) => item(r.id, '> ' + r.name, 268 + i * 140, 54, r.line));
-      item('back', '< BACK', 560, 40);
+      ROUTES.forEach((r, i) => item(r.id, '> ' + r.name, 250 + i * 118, 46, r.line));
+      item('back', '< BACK', 600, 38);
     } else if (UI.state === 'soon') {
       const r = ROUTES.find((q) => q.id === UI.route) || ROUTES[0];
       text('ROUTE: ' + r.name, 72, 190, 46);
