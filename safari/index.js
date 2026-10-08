@@ -50,7 +50,7 @@ function makeSky(scene, P, dark) {
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
-  const stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xdfe7ff, size: 1.7, sizeAttenuation: false, transparent: true, opacity: 0.9, depthWrite: false }));
+  const stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xdfe7ff, size: 1.7, sizeAttenuation: false, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
   stars.frustumCulled = false;
   scene.add(stars);
   return dome;
@@ -88,14 +88,14 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
       l.position.set(x, 1.1, -2.1); l.target.position.set(x * 1.6, -0.6, -26);
       rig.rig.add(l, l.target);
     });
-    const torch = new THREE.SpotLight(0xe8f2ff, tod === 'night' ? 70 : 28, 110, 0.32, 0.7, 1.3);
+    const torch = new THREE.SpotLight(0xdfe6f2, tod === 'night' ? 48 : 22, 110, 0.32, 0.7, 1.3);
     torch.position.set(0, 0, 0); torch.target.position.set(0, 0, -30);
     rig.camera.add(torch, torch.target);
   }
 
   // the HUD hangs in the body, not in the stage: the stage's own canvas rules are not meant for it
   const hud = createHud({ route: R, tod, film: FILM, pellets: PELLETS, on: {
-    exit: () => (S.shots.length && !S.over ? finish() : leave()),
+    exit: () => quit(),
     feed: () => { audio.start(); throwFeed(); },
     mute: () => { audio.start(); hud.setMuted(audio.mute(!audio.muted)); },
   } });
@@ -220,6 +220,8 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     if (S.dead) return;
     onExit(opts);
   }
+  // Exit and Esc: with photos in the bag the run ends in the report, otherwise straight back to the van
+  const quit = () => (!S.over && S.shots.length ? finish() : leave());
 
   // ---- input: the HUD element is on top of everything, so the station never sees any of it
   const abort = new AbortController(), sig = { signal: abort.signal };
@@ -268,9 +270,11 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     if (dx || dy) rig.nudge(dx * 0.035, -dy * 0.025);
   }
   window.addEventListener('keydown', (ev) => {
-    if (ev.target.closest && ev.target.closest('input, textarea')) return;
+    const t = ev.target;
+    if (t && t.closest && t.closest('input, textarea, .sf-report')) return;      // the report has its own keys
     const k = ev.key;
-    if (k === 'Escape') { ev.stopImmediatePropagation(); ev.preventDefault(); S.over ? leave() : finish(); return; }
+    if ((k === ' ' || k === 'Enter') && t && t.closest && t.closest('button')) return;   // a focused button acts
+    if (k === 'Escape') { ev.stopImmediatePropagation(); ev.preventDefault(); quit(); return; }
     if (S.over) return;
     if (k === ' ' || k === 'Spacebar') { ev.preventDefault(); ev.stopImmediatePropagation(); audio.start(); shoot(); }
     else if (k === 'f' || k === 'F') { ev.stopImmediatePropagation(); audio.start(); throwFeed(); }

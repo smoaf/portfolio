@@ -38,7 +38,7 @@ export const ROUTE = {
     dawn: { top: 0x2d4a74, horizon: 0xe6a173, ground: 0x6b5f54, fog: 0xc9a089, near: 40, far: 330, sun: [0xffd0a0, 1.5, [-0.5, 0.18, 1]], hemi: [0xcfd9ef, 0x6c5a44, 0.55], amb: 0.25 },
     day: { top: 0x5b8fd0, horizon: 0xc9dbe8, ground: 0x8d7f6d, fog: 0xc3cfd6, near: 70, far: 430, sun: [0xfff0d8, 2.4, [0.6, 0.72, 0.35]], hemi: [0xdce8f5, 0x8a7c63, 0.75], amb: 0.2 },
     dusk: { top: 0x24335c, horizon: 0xe08a5a, ground: 0x59493c, fog: 0xa9775f, near: 35, far: 300, sun: [0xffb070, 1.3, [0.75, 0.14, -0.5]], hemi: [0xb9b0c9, 0x5a4636, 0.5], amb: 0.22 },
-    night: { top: 0x070c1a, horizon: 0x16253f, ground: 0x1b2230, fog: 0x101a2c, near: 20, far: 190, sun: [0x9ab4e8, 0.35, [-0.3, 0.6, -0.6]], hemi: [0x3b4e74, 0x16181f, 0.35], amb: 0.12 },
+    night: { top: 0x070c1a, horizon: 0x1b2e4d, ground: 0x6a6f78, fog: 0x15213a, near: 25, far: 230, sun: [0x9ab4e8, 0.9, [-0.3, 0.6, -0.6]], hemi: [0x4d6397, 0x1d2029, 1.0], amb: 0.5 },
   },
   ambience: {
     day: { wind: 0.05, windCut: 480, band: 0.016, bandHz: 2600 },
@@ -89,7 +89,7 @@ export const ROUTE = {
     const pos = gg.attributes.position;
     const col = new Float32Array(pos.count * 3);
     const H = new Float32Array(pos.count);              // the heights, kept for the fast lookup below
-    const sand = new THREE.Color(P.ground), green = new THREE.Color(night ? 0x24301f : 0x6d7a4a), wet = new THREE.Color(night ? 0x16222b : 0x5d6b5a);
+    const sand = new THREE.Color(P.ground), green = new THREE.Color(night ? 0x47523c : 0x6d7a4a), wet = new THREE.Color(night ? 0x2c3b47 : 0x5d6b5a);
     const c = new THREE.Color();
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i);
@@ -117,7 +117,7 @@ export const ROUTE = {
 
     // ---- the pond: a flat sheet with a little shine, brighter at night where the sky is in it
     const water = new THREE.Mesh(geo(new THREE.CircleGeometry(POND.r * 0.92, 40)), mat({
-      color: night ? 0x12243a : 0x3f6f82, roughness: 0.16, metalness: 0.35, transparent: true, opacity: 0.86,
+      color: night ? 0x1d3550 : 0x3f6f82, roughness: 0.16, metalness: 0.35, transparent: true, opacity: 0.86,
       emissive: night ? 0x0a1a2c : 0x000000, emissiveIntensity: night ? 0.6 : 0,
     }));
     water.rotation.x = -Math.PI / 2;
@@ -154,20 +154,20 @@ export const ROUTE = {
       return im;
     };
     const rockSpots = place(110, { minRoad: 7, maxR: 220 });
-    const rocks = instance(new THREE.IcosahedronGeometry(1, 0), lam({ color: night ? 0x3a3c42 : 0x9b8e7d, flatShading: true }),
+    const rocks = instance(new THREE.IcosahedronGeometry(1, 0), lam({ color: night ? 0x6c7076 : 0x9b8e7d, flatShading: true }),
       rockSpots, (r) => ({ x: 0.7 + r * 2.6, y: 0.5 + r * 1.9, z: 0.8 + r * 2.4, lift: -0.3 }));
     const treeSpots = place(64, { minRoad: 12, maxR: 215 });
-    const trunks = instance(new THREE.CylinderGeometry(0.22, 0.42, 4.6, 6), lam({ color: night ? 0x2c2721 : 0x6b543c }),
+    const trunks = instance(new THREE.CylinderGeometry(0.22, 0.42, 4.6, 6), lam({ color: night ? 0x4a4038 : 0x6b543c }),
       treeSpots, () => ({ x: 1, y: 0.8 + rand() * 0.6, z: 1, lift: 1.9 }));
     // flat, wide crowns, after the watercolour tree sheet in the references
     const crownGeo = new THREE.SphereGeometry(1, 10, 6);
     crownGeo.scale(1, 0.42, 1);
-    const crowns = instance(crownGeo, lam({ color: night ? 0x1d2a1e : 0x6f8046, flatShading: true }),
+    const crowns = instance(crownGeo, lam({ color: night ? 0x3c4a35 : 0x6f8046, flatShading: true }),
       treeSpots, () => ({ x: 3 + rand() * 2.6, y: 2.4 + rand() * 1.4, z: 3 + rand() * 2.6, lift: 5.1 }));
     const bushSpots = place(170, { minRoad: 5, maxR: 215 });
     const bushGeo = new THREE.IcosahedronGeometry(1, 1);
     bushGeo.scale(1, 0.62, 1);
-    const bushes = instance(bushGeo, lam({ color: night ? 0x1b2419 : 0x5f7342, flatShading: true }),
+    const bushes = instance(bushGeo, lam({ color: night ? 0x36432f : 0x5f7342, flatShading: true }),
       bushSpots, () => ({ x: 0.6 + rand() * 1.1, y: 0.5 + rand() * 0.9, z: 0.6 + rand() * 1.1, lift: 0.1 }));
     // reeds in a band at the water's edge, so the pond is not a bare disc
     const reedSpots = [];
@@ -177,7 +177,7 @@ export const ROUTE = {
       if (nearRoad(x, z) < 8) continue;
       reedSpots.push(new THREE.Vector3(x, groundY(x, z), z));
     }
-    const reeds = instance(new THREE.ConeGeometry(0.22, 1.5, 5), lam({ color: night ? 0x273223 : 0x8c9452 }),
+    const reeds = instance(new THREE.ConeGeometry(0.22, 1.5, 5), lam({ color: night ? 0x4c5641 : 0x8c9452 }),
       reedSpots, () => ({ x: 0.7 + rand() * 0.7, y: 0.5 + rand() * 0.8, z: 0.7 + rand() * 0.7, lift: 0.7 }));
 
     // ---- the road itself, laid on the ground as a pale band
@@ -192,7 +192,7 @@ export const ROUTE = {
     });
     band.setAttribute('position', new THREE.Float32BufferAttribute(bv, 3));
     band.setIndex(bi); band.computeVertexNormals();
-    const track = new THREE.Mesh(geo(band), lam({ color: night ? 0x2e2a25 : 0xb5a68d }));
+    const track = new THREE.Mesh(geo(band), lam({ color: night ? 0x6a6257 : 0xb5a68d }));
     scene.add(track);
 
     // ---- the path the van drives: the road, lifted to the ground height
@@ -315,7 +315,7 @@ export const ROUTE = {
       }
       scene.add(root);
       return makeFlock({
-        species: SPECIES.glider, root, bodies, centre, radius: 30, height: 20, speed: 0.2, climb: 5,
+        species: SPECIES.glider, root, bodies, centre, radius: 24, height: 15, speed: 0.2, climb: 4,
         pose(b, i, t, state) {
           const flap = state === 'rare' ? 0.1 : 0.55;
           b.userData.wings.forEach((w, s) => { w.rotation.z = (s ? 1 : -1) * Math.sin(t * 2.6 + i) * flap; });
