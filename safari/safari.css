@@ -66,6 +66,34 @@
 .sf-say.on { opacity: 1; transform: translate(-50%, -8px); }
 .sf-say b { display: block; font-size: 26px; letter-spacing: 0.06em; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
 
+/* the name of the stretch the van rolls into, top middle */
+.sf-title { position: absolute; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translate(-50%, -6px); text-align: center;
+  pointer-events: none; opacity: 0; text-shadow: 0 2px 12px rgba(0,0,0,0.55); max-width: calc(100vw - 32px); }
+.sf-title b { display: block; font-size: 22px; letter-spacing: 0.08em; font-weight: 600; }
+.sf-title span { display: block; margin-top: 4px; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vf); }
+.sf-title.on { animation: sf-title 3.6s ease both; }
+@keyframes sf-title { 0% { opacity: 0; transform: translate(-50%, -6px); } 12%, 78% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 4px); } }
+
+/* below the surface: the frame goes blue-green at the rim, like a porthole */
+.sf-sea { position: absolute; inset: 0; pointer-events: none; opacity: var(--under, 0);
+  background: radial-gradient(ellipse at 50% 46%, rgba(20, 80, 90, 0) 48%, rgba(6, 40, 52, 0.55) 86%, rgba(3, 22, 30, 0.85) 100%); }
+/* the hatches: two armoured shutters close over the view and open again */
+.sf-hatch { position: absolute; inset: 0; pointer-events: none; }
+.sf-hatch i { position: absolute; left: 0; right: 0; height: 51%; background:
+  repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 46px), linear-gradient(#3b3a36, #24231f);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.6); transform: translateY(-101%); }
+.sf-hatch i:nth-child(2) { bottom: 0; transform: translateY(101%); }
+.sf-hatch i:nth-child(1) { top: 0; border-bottom: 3px solid #d8a542; }
+.sf-hatch i:nth-child(2) { border-top: 3px solid #d8a542; }
+.sf-hatch span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: #ffd27a; opacity: 0; white-space: nowrap; text-shadow: 0 0 8px rgba(255, 190, 80, 0.7); }
+.sf-hatch.shut i:nth-child(1) { animation: sf-shut-a 2.1s ease-in-out both; }
+.sf-hatch.shut i:nth-child(2) { animation: sf-shut-b 2.1s ease-in-out both; }
+.sf-hatch.shut span { animation: sf-shut-t 2.1s ease both; }
+@keyframes sf-shut-a { 0% { transform: translateY(-101%); } 30%, 62% { transform: translateY(0); } 100% { transform: translateY(-101%); } }
+@keyframes sf-shut-b { 0% { transform: translateY(101%); } 30%, 62% { transform: translateY(0); } 100% { transform: translateY(101%); } }
+@keyframes sf-shut-t { 0%, 26% { opacity: 0; } 34%, 60% { opacity: 1; } 70%, 100% { opacity: 0; } }
+
 /* the field report at the end: the best shot per species, in the polaroid style of the van */
 .sf-report { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; background: rgba(14, 12, 10, 0.86);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); padding: calc(20px + env(safe-area-inset-top, 0px)) var(--pad) 28px;
@@ -104,6 +132,7 @@
 
 /* while the report is up, the viewfinder and the tools are out of the way */
 .safari.reporting .sf-finder, .safari.reporting .sf-read, .safari.reporting .sf-top-right,
+.safari.reporting .sf-title, .safari.reporting .sf-sea,
 .safari.reporting .sf-tools, .safari.reporting .sf-feed, .safari.reporting .sf-help, .safari.reporting .sf-rail { display: none; }
 
 /* a short line of help on the first run, gone after a few seconds */
@@ -122,4 +151,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .safari .sf-shot, .sf-flash.on, .sf-say { transition: none; animation: none; }
+  .sf-hatch.shut i, .sf-hatch.shut span { animation-duration: .01s; }
+  .sf-title.on { animation: none; opacity: 1; }
 }
