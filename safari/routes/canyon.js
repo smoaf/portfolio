@@ -272,7 +272,7 @@ export const ROUTE = {
     const shafts = [];
     for (let i = 0; i < 16; i++) {
       const z = lerp(POOL.z0 + 50, POOL.z1 - 40, rand()), d = (rand() - 0.5) * 50;
-      shafts.push({ p: new THREE.Vector3(XC(z) + d, WATER - 0.2, z), s: [1.5 + rand() * 2.5, 16, 1.5 + rand() * 2.5], rx: Math.PI + 0.18, rz: 0.12, ry: 0 });
+      shafts.push({ p: new THREE.Vector3(XC(z) + d, WATER - 0.2, z), s: [1.5 + rand() * 2.5, 16, 1.5 + rand() * 2.5], rx: 0.16, rz: 0.1, ry: 0 });
     }
     const shaftGeo = geo(new THREE.CylinderGeometry(1, 0.35, 1, 10, 1, true).translate(0, -0.5, 0));
     // uv.y: 1 at the top (surface), 0 deep down; the cylinder's own uv runs the other way
