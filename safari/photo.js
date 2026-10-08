@@ -17,7 +17,7 @@ const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3
 const ray = new THREE.Raycaster();
 
 // how much of the frame height the creature covers
-function framing(camera, point, radius, dist) {
+function framing(camera, radius, dist) {
   const half = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dist;
   return THREE.MathUtils.clamp(radius / half, 0, 2);
 }
@@ -39,7 +39,7 @@ export function judge({ camera, creatures, colliders, aspect }) {
     if (dist > 160) continue;
     vB.copy(vA).project(camera);
     if (vB.z > 1 || Math.abs(vB.x) > 1.08 || Math.abs(vB.y) > 1.08) continue;
-    const f = framing(camera, vA, c.radius, dist);
+    const f = framing(camera, c.radius, dist);
     const size = sizeScore(f);
     if (size <= 0.02) continue;
     // centring: the middle of the frame counts most, the corners least

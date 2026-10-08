@@ -104,7 +104,7 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
   const store = localStore();
 
   // ---- state
-  const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false, dragging: 0 };
+  const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false };
   const pellets = [];
   const pelletGeo = keep(new THREE.SphereGeometry(0.16, 8, 6));
   const pelletMat = keep(new THREE.MeshStandardMaterial({ color: 0xd9b36a, emissive: dark ? 0x3a2a10 : 0x000000, roughness: 0.8 }));
@@ -121,6 +121,23 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     const call = c.species.call || {};
     audio.call({ x: d.x, y: d.y, z: -d.z, hz: (call.hz || 700) * (why === 'flee' ? 1.3 : 1), kind: why === 'eat' ? 'noise' : (call.kind || 'chirp'), vol: why === 'rare' ? 0.6 : 0.4 });
   };
+
+  // the bed on its own is just wind: now and then something calls from somewhere out in the range
+  // (birds by day, insects after dark). Nothing is scheduled ahead, so a pause costs nothing.
+  const AMBIENT = {
+    day: { every: 4.5, kind: 'chirp', hz: 1500, vol: 0.18 },
+    dawn: { every: 3.2, kind: 'trill', hz: 1700, vol: 0.22 },
+    dusk: { every: 4.0, kind: 'hoot', hz: 420, vol: 0.2 },
+    night: { every: 2.6, kind: 'chirp', hz: 3400, vol: 0.12 },
+  };
+  let nextAmbient = 3;
+  function stepAmbient() {
+    if (!audio.live || S.t < nextAmbient) return;
+    const a = AMBIENT[tod] || AMBIENT.day;
+    nextAmbient = S.t + a.every * (0.6 + Math.random());
+    const ang = Math.random() * Math.PI * 2, r = 8 + Math.random() * 30;
+    audio.call({ x: Math.cos(ang) * r, y: 2 + Math.random() * 10, z: Math.sin(ang) * r, hz: a.hz * (0.85 + Math.random() * 0.3), kind: a.kind, vol: a.vol });
+  }
 
   function throwFeed() {
     if (S.pellets <= 0 || S.over) return;
@@ -195,6 +212,7 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     }
     if (!poi && world.poi) poi = world.poi(rig.progress);
     stepPellets(dt);
+    stepAmbient();
     audio.drive(speed);
     if (rig.state.bump > lastBump + 0.18) audio.bump(Math.min(1, rig.state.bump));   // only the new jolts make a sound
     lastBump = rig.state.bump;

@@ -133,7 +133,8 @@ export function makeFlock({ species, root, bodies, centre, radius = 26, height =
     home: centre.clone(), visible: true, bodies,
     phase: bodies.map((_, i) => (i / bodies.length) * Math.PI * 2),
   };
-  c.photoPoint = (out) => out.copy(c.lead ? c.lead.position : c.root.position).add(c.root.position.clone().sub(c.root.position));
+  // the photo subject is whichever bird is nearest the lens
+  c.photoPoint = (out) => (c.lead ? c.lead.getWorldPosition(out) : out.copy(centre));
   c.forward = (out) => out.copy(c.leadDir || vA.set(0, 0, 1));
   c.step = (dt, env) => {
     c.t += dt;
@@ -157,6 +158,5 @@ export function makeFlock({ species, root, bodies, centre, radius = 26, height =
     if (best) c.leadDir = vB.set(Math.sin(best.rotation.y), 0, Math.cos(best.rotation.y)).clone();
     c.root.updateMatrixWorld();
   };
-  c.photoPoint = (out) => (c.lead ? out.copy(c.lead.getWorldPosition(vA)) : out.copy(centre));
   return c;
 }
