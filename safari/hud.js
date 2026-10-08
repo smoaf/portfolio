@@ -122,6 +122,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       });
       if (!picks.length) grid.innerHTML = '<p class="sf-empty">No species in the album this time. The animals come closer when you feed them, and the lens zooms in for the shy ones.</p>';
       root.appendChild(report);
+      root.classList.add('reporting');                 // the viewfinder and the tools step aside
       requestAnimationFrame(() => report.classList.add('on'));
 
       const listEl = report.querySelector('#sf-list');

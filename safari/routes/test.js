@@ -15,7 +15,9 @@ const base = (x, z) => 3.4 * Math.sin(x * 0.0112) * Math.cos(z * 0.0097) + 2.1 *
 // the detail on top: small hills and dips the road is flattened out of
 const detail = (x, z) => 1.5 * Math.sin(x * 0.047 + 1.3) * Math.sin(z * 0.041) + 0.8 * Math.cos(x * 0.082 - 0.4) * Math.sin(z * 0.075 + 1.1);
 
-const POND = { x: 86, z: -74, r: 34, deep: 3.2 };     // the low ground the water sits in
+// the loop the van drives, and the pond beside its second set piece
+const RING = [[0, -150], [92, -128], [140, -56], [120, 34], [52, 92], [-40, 108], [-124, 72], [-152, -12], [-108, -104], [-54, -144]];
+const POND = { x: 2, z: 56, r: 30, deep: 3.4 };      // the low ground the water sits in, 45 m off the road
 
 function raw(x, z) {
   const r = Math.hypot(x, z);
@@ -57,11 +59,13 @@ export const ROUTE = {
     const night = tod === 'night', dim = night || tod === 'dusk';
     const P = ROUTE.palette[tod] || ROUTE.palette.day;
     const mat = (o) => keep(new THREE.MeshStandardMaterial({ roughness: 0.92, ...o }));
+    // the ground, the rock and the plants cover the whole screen, so they use the cheap lit material;
+    // the creatures keep the standard one, where the sheen and the glowing markings are worth it
+    const lam = (o) => keep(new THREE.MeshLambertMaterial(o));
     const geo = (g) => keep(g);
 
     // ---- the road: a loop around the range, laid out first so the ground can be flattened under it
-    const ring = [[0, -150], [92, -128], [140, -56], [120, 34], [52, 92], [-40, 108], [-124, 72], [-152, -12], [-108, -104], [-54, -144]];
-    const flat2 = ring.map(([x, z]) => new THREE.Vector2(x, z));
+    const ring = RING;
     const road = new THREE.CatmullRomCurve3(ring.map(([x, z]) => new THREE.Vector3(x, 0, z)), true, 'catmullrom', 0.5);
     const online = road.getSpacedPoints(220);           // for the distance test below
 
@@ -107,7 +111,7 @@ export const ROUTE = {
     };
     gg.setAttribute('color', new THREE.BufferAttribute(col, 3));
     gg.computeVertexNormals();
-    const ground = new THREE.Mesh(gg, mat({ vertexColors: true, roughness: 1, metalness: 0 }));
+    const ground = new THREE.Mesh(gg, lam({ vertexColors: true }));
     ground.name = 'ground';
     scene.add(ground);
 
@@ -150,26 +154,31 @@ export const ROUTE = {
       return im;
     };
     const rockSpots = place(110, { minRoad: 7, maxR: 220 });
-    const rocks = instance(new THREE.IcosahedronGeometry(1, 0), mat({ color: night ? 0x3a3c42 : 0x9b8e7d, flatShading: true, roughness: 0.95 }),
+    const rocks = instance(new THREE.IcosahedronGeometry(1, 0), lam({ color: night ? 0x3a3c42 : 0x9b8e7d, flatShading: true }),
       rockSpots, (r) => ({ x: 0.7 + r * 2.6, y: 0.5 + r * 1.9, z: 0.8 + r * 2.4, lift: -0.3 }));
     const treeSpots = place(64, { minRoad: 12, maxR: 215 });
-    const trunks = instance(new THREE.CylinderGeometry(0.22, 0.42, 4.6, 6), mat({ color: night ? 0x2c2721 : 0x6b543c, roughness: 1 }),
+    const trunks = instance(new THREE.CylinderGeometry(0.22, 0.42, 4.6, 6), lam({ color: night ? 0x2c2721 : 0x6b543c }),
       treeSpots, () => ({ x: 1, y: 0.8 + rand() * 0.6, z: 1, lift: 1.9 }));
     // flat, wide crowns, after the watercolour tree sheet in the references
     const crownGeo = new THREE.SphereGeometry(1, 10, 6);
     crownGeo.scale(1, 0.42, 1);
-    const crowns = instance(crownGeo, mat({ color: night ? 0x1d2a1e : 0x6f8046, flatShading: true, roughness: 1 }),
+    const crowns = instance(crownGeo, lam({ color: night ? 0x1d2a1e : 0x6f8046, flatShading: true }),
       treeSpots, () => ({ x: 3 + rand() * 2.6, y: 2.4 + rand() * 1.4, z: 3 + rand() * 2.6, lift: 5.1 }));
     const bushSpots = place(170, { minRoad: 5, maxR: 215 });
     const bushGeo = new THREE.IcosahedronGeometry(1, 1);
     bushGeo.scale(1, 0.62, 1);
-    const bushes = instance(bushGeo, mat({ color: night ? 0x1b2419 : 0x5f7342, flatShading: true, roughness: 1 }),
+    const bushes = instance(bushGeo, lam({ color: night ? 0x1b2419 : 0x5f7342, flatShading: true }),
       bushSpots, () => ({ x: 0.6 + rand() * 1.1, y: 0.5 + rand() * 0.9, z: 0.6 + rand() * 1.1, lift: 0.1 }));
-    // reeds at the water's edge, so the pond is not a bare disc
-    const reedSpots = place(90, { minRoad: 6, minR: POND.r * 0.9, maxR: POND.r * 1.5, wet: true })
-      .map((p) => p.clone().add(new THREE.Vector3(POND.x, 0, POND.z)).setY(groundY(p.x + POND.x, p.z + POND.z)));
-    const reeds = instance(new THREE.ConeGeometry(0.3, 2.2, 5), mat({ color: night ? 0x273223 : 0x8c9452, roughness: 1 }),
-      reedSpots, () => ({ x: 0.7 + rand() * 0.8, y: 0.6 + rand() * 1.2, z: 0.7 + rand() * 0.8, lift: 1 }));
+    // reeds in a band at the water's edge, so the pond is not a bare disc
+    const reedSpots = [];
+    for (let i = 0; i < 110; i++) {
+      const a = rand() * Math.PI * 2, r = POND.r * (0.9 + rand() * 0.22);
+      const x = POND.x + Math.cos(a) * r, z = POND.z + Math.sin(a) * r;
+      if (nearRoad(x, z) < 8) continue;
+      reedSpots.push(new THREE.Vector3(x, groundY(x, z), z));
+    }
+    const reeds = instance(new THREE.ConeGeometry(0.22, 1.5, 5), lam({ color: night ? 0x273223 : 0x8c9452 }),
+      reedSpots, () => ({ x: 0.7 + rand() * 0.7, y: 0.5 + rand() * 0.8, z: 0.7 + rand() * 0.7, lift: 0.7 }));
 
     // ---- the road itself, laid on the ground as a pale band
     const bandPts = road.getSpacedPoints(240).map((p) => p.setY(groundY(p.x, p.z)));
@@ -183,7 +192,7 @@ export const ROUTE = {
     });
     band.setAttribute('position', new THREE.Float32BufferAttribute(bv, 3));
     band.setIndex(bi); band.computeVertexNormals();
-    const track = new THREE.Mesh(geo(band), mat({ color: night ? 0x2e2a25 : 0xb5a68d, roughness: 1 }));
+    const track = new THREE.Mesh(geo(band), lam({ color: night ? 0x2e2a25 : 0xb5a68d }));
     scene.add(track);
 
     // ---- the path the van drives: the road, lifted to the ground height
@@ -225,10 +234,11 @@ export const ROUTE = {
       // the shadow: a soft dark disc, because the safari has no moving shadows (Global rule 4)
       const shade = mesh(new THREE.CircleGeometry(0.5, 14), mat({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }), [0, 0.03, 0], root);
       shade.rotation.x = -Math.PI / 2;
+      root.scale.setScalar(1.5);                                               // waist-high, so it reads from the road
       scene.add(root);
       return makeCreature({
-        species: SPECIES.hopper, root, home, radius: 0.72, eye: new THREE.Vector3(0, 0.95, 0.2),
-        ground: heightAt, speed: 2.2, roam: 9, fleeAt: 8, curiousAt: 26, shy: 0.35, rareChance: 0.6, rareAt: 'dawn',
+        species: SPECIES.hopper, root, home, radius: 1.05, eye: new THREE.Vector3(0, 0.88, 0.22),   // the head, in its own (1.5x) scale
+        ground: heightAt, speed: 2.4, roam: 9, fleeAt: 5.5, curiousAt: 28, shy: 0.3, rareChance: 0.6, rareAt: 'dawn',
         pose(c, dt, env) {
           const moving = c.state === 'wander' || c.state === 'flee' || c.state === 'eat';
           c.bob += dt * (moving ? 9 : 2.2);
@@ -262,10 +272,11 @@ export const ROUTE = {
         tents.push(t);
       }
       [-1, 1].forEach((s) => mesh(new THREE.SphereGeometry(0.07, 8, 6), eyeMat, [s * 0.26, -0.1, 0.62], g));
+      root.scale.setScalar(1.4);
       scene.add(root);
       return makeCreature({
-        species: SPECIES.drifter, root, home, radius: 1.0, eye: new THREE.Vector3(0, 0, 0), flyer: true,
-        ground: heightAt, speed: 1.1, roam: 11, fleeAt: 6, curiousAt: 30, shy: 0.2, rareChance: 0.8, rareAt: 'night',
+        species: SPECIES.drifter, root, home, radius: 1.35, eye: new THREE.Vector3(0, 0, 0), flyer: true,
+        ground: heightAt, speed: 1.1, roam: 11, fleeAt: 5, curiousAt: 32, shy: 0.2, rareChance: 0.8, rareAt: 'night',
         pose(c, dt, env) {
           c.bob += dt * 1.6;
           const pulse = 0.5 + 0.5 * Math.sin(c.bob * 2.4);
@@ -320,16 +331,25 @@ export const ROUTE = {
       return p.clone().addScaledVector(s, side).addScaledVector(t, back).setY(0).setY(groundY(p.x + s.x * side + t.x * back, p.z + s.z * side + t.z * back));
     };
     const SETS = [0.17, 0.46, 0.78];                                   // the van slows down here
-    for (let i = 0; i < 7; i++) creatures.push(buildHopper(at(SETS[0] + (rand() - 0.5) * 0.045, (rand() - 0.5) * 36 + (rand() > 0.5 ? 14 : -14))));
+    const side = (lo, hi) => (rand() > 0.5 ? 1 : -1) * (lo + rand() * (hi - lo));
+    // 1. a colony of hoppers on the open ground, close enough to the track to fill a frame
+    for (let i = 0; i < 8; i++) creatures.push(buildHopper(at(SETS[0] + (rand() - 0.5) * 0.05, side(7, 22))));
+    // 2. drifters between the road and the pond, and a few more out over the water
     for (let i = 0; i < 5; i++) {
-      const a = rand() * Math.PI * 2, r = POND.r * (0.35 + rand() * 0.75);
-      const home = new THREE.Vector3(POND.x + Math.cos(a) * r, 2.6 + rand() * 3.2, POND.z + Math.sin(a) * r);
+      const home = at(SETS[1] + (rand() - 0.5) * 0.035, side(9, 26));
+      home.y += 4.2 + rand() * 3.2;                                 // high enough that the tentacles clear the grass
       creatures.push(buildDrifter(home));
     }
-    const ridge = at(SETS[2], 10);
-    creatures.push(buildFlock(ridge.clone().setY(ridge.y + 6), 11));
-    for (const u of [0.05, 0.3, 0.63, 0.9]) creatures.push(buildHopper(at(u, (rand() > 0.5 ? 1 : -1) * (16 + rand() * 20))));
-    for (const u of [0.36, 0.92]) creatures.push(buildDrifter(at(u, (rand() > 0.5 ? 1 : -1) * 20).setY(groundY(0, 0) + 4 + rand() * 3)));
+    for (let i = 0; i < 3; i++) {
+      const a = rand() * Math.PI * 2, r = POND.r * (0.2 + rand() * 0.6);
+      creatures.push(buildDrifter(new THREE.Vector3(POND.x + Math.cos(a) * r, 3.4 + rand() * 3, POND.z + Math.sin(a) * r)));
+    }
+    // 3. the flock circling over the rise, the one that wants the long lens
+    const ridge = at(SETS[2], 14);
+    creatures.push(buildFlock(ridge.clone().setY(ridge.y + 8), 11));
+    // and strays in between, so no stretch of the drive is empty
+    for (const u of [0.05, 0.3, 0.63, 0.9]) creatures.push(buildHopper(at(u, side(8, 24))));
+    for (const u of [0.36, 0.92]) { const h = at(u, side(10, 22)); h.y += 4.5 + rand() * 2.5; creatures.push(buildDrifter(h)); }
 
     return {
       path, groundY: heightAt, creatures,

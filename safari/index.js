@@ -85,7 +85,7 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
   if (tod === 'night' || tod === 'dusk') {
     [-0.85, 0.85].forEach((x) => {
       const l = new THREE.SpotLight(0xfff0cf, tod === 'night' ? 90 : 40, 85, 0.5, 0.55, 1.4);
-      l.position.set(x, 1.1, 2.1); l.target.position.set(x * 1.6, -0.6, 26);
+      l.position.set(x, 1.1, -2.1); l.target.position.set(x * 1.6, -0.6, -26);
       rig.rig.add(l, l.target);
     });
     const torch = new THREE.SpotLight(0xe8f2ff, tod === 'night' ? 70 : 28, 110, 0.32, 0.7, 1.3);
@@ -93,7 +93,8 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     rig.camera.add(torch, torch.target);
   }
 
-  const hud = createHud({ host, route: R, tod, film: FILM, pellets: PELLETS, on: {
+  // the HUD hangs in the body, not in the stage: the stage's own canvas rules are not meant for it
+  const hud = createHud({ route: R, tod, film: FILM, pellets: PELLETS, on: {
     exit: () => (S.shots.length && !S.over ? finish() : leave()),
     feed: () => { audio.start(); throwFeed(); },
     mute: () => { audio.start(); hud.setMuted(audio.mute(!audio.muted)); },
@@ -169,16 +170,20 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     if (!S.film) hud.help('Last frame used. The report comes at the end of the drive.');
   }
 
-  // ---- the loop
+  // ---- the loop. The van is placed first, then the creatures react to where it now is, then the
+  // picture is drawn: that way nothing ever reads a position from the frame before.
   const env = { camPos: new THREE.Vector3(), t: 0, tod, pellets, call: callFor, dist: 0 };
+  let poi = null;
   function frame(now) {
     const dt = S.last ? Math.min(0.08, (now - S.last) / 1000) : 0.016;
     S.last = now;
     S.t += dt; env.t = S.t;
 
-    // what the lens drifts towards: the nearest creature worth a look, else the route's own point
-    let poi = null, poiD = 70;
+    const speed = rig.step(dt, reduceMotion() ? null : poi);
     rig.worldHead(env.camPos);
+    // what the lens drifts towards next: the nearest creature worth a look, else the route's own point
+    let poiD = 80;
+    poi = null;
     for (const c of world.creatures) {
       c.photoPoint(vA);
       const d = vA.distanceTo(env.camPos);
@@ -186,10 +191,9 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
       c.visible = d < 170;
       c.root.visible = c.visible;
       if (c.visible) { env.dist = d; c.step(dt, env); }
-      if (d < poiD && d > 6) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }
+      if (d < poiD && d > 7) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }
     }
     if (!poi && world.poi) poi = world.poi(rig.progress);
-    const speed = rig.step(dt, reduceMotion() ? null : poi);
     stepPellets(dt);
     audio.drive(speed);
     if (rig.state.bump > lastBump + 0.18) audio.bump(Math.min(1, rig.state.bump));   // only the new jolts make a sound
@@ -307,6 +311,8 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
       species: new Set(S.shots.filter((s) => s.best).map((s) => s.best.species.id)).size }),
     // test hooks: drive the run on without waiting two minutes
     skipTo: (u) => { rig.state.u = Math.max(rig.state.u, Math.min(0.999, u)); },
+    shots: () => S.shots,
+    aimAt: (p) => rig.aimAt(p),
     shoot, feed: throwFeed, finish,
     hud, rig, scene, world,
     dispose() {

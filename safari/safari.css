@@ -53,7 +53,7 @@
   transform: translateX(120%); opacity: 0; transition: transform .45s cubic-bezier(.2,.7,.2,1), opacity .45s; }
 .sf-shot.in { transform: none; opacity: 1; }
 .sf-shot.out { opacity: 0; transform: translateY(-6px); }
-.sf-shot canvas, .sf-shot img { display: block; width: 100%; height: auto; background: #cfc7b8; }
+.sf-shot canvas, .sf-shot img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
 .sf-shot .sf-cap { display: flex; justify-content: space-between; gap: 6px; margin-top: 5px; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; }
 .sf-shot .sf-cap b { color: #1d1b18; font-weight: 600; font-variant-numeric: tabular-nums; }
 
@@ -78,7 +78,7 @@
 .sf-total b { font: 700 34px/1 var(--font-display, sans-serif); font-variant-numeric: tabular-nums; }
 .sf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
 .sf-card { background: #f6f2ea; color: #1d1b18; padding: 8px 8px 10px; box-shadow: 0 8px 22px rgba(0,0,0,0.4); }
-.sf-card canvas, .sf-card img { display: block; width: 100%; height: auto; background: #cfc7b8; }
+.sf-card canvas, .sf-card img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
 .sf-card .sf-name { font: 600 13px/1.2 var(--font-display, sans-serif); margin-top: 7px; }
 .sf-card .sf-meta { display: flex; justify-content: space-between; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; margin-top: 3px; }
 .sf-card .sf-meta b { color: #1d1b18; font-variant-numeric: tabular-nums; }
@@ -96,6 +96,10 @@
 .sf-list .sf-rank { color: var(--vf-dim); }
 .sf-done { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
 .sf-done button { background: rgba(255,244,228,0.1); }
+
+/* while the report is up, the viewfinder and the tools are out of the way */
+.safari.reporting .sf-finder, .safari.reporting .sf-read, .safari.reporting .sf-top-right,
+.safari.reporting .sf-tools, .safari.reporting .sf-feed, .safari.reporting .sf-help, .safari.reporting .sf-rail { display: none; }
 
 /* a short line of help on the first run, gone after a few seconds */
 .sf-help { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px));

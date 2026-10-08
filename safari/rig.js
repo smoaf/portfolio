@@ -16,7 +16,7 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
   const length = path.getLength();
   const rig = new THREE.Group();                        // the van: position and heading
   const head = new THREE.Group();                       // where the visitor's head is in the van
-  head.position.set(0, route.eyeHeight ?? 1.95, 0.2);
+  head.position.set(0, route.eyeHeight ?? 1.95, -0.2);      // a little ahead of the van's middle
   rig.add(head);
   scene.add(rig);
   const camera = new THREE.PerspectiveCamera(FOV.wide, aspect, 0.25, 900);
@@ -36,11 +36,21 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
     path.getPointAt(u, vA);
     path.getTangentAt(u, vB);
     rig.position.copy(vA);
-    rig.rotation.y = Math.atan2(vB.x, vB.z);
+    rig.rotation.y = Math.atan2(-vB.x, -vB.z);           // the rig's -z is the way it drives, like the camera's
     const roll = Math.sin(S.t * 1.1) * 0.012 + S.bump * 0.03;
     rig.rotation.z = roll;
     head.position.y = (route.eyeHeight ?? 1.95) + Math.sin(S.t * 6.2) * 0.012 * (0.3 + S.speed) + S.bump * 0.05;
     S.bump *= Math.max(0, 1 - dt * 6);
+  }
+
+  place(0);                                             // stand on the start of the route right away
+  scene.updateMatrixWorld(true);
+
+  // the yaw and pitch that would put a world point in the middle of the viewfinder
+  function angles(point) {
+    head.getWorldPosition(vA);
+    vB.copy(point).sub(vA).normalize().applyQuaternion(rig.getWorldQuaternion(q).invert());
+    return { yaw: Math.atan2(-vB.x, -vB.z), pitch: Math.asin(THREE.MathUtils.clamp(vB.y, -1, 1)) };
   }
 
   function step(dt, poi) {
@@ -60,10 +70,9 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
     const idle = S.t - S.lastDrag > 1.6;
     let tx = 0, ty = 0;
     if (idle && poi) {
-      vA.copy(poi).sub(head.getWorldPosition(vB));
-      const want2 = Math.atan2(vA.x, vA.z) - rig.rotation.y;
-      tx = THREE.MathUtils.clamp(wrap(want2), -0.5, 0.5);
-      ty = THREE.MathUtils.clamp(Math.asin(THREE.MathUtils.clamp(vA.y / Math.max(0.5, vA.length()), -1, 1)), -0.3, 0.3);
+      const a = angles(poi);
+      tx = THREE.MathUtils.clamp(wrap(a.yaw - S.yaw), -0.5, 0.5);
+      ty = THREE.MathUtils.clamp(a.pitch - S.pitch, -0.3, 0.3);
     }
     S.auto.x += (tx * 0.35 - S.auto.x) * Math.min(1, dt * (idle ? 0.7 : 4));
     S.auto.y += (ty * 0.35 - S.auto.y) * Math.min(1, dt * (idle ? 0.7 : 4));
@@ -91,6 +100,13 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
       S.yaw = THREE.MathUtils.clamp(S.yaw + dx * k, -S.yawLimit, S.yawLimit);
       S.pitch = THREE.MathUtils.clamp(S.pitch + dy * k, -S.pitchLimit, S.pitchLimit);
       S.lastDrag = S.t; S.auto.set(0, 0);
+    },
+    angles,
+    aimAt(point) {                                      // tests and set pieces: look straight at it
+      const a = angles(point);
+      S.yaw = THREE.MathUtils.clamp(a.yaw, -S.yawLimit, S.yawLimit);
+      S.pitch = THREE.MathUtils.clamp(a.pitch, -S.pitchLimit, S.pitchLimit);
+      S.auto.set(0, 0); S.lastDrag = S.t;
     },
     nudge(x, y) { S.yaw = THREE.MathUtils.clamp(S.yaw + x, -S.yawLimit, S.yawLimit); S.pitch = THREE.MathUtils.clamp(S.pitch + y, -S.pitchLimit, S.pitchLimit); S.lastDrag = S.t; },
     zoom(factor) { return setZoom(S.fov * factor); },

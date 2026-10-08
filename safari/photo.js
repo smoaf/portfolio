@@ -13,7 +13,7 @@ import * as THREE from 'three';
 
 export const THUMB = { w: 216, h: 162 };               // the little polaroid in the feed and the album
 
-const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
+const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3(), eye = new THREE.Vector3();
 const ray = new THREE.Raycaster();
 
 // how much of the frame height the creature covers
@@ -30,11 +30,12 @@ function sizeScore(f) {
 
 export function judge({ camera, creatures, colliders, aspect }) {
   camera.updateMatrixWorld();
+  camera.getWorldPosition(eye);                        // the lens sits on the van, not at the origin
   const subjects = [];
   for (const c of creatures) {
     if (!c.visible || !c.root.visible) continue;
     c.photoPoint(vA);
-    const dist = camera.position.distanceTo(vA);
+    const dist = eye.distanceTo(vA);
     if (dist > 160) continue;
     vB.copy(vA).project(camera);
     if (vB.z > 1 || Math.abs(vB.x) > 1.08 || Math.abs(vB.y) > 1.08) continue;
@@ -45,16 +46,16 @@ export function judge({ camera, creatures, colliders, aspect }) {
     const off = Math.min(1, Math.hypot(vB.x * 0.8, vB.y) / 1.0);
     const centre = 1 - 0.75 * off * off;
     // facing: 1 when it looks straight down the lens
-    vC.subVectors(camera.position, vA).setY(0).normalize();
-    const facing = 0.55 + 0.45 * THREE.MathUtils.clamp(c.forward(vB).dot(vC), -1, 1);
+    vC.subVectors(eye, vA).setY(0).normalize();
+    const facing = 0.65 + 0.35 * THREE.MathUtils.clamp(c.forward(vB).dot(vC), -1, 1);
     // occlusion: three rays, from the lens to the head, the shoulder and the flank
     const OFF = [[0, 0, 0], [c.radius * 0.6, -c.radius * 0.5, 0], [-c.radius * 0.6, 0, 0]];
     let open = 0;
     for (const o of OFF) {
       c.photoPoint(vA).add(vC.set(o[0], o[1], o[2]));
-      vB.subVectors(vA, camera.position);
+      vB.subVectors(vA, eye);
       const len = vB.length();
-      ray.set(camera.position, vB.normalize());
+      ray.set(eye, vB.normalize());
       ray.far = Math.max(0.1, len - c.radius * 0.5);
       if (!colliders.length || !ray.intersectObjects(colliders, false).length) open++;
     }
