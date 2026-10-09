@@ -1,7 +1,5 @@
 .DS_Store
 __pycache__/
 *.pyc
-CLAUDE.md
-docs/
 .venv/
 3d/scripts/*.glb
