@@ -112,7 +112,7 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
   box(0.05, 0.62, 0.2, 1.6, 0.48, 1.98, M.black);                              // where the gauges were
   box(0.03, 0.55, 0.16, 1.6, -0.5, 1.96, M.plastic);                           // glovebox
   for (const y of [0.88, -0.88, 0.15, -0.15]) add(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 16), M.black, 1.6, y, 2.04).rotation.z = Math.PI / 2;
-  // center console between the seats (the 208's tall engine hump), worn plastic
+  // center console between the seats (a tall engine hump), worn plastic
   box(0.6, 0.42, 0.5, 1.4, 0, FLOOR + 0.25, M.plastic);
   box(0.26, 0.36, 0.28, 1.6, 0, 1.62, M.dash);
   // retrofit: an amber LED line along the dash, a small status display, blinking diodes
