@@ -1108,3 +1108,6 @@ export const BUILDERS = {
   'sea-pen': buildSeaPens,
   'deep-sea-cucumber': buildDeepSeaCucumber,
 };
+
+// the rig and its helpers, for the other water species (safari/fauna/pool.js)
+export { Rig, xf, merge, tubeGeo, rigEye, flash, lit, turn, swimDepth, moving };

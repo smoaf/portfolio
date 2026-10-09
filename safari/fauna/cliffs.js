@@ -792,7 +792,7 @@ export function buildFallowDeer(K, home, opts = {}) {
     K.mesh(K.tube('fd-beam' + s, [[0, 0, 0], [s * 0.06, 0.1, -0.04], [s * 0.17, 0.2, -0.04], [s * 0.24, 0.3, 0.02], [s * 0.27, 0.38, 0.02]], 0.026, 0.018, 6, 10), antlerM, [s * 0.05, 0.1, -0.02], head);
     K.mesh(K.tube('fd-brow' + s, [[0, 0, 0], [s * 0.02, 0.05, 0.05], [s * 0.03, 0.06, 0.13]], 0.016, 0.006, 5, 5), antlerM, [s * 0.06, 0.13, -0.03], head);
     K.mesh(K.tube('fd-trez' + s, [[0, 0, 0], [s * 0.02, 0.04, 0.06], [s * 0.03, 0.06, 0.12]], 0.014, 0.005, 5, 5), antlerM, [s * 0.2, 0.31, -0.06], head);
-    const palm = K.mesh(K.shape('fd-palm', PALM, 0.016), antlerM, [s * 0.31, 0.45, 0.03], head, [0, PI / 2 - s * 0.6, -s * 0.3], [0.85, 0.72, 1]);
+    const palm = K.mesh(K.shape('fd-palm', PALM, 0.016), antlerM, [s * 0.31, 0.45, 0.03], head, [0, PI / 2 - s * 0.97, -s * 0.3], [0.85, 0.72, 1]);
     palm.rotation.order = 'ZYX';
     palm.updateMatrix();
     for (const [x, y] of PALM_TIPS) {

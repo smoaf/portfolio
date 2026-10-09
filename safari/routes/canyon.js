@@ -12,6 +12,7 @@ import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, roadBand, instance
 import * as FLOOR from '../fauna/floor.js';
 import * as CLIFFS from '../fauna/cliffs.js';
 import * as DEEP from '../fauna/deep.js';
+import * as WATERFOLK from '../fauna/pool.js';
 
 const WATER = -0.7;                                        // the river's surface
 const RIM = 74;                                            // the plateau above the walls
@@ -362,7 +363,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 404 });
-    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS };
+    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS };
     const creatures = [];
     const spawn = (id, home, opts = {}, extra = {}) => {
       if (!B[id]) return null;
@@ -387,6 +388,11 @@ export const ROUTE = {
     spawn('stag-beetle', P3(-348, -31), {}, small); spawn('stag-beetle', P3(-236, -34), {}, small); spawn('stag-beetle', P3(500, 31), {}, small);
     spawn('picasso-bug', P3(-436, -16, 0.4), {}, small); spawn('picasso-bug', P3(-310, -31, 0.4), {}, small);
     spawn('ladybird', P3(-380, -17, 1.2), {}, small); spawn('ladybird', P3(-245, -20, 1.2), {}, small); spawn('ladybird', P3(518, 18, 1.2), {}, small);
+    // the twilight secret: fire salamanders come out on the wet banks only at dawn and dusk
+    if (tod === 'dawn' || tod === 'dusk') {
+      spawn('fire-salamander', P3(-418, -14.5), {}, small); spawn('fire-salamander', P3(-334, -15), {}, small);
+      spawn('fire-salamander', P3(-268, -14), {}, small); spawn('fire-salamander', P3(516, 14), {}, small);
+    }
 
     // the cliff path: goats on the wall, raptors on the spires, flocks below and above the van
     const wallSpot = (z, y, dd = 0) => { const d = dAtHeight(z, y) + dd; return P3(z, d); };
@@ -412,6 +418,9 @@ export const ROUTE = {
     spawn('feather-duster-worm', PD(zs(0.05), -10, 0)); spawn('feather-duster-worm', PD(zs(0.45), 13, 0)); spawn('feather-duster-worm', PD(zs(0.78), -9, 0));
     spawn('sea-pen', PD(zs(0.34), 10, 0)); spawn('sea-pen', PD(zs(0.58), -16, 0)); spawn('sea-pen', PD(zs(0.95), 9, 0));
     spawn('deep-sea-cucumber', PD(zs(0.38), -4, 6)); spawn('deep-sea-cucumber', PD(zs(0.66), 4, 4));
+    // the salamanders of the pool (walking its floor, gills glowing) and shoals of tetras above them
+    spawn('axolotl', PD(zs(0.08), 3, 0), {}, small); spawn('axolotl', PD(zs(0.47), -5, 0), {}, small); spawn('axolotl', PD(zs(0.8), 6, 0), {}, small);
+    spawn('lantern-tetra', PD(zs(0.18), -2, 4.5)); spawn('lantern-tetra', PD(zs(0.5), 4, 5.5), { count: 36 }); spawn('lantern-tetra', PD(zs(0.88), -4, 4));
     // the secret: the goblin shark only comes up from the deep at night
     if (night) spawn('goblin-shark', PD(zs(0.55), 0, 5));
 
