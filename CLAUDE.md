@@ -14,6 +14,8 @@ Simon Winkler's ("Smo") portfolio site. The main page is a 3D research station (
 - After a change, check it in the browser pane (desktop and phone width) before reporting it done.
 - Add a dated entry to `docs/build-log.md` for every built change; update `docs/portfolio-concept.md` when a decision changes.
 - Commit with clear messages. Push only when Smo says to publish: a push to `main` goes live.
+- GitHub is the only copy; there is no permanent folder on the Mac. Work in a fresh clone or a cloud session.
+- Bigger features: the build plans are `*_PLAN.md` in the private repo `smoaf/portfolio-refs`, each with its branch, PR target and progress log. Work on a feature branch with a draft PR; Smo merges into `main`.
 
 ## Structure
 - `index.html`: the whole site and viewer (HTML, CSS, JS in one file; three.js r160 from jsDelivr via import map)
