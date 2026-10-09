@@ -4,8 +4,8 @@
 // The twist on every real animal is light: markings that glow faintly by day and strongly at dusk
 // and night (ctx.glow), an extra pair of eyes here, a fin there. The shapes stay true to the animal.
 import * as THREE from 'three';
-import { body, materials, lookAt, damp, blinker } from '../kit.js';
-import { quadruped, quadLife, quadPose, spawn, jointedLeg, legWave, spine, swimWave } from './forms.js';
+import { body, materials, lookAt, damp, blinker } from '../skinned.js';
+import { quadruped, quadLife, quadPose, spawn, jointedLeg, legWave, spine, swimWave } from './skinned-forms.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const arr = (v) => [v.x, v.y, v.z];

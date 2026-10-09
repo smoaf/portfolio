@@ -3,7 +3,7 @@
 // proportions; the species file adds what makes the animal itself (horns, ears, frill, markings)
 // and its animation. All sizes in metres, facing +z, standing on y = 0.
 import * as THREE from 'three';
-import { damp, wrap, lookAt, blinker, twoBodies, blob } from '../kit.js';
+import { damp, wrap, lookAt, blinker, twoBodies, blob } from '../skinned.js';
 import { makeCreature } from '../creature.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
