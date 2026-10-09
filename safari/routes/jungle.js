@@ -158,6 +158,8 @@ export const ROUTE = {
             float streak = smoothstep(0.94, 1.0, st) * (0.5 + 0.5 * sin(w.x * 0.08 - uTime * 0.9)) * (1.0 - smoothstep(300.0, 600.0, w.x));
             col += uFoam * 0.08 * streak;
             diffuseColor.rgb = mix(col, uFoam, front * 0.4);
+            // clearer right by the van, so a dolphin or a fish just under the surface still shows
+            diffuseColor.a = mix(0.7, 0.94, smoothstep(6.0, 40.0, length(vWp - cameraPosition)));
           }`)
         .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
           {
