@@ -20,6 +20,7 @@ import { localStore } from './leaderboard.js';
 
 const FILM = 30, PELLETS = 8;
 const vA = new THREE.Vector3(), vB = new THREE.Vector3();
+const frustum = new THREE.Frustum(), mView = new THREE.Matrix4(), ball = new THREE.Sphere();
 const srgb = (hex) => new THREE.Color(hex).convertSRGBToLinear();
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -56,7 +57,7 @@ function makeSky(scene, P, dark) {
   return dome;
 }
 
-export async function startSafari({ renderer, route = 'test', tod = 'day', host = document.body, onExit = () => {} } = {}) {
+export async function startSafari({ renderer, route = 'canyon', tod = 'day', host = document.body, onExit = () => {} } = {}) {
   // the HUD's own stylesheet comes with the safari and goes with it
   const css = document.createElement('link');
   css.rel = 'stylesheet'; css.href = new URL('./safari.css', import.meta.url).href;
@@ -88,11 +89,13 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
   // at night the van's own light is all there is: two headlights, and a torch that follows the lens
   if (tod === 'night' || tod === 'dusk') {
     [-0.85, 0.85].forEach((x) => {
-      const l = new THREE.SpotLight(0xfff0cf, tod === 'night' ? 90 : 40, 85, 0.5, 0.55, 1.4);
-      l.position.set(x, 1.1, -2.1); l.target.position.set(x * 1.6, -0.6, -26);
+      // aimed long and soft, so the pool of light lies out on the road ahead instead of flooding the
+      // ground right under the lens
+      const l = new THREE.SpotLight(0xfff0cf, tod === 'night' ? 38 : 12, 90, 0.42, 0.85, 1.2);
+      l.position.set(x, 1.1, -2.1); l.target.position.set(x * 1.6, -0.2, -40);
       rig.rig.add(l, l.target);
     });
-    const torch = new THREE.SpotLight(0xdfe6f2, tod === 'night' ? 48 : 22, 110, 0.32, 0.7, 1.3);
+    const torch = new THREE.SpotLight(0xdfe6f2, tod === 'night' ? 30 : 14, 110, 0.32, 0.7, 1.3);
     torch.position.set(0, 0, 0); torch.target.position.set(0, 0, -30);
     rig.camera.add(torch, torch.target);
   }
@@ -230,12 +233,17 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     // what the lens drifts towards next: the nearest creature worth a look, else the route's own point
     let poiD = 80;
     poi = null;
+    // what the lens can see this frame: animals outside it keep living but are not drawn (their
+    // bodies are many small draws, so this is most of the saving); flocks spread wide, so they stay
+    rig.camera.updateMatrixWorld();
+    frustum.setFromProjectionMatrix(mView.multiplyMatrices(rig.camera.projectionMatrix, rig.camera.matrixWorldInverse));
     for (const c of world.creatures) {
       c.photoPoint(vA);
       const d = vA.distanceTo(env.camPos);
       c.near = d;
       c.visible = d < (c.seeAt || 170);
-      c.root.visible = c.visible;
+      ball.set(vA, (c.radius || 1) * 2.5 + 1.5);
+      c.root.visible = c.visible && (c.flock || d < 6 || frustum.intersectsSphere(ball));
       if (c.lod) c.lod(d);
       if (c.visible) { env.dist = d; c.step(dt, env); }
       if (d < poiD && d > 7) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }

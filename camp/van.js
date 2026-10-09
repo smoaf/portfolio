@@ -10,11 +10,9 @@
 import * as THREE from 'three';
 
 // `ready` says whether the route has its terrain yet; the screen shows COMING SOON for the others.
-// The test range is the placeholder Phase 2 drives on and goes once the canyon and the jungle land.
 export const ROUTES = [
   { id: 'canyon', name: 'CANYON', line: 'RIVER · CLIFF PATH · DEEP POOL', ready: true },
   { id: 'jungle', name: 'JUNGLE', line: 'CANOPY · BRACKISH RIVER CROSSING', ready: false },
-  { id: 'test', name: 'TEST RANGE', line: 'ENGINE TEST · PLACEHOLDER GROUND', ready: true },
 ];
 export const VIEWS = {
   seat: { eye: [-0.95, 0.0, 2.42], look: [1.35, 0.12, 2.08] },     // on the rear bench, looking forward

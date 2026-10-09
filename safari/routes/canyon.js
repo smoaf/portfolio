@@ -102,7 +102,7 @@ export const ROUTE = {
     dawn: { top: 0x3a5584, horizon: 0xf0aa78, ground: 0x8a5a44, fog: 0xd6a184, near: 120, far: 760, sun: [0xffcf9c, 1.7, [-0.55, 0.22, 0.9]], hemi: [0xd9dff0, 0x7a4a34, 0.6], amb: 0.25 },
     day: { top: 0x6c9cd6, horizon: 0xcfe0ee, ground: 0xb06a44, fog: 0xd8c2ad, near: 160, far: 900, sun: [0xfff1dc, 2.5, [0.55, 0.78, 0.3]], hemi: [0xdce8f5, 0x9a5a3c, 0.8], amb: 0.2 },
     dusk: { top: 0x27345f, horizon: 0xe8885a, ground: 0x6b3e2e, fog: 0xb07a62, near: 90, far: 640, sun: [0xffa860, 1.4, [0.8, 0.14, -0.45]], hemi: [0xc2b2cc, 0x5a3426, 0.55], amb: 0.24 },
-    night: { top: 0x060b19, horizon: 0x1b2d4f, ground: 0x4a4650, fog: 0x14203a, near: 50, far: 420, sun: [0x9ab4e8, 0.8, [-0.3, 0.6, -0.6]], hemi: [0x4d6397, 0x231d24, 1.0], amb: 0.5 },
+    night: { top: 0x060b19, horizon: 0x1b2d4f, ground: 0x4a4650, fog: 0x14203a, near: 60, far: 480, sun: [0x9ab4e8, 1.5, [-0.3, 0.6, -0.6]], hemi: [0x5a72a8, 0x2a2430, 1.35], amb: 0.55 },   // a bright moon: the canyon reads from the lookout
   },
   // below the surface of the pool, per time of day
   under: {
