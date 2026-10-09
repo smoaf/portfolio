@@ -12,7 +12,7 @@ import * as THREE from 'three';
 // `ready` says whether the route has its terrain yet; the screen shows COMING SOON for the others.
 export const ROUTES = [
   { id: 'canyon', name: 'CANYON', line: 'RIVER · CLIFF PATH · DEEP POOL', ready: true },
-  { id: 'jungle', name: 'JUNGLE', line: 'CANOPY · BRACKISH RIVER CROSSING', ready: false },
+  { id: 'jungle', name: 'JUNGLE', line: 'CANOPY · BRACKISH RIVER CROSSING', ready: true },
 ];
 export const VIEWS = {
   seat: { eye: [-0.95, 0.0, 2.42], look: [1.35, 0.12, 2.08] },     // on the rear bench, looking forward
