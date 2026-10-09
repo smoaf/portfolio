@@ -112,30 +112,53 @@ export const ROUTE = {
     const wg = geo(new THREE.PlaneGeometry(3400, 3400, 110, 110));
     wg.rotateX(-Math.PI / 2);
     wg.translate(800, 0, 0);
-    {
-      const pos = wg.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
-      const river = dark(0x6a5a34, 0.3), brack = dark(0x4a7458, 0.3), sea = dark(0x2a8aa0, 0.3), deep = dark(0x1d6a8e, 0.3);
-      for (let i = 0; i < pos.count; i++) {
-        const x = pos.getX(i), z = pos.getZ(i);
-        // the fresh water stays in a tongue down the middle, the sea creeps up along the banks
-        const swirl = 50 * N1(x * 0.008, z * 0.008) + 30 * N2(x * 0.02, z * 0.02) - Math.abs(z - ZC(x)) * 0.25;
-        const k = smooth(-60, 260, x + swirl);
-        c.copy(river).lerp(brack, smooth(0, 0.5, k)).lerp(sea, smooth(0.5, 1, k)).lerp(deep, smooth(700, 1600, x));
-        c.toArray(col, i * 3);
-      }
-      wg.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    }
+    // the colours are worked out per pixel, so the front where the tea-brown river water meets the
+    // salt is a crisp line: the fresh water stays in a tongue down the middle, the sea creeps up along
+    // the banks, and a seam of pale scum marks where they meet
+    const WC = { uRiver: dark(0x5c4524, 0.3), uBrack: dark(0x4d6a48, 0.3), uSea: dark(0x2a8aa0, 0.3), uDeep: dark(0x1d6a8e, 0.3), uFoam: dark(0xe6e2cc, 0.6) };
     // no reflections to speak of, so the sky's own colour is lent to the surface instead
-    const waterMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0, transparent: true, opacity: 0.92,
+    const waterMat = keep(new THREE.MeshStandardMaterial({ roughness: 0.26, metalness: 0, transparent: true, opacity: 0.92,
       emissive: new THREE.Color(P.horizon).convertSRGBToLinear(), emissiveIntensity: night ? 0.05 : 0.12 }));
     waterMat.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = T.time;
+      for (const k in WC) sh.uniforms[k] = { value: WC[k] };
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nuniform float uTime;')
+        .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying vec3 vWp;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
           float sea = smoothstep(260.0, 620.0, position.x);
           transformed.y += sea * (0.55 * sin(position.x * 0.045 - uTime * 1.3) + 0.25 * sin(position.z * 0.07 + position.x * 0.02 - uTime * 0.9))
-            + 0.05 * sin(position.x * 0.3 + position.z * 0.2 + uTime * 2.0);`);
+            + 0.05 * sin(position.x * 0.3 + position.z * 0.2 + uTime * 2.0);
+          vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>
+          uniform float uTime; uniform vec3 uRiver, uBrack, uSea, uDeep, uFoam;
+          varying vec3 vWp;`)
+        .replace('#include <color_fragment>', `#include <color_fragment>
+          {
+            vec2 w = vWp.xz;
+            float zc = 14.0 * sin(w.x * 0.006 + 0.5) + 6.0 * sin(w.x * 0.017);
+            float sw = 38.0 * sin(w.x * 0.011 + w.y * 0.007) + 22.0 * sin(w.y * 0.023 - w.x * 0.017 + 1.3) + 9.0 * sin(w.x * 0.06 + w.y * 0.05) - abs(w.y - zc) * 0.25;
+            float k = smoothstep(-60.0, 260.0, w.x + sw);
+            vec3 col = mix(uRiver, uBrack, smoothstep(0.3, 0.38, k));
+            col = mix(col, uSea, smoothstep(0.5, 1.0, k));
+            col = mix(col, uDeep, smoothstep(700.0, 1600.0, w.x));
+            float front = (1.0 - smoothstep(0.0, 0.0045, abs(k - 0.34 + 0.004 * sin(w.x * 0.7 + w.y * 0.5)))) * smoothstep(-0.3, 0.5, sin(w.x * 0.13 + w.y * 0.09) * sin(w.y * 0.05 - w.x * 0.02 + uTime * 0.05));
+            // flow lines: long thin streaks drifting downstream on the river
+            float st = sin(w.y * 1.3 + 2.0 * sin(w.x * 0.05 + w.y * 0.03));
+            float streak = smoothstep(0.94, 1.0, st) * (0.5 + 0.5 * sin(w.x * 0.08 - uTime * 0.9)) * (1.0 - smoothstep(300.0, 600.0, w.x));
+            col += uFoam * 0.08 * streak;
+            diffuseColor.rgb = mix(col, uFoam, front * 0.4);
+          }`)
+        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+          {
+            // ripples: three wave trains bend the normal so the light glints, fading out with distance
+            vec2 w = vWp.xz, g = vec2(0.0);
+            g += 0.6 * vec2(0.9, 0.3) * cos(dot(w, vec2(0.9, 0.3)) * 1.1 - uTime * 1.7);
+            g += 0.5 * vec2(-0.4, 1.0) * cos(dot(w, vec2(-0.4, 1.0)) * 1.7 - uTime * 2.1);
+            g += 0.35 * vec2(0.7, -0.8) * cos(dot(w, vec2(0.7, -0.8)) * 2.9 - uTime * 2.9);
+            float a = 0.22 * (1.0 + smoothstep(260.0, 620.0, w.x)) * (1.0 - smoothstep(30.0, 180.0, length(vWp - cameraPosition)));
+            normal = normalize(normal + (viewMatrix * vec4(-g.x * a, 0.0, -g.y * a, 0.0)).xyz);
+          }`);
     };
     const water = new THREE.Mesh(wg, waterMat);
     water.renderOrder = 2;
@@ -192,7 +215,13 @@ export const ROUTE = {
     const treeTest = (q) => (land(q, 8) ? { s: [0.8 + rand() * 0.6, 0.7 + rand() * 0.5, 0.8 + rand() * 0.6] } : null);
     const treeSpots = [...near(300, 8, 70, treeTest), ...items(160, treeTest)];
     const trunks = instanced(trunkGeo, lam({ color: dark(0x5e5040) }), treeSpots);
-    const crownGeo = geo(new THREE.IcosahedronGeometry(1, 0).scale(1, 0.5, 1));
+    // a crown is a cluster of lumps (one mesh), so it reads as foliage and not as a parasol
+    const crownGeo = (() => {
+      const lumps = [[0, 0.1, 0, 0.75], [0.55, -0.05, 0.2, 0.55], [-0.5, 0, 0.3, 0.55], [0.15, 0, -0.55, 0.55], [-0.3, 0.25, -0.3, 0.5], [0.3, 0.3, 0.35, 0.45], [0, -0.25, 0, 0.6]];
+      const g = mergeGeometries(lumps.map(([x, y, z, r]) => new THREE.IcosahedronGeometry(r, 0).translate(x, y, z)), false);
+      g.deleteAttribute('uv'); g.scale(1, 0.75, 1);
+      return geo(g);
+    })();
     const crownA = instanced(crownGeo, lam({ color: dark(0x2f5a2a), flatShading: true }),
       treeSpots.map((t) => ({ p: t.p.clone().setY(t.p.y + 18 * t.s[1] + 0.5), s: [8 + rand() * 5, 3.6 + rand() * 2, 8 + rand() * 5], ry: rand() * 6 })));
     const crownB = instanced(crownGeo, lam({ color: dark(0x3e6e2e), flatShading: true }),
@@ -278,7 +307,7 @@ export const ROUTE = {
     mangroveSpots.forEach((m) => { m.p.y = Math.max(m.p.y, WATER - 0.6); });
     const mangroveRoots = instanced(mangroveRootGeo, lam({ color: dark(0x5a4a3a) }), mangroveSpots);
     const mangroveCrowns = instanced(crownGeo, lam({ color: dark(0x3b6634), flatShading: true }),
-      mangroveSpots.map((m) => ({ p: m.p.clone().setY(m.p.y + 5.6 * m.s), s: [3.6 * m.s, 2.2 * m.s, 3.6 * m.s], ry: rand() * 6 })));
+      mangroveSpots.map((m) => ({ p: m.p.clone().setY(m.p.y + 5.6 * m.s), s: [3.4 * m.s, 2.8 * m.s, 3.4 * m.s], ry: rand() * 6 })));
     // the river's banks: a wall of forest behind the mangroves, as seen from the water
     const bankWall = [];
     for (let i = 0; i < 380; i++) {
@@ -310,7 +339,7 @@ export const ROUTE = {
 
     // ---- light through the canopy: still shafts, warm by day and cool at night
     const shaftGeo = geo(new THREE.CylinderGeometry(1, 0.6, 1, 8, 1, true).translate(0, -0.5, 0));
-    const shafts = items(46, (q) => (land(q, 3) && q.road < 26 ? { s: [1.2 + rand() * 2.2, 26, 1.2 + rand() * 2.2], lift: 25, rx: 0.22 + (rand() - 0.5) * 0.1, rz: 0.15 } : null));
+    const shafts = items(46, (q) => (land(q, 3) && q.road < 26 ? { s: [0.8 + rand() * 1.5, 26, 0.8 + rand() * 1.5], lift: 25, rx: 0.22 + (rand() - 0.5) * 0.1, rz: 0.15 } : null));
     const shaftMesh = instanced(shaftGeo, keep(shaftMaterial(night ? 0x8fb0e0 : tod === 'day' ? 0xfff0c0 : 0xffc890, night ? 0.035 : 0.09)), shafts);
     // drifting things in the air: pollen by day, fireflies at night
     const air = motes({ n: night ? 320 : 220, box: 40, color: night ? 0xd8ff8a : 0xfff2c8, size: night ? 0.14 : 0.06, opacity: night ? 0.85 : 0.5, drift: [0.15, 0.06, 0.1] });
