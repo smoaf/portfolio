@@ -498,16 +498,18 @@ export function buildGiantTortoise(K, home, opts = {}) {
 // opts.female: no horns (default: random).
 export function buildSaigaAntelope(K, home, opts = {}) {
   const female = opts.female ?? K.rand() < 0.4;
-  const fur = K.mat(0xd3c3a6, { roughness: 0.92 }), belly = K.mat(0xf1ebde, { roughness: 0.92 });
-  const shade = K.mat(0x8c7c69, { roughness: 0.9 }), legMat = K.mat(0xbfae92, { roughness: 0.9 });
-  const horn = K.sheen(0xd9a35c, { roughness: 0.35, emissive: 0x6a3a10, emissiveIntensity: 0.25 });
+  const fur = K.mat(0xdcd2c0, { roughness: 0.92 }), belly = K.mat(0xf3efe7, { roughness: 0.92 });
+  const shade = K.mat(0x6f6a66, { roughness: 0.9 }), legMat = K.mat(0xc9bba3, { roughness: 0.9 });
+  // the horns: waxy amber, a little see-through, with dark tips
+  const horn = K.sheen(0xe0a878, { roughness: 0.3, emissive: 0x7a3a18, emissiveIntensity: 0.3, transparent: true, opacity: 0.94 });
+  const hornTip = K.sheen(0x2a1a12, { roughness: 0.3 });
   const nostril = K.sheen(0x2a2420, { roughness: 0.5 }), glow = K.glow(0x9fd8ff, 0.9);
   const root = K.group(), near = K.group(null, root), far = K.group(null, root);
   K.shadow(root, 0.32, 0.62);
 
   const body = K.group([0, 0.7, 0], near);
-  K.mesh(K.sphere(1, 12, 9), fur, [0, 0, -0.04], body, null, [0.22, 0.23, 0.46]);
-  K.mesh(K.sphere(1, 12, 9), fur, [0, 0.02, 0.24], body, null, [0.21, 0.24, 0.25]);
+  K.mesh(K.sphere(1, 18, 12), fur, [0, 0, -0.04], body, null, [0.22, 0.23, 0.46]);
+  K.mesh(K.sphere(1, 16, 12), fur, [0, 0.02, 0.24], body, null, [0.21, 0.24, 0.25]);
   K.mesh(K.sphere(1, 10, 8), belly, [0, -0.09, 0], body, null, [0.17, 0.13, 0.4]);
   K.mesh(K.sphere(1, 10, 8), fur, [0, 0.02, -0.33], body, null, [0.18, 0.19, 0.18]);
   K.mesh(K.cone(1, 1, 6), fur, [0, 0.02, -0.5], body, [-2.4, 0, 0], [0.035, 0.12, 0.03]);
@@ -525,23 +527,28 @@ export function buildSaigaAntelope(K, home, opts = {}) {
     K.mesh(K.sphere(1, 9, 7), fur, [s * 0.085, 0.09, -0.04], head, [0, 0, -s * 0.9], [0.045, 0.055, 0.02]);
     K.mesh(K.sphere(1, 8, 6), shade, [s * 0.087, 0.09, -0.03], head, [0, 0, -s * 0.9], [0.032, 0.04, 0.012]);
     if (!female) {
+      // long and ringed for most of their length (the ridges of the reference), smooth near the tip
       const prof = [];
-      for (let i = 0; i <= 18; i++) {
-        const y = (i / 18) * 0.24, r = 0.019 * (1 - (i / 18) * 0.8);
-        prof.push([r * (i < 15 && i % 2 ? 1.22 : 1), y]);
+      for (let i = 0; i <= 30; i++) {
+        const y = (i / 30) * 0.34, r = 0.021 * (1 - (i / 30) * 0.78);
+        prof.push([r * (i < 24 && i % 2 ? 1.32 : 1), y]);
       }
-      prof.push([0.0005, 0.245]);
-      K.mesh(K.lathe('saigaHorn', prof, 7), horn, [s * 0.035, 0.1, 0.0], head, [-0.25, 0, -s * 0.12]);
+      prof.push([0.0005, 0.345]);
+      K.mesh(K.lathe('saigaHorn2', prof, 9), horn, [s * 0.035, 0.1, 0.0], head, [-0.32, 0, -s * 0.1]);
+      K.mesh(K.cone(0.0052, 0.05, 6), hornTip, [s * (0.035 + 0.032), 0.1 + 0.31, -0.105], head, [-0.32, 0, -s * 0.1]);
     }
   }
   const eyeG = eyes(K, head, { x: 0.074, y: 0.05, z: 0.065, r: 0.018, iris: 0x2b1c12, out: 0.75 });
   // the nose: a soft drooping proboscis that flares
   const nose = K.group([0, -0.01, 0.12], head);
-  K.mesh(K.sphere(1, 12, 9), fur, [0, 0.0, 0.03], nose, null, [0.07, 0.075, 0.09]);
-  K.mesh(K.sphere(1, 10, 8), fur, [0, -0.05, 0.095], nose, null, [0.064, 0.07, 0.062]);
-  K.mesh(K.sphere(1, 10, 8), belly, [0, -0.1, 0.06], nose, null, [0.045, 0.03, 0.05]);
-  K.mesh(K.sphere(1, 6, 5), nostril, [0.024, -0.1, 0.13], nose, null, [0.016, 0.011, 0.012]);
-  K.mesh(K.sphere(1, 6, 5), nostril, [-0.024, -0.1, 0.13], nose, null, [0.016, 0.011, 0.012]);
+  K.mesh(K.sphere(1, 14, 10), fur, [0, 0.0, 0.03], nose, null, [0.07, 0.075, 0.1]);
+  K.mesh(K.sphere(1, 12, 9), fur, [0, -0.05, 0.1], nose, null, [0.066, 0.074, 0.068]);
+  // the trunk-like tip that hangs over the mouth
+  K.mesh(K.sphere(1, 12, 9), fur, [0, -0.1, 0.13], nose, null, [0.058, 0.056, 0.048]);
+  K.mesh(K.sphere(1, 10, 8), belly, [0, -0.13, 0.07], nose, null, [0.042, 0.028, 0.05]);
+  K.mesh(K.box(0.005, 0.06, 0.012), nostril, [0, -0.12, 0.172], nose);                    // the crease
+  K.mesh(K.sphere(1, 6, 5), nostril, [0.022, -0.145, 0.155], nose, null, [0.016, 0.01, 0.012]);
+  K.mesh(K.sphere(1, 6, 5), nostril, [-0.022, -0.145, 0.155], nose, null, [0.016, 0.01, 0.012]);
 
   const legs = [];
   for (const [s, f] of [[-1, 1], [1, 1], [-1, 0], [1, 0]]) {
@@ -556,7 +563,7 @@ export function buildSaigaAntelope(K, home, opts = {}) {
   K.mesh(K.sphere(1, 8, 6), fur, [0, 0.72, 0.0], far, null, [0.22, 0.24, 0.52]);
   K.mesh(K.sphere(1, 8, 6), fur, [0, 0.9, 0.58], far, null, [0.1, 0.12, 0.16]);
   K.mesh(K.box(0.26, 0.58, 0.6), legMat, [0, 0.3, 0], far);
-  if (!female) K.mesh(K.box(0.09, 0.22, 0.02), horn, [0, 1.07, 0.52], far, [-0.3, 0, 0]);
+  if (!female) K.mesh(K.box(0.09, 0.32, 0.02), horn, [0, 1.12, 0.5], far, [-0.3, 0, 0]);
 
   return finish(K, root, near, far, home, 45, {
     species: SPECIES['saiga-antelope'], radius: 0.72, eye: new THREE.Vector3(0, 1.0, 0.62),

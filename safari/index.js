@@ -9,8 +9,8 @@
 // at the end a field report shows the best shot per species, the score and the board.
 //
 // A route module (safari/routes/*.js) brings the terrain, the creatures and the palette; the engine
-// brings the camera, the scoring, the sound and the HUD. Phase 3 and 4 add canyon.js and jungle.js
-// next to test.js and nothing in here has to change.
+// brings the camera, the scoring, the sound and the HUD. A route with water (`under`, `dive`) also
+// gets the submersible: the hatches, the lamps, the tinted fog and the muffled sound.
 import * as THREE from 'three';
 import { makeRig, FOV } from './rig.js';
 import { createHud } from './hud.js';
