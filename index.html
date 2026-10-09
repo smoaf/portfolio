@@ -2542,6 +2542,7 @@ const campScreen = (id) => {                           // tests: where on screen
 };
 window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => camp.armed, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
 window.__safari = () => camp.safari;
+window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
 window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
 
