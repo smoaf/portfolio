@@ -18,6 +18,7 @@ import { createAudio, mutedByDefault } from './audio.js';
 import { judge, verdict, grab } from './photo.js';
 import { localStore } from './leaderboard.js';
 import { survey, record } from './fieldlog.js';
+import { chunkScenery } from './terrain.js';
 
 const FILM = 30, PELLETS = 8;
 const vA = new THREE.Vector3(), vB = new THREE.Vector3();
@@ -73,6 +74,9 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   const world = R.build({ scene, tod, keep, THREE });
   const P = world.palette || R.palette[tod] || R.palette.day;
   const dark = tod === 'night' || tod === 'dusk' || tod === 'dawn';
+  // route-long instance sets in culled chunks: only where the fog closes the view in (the jungle);
+  // in the open canyon nearly every chunk would be in view, so it would only add draw calls
+  const scenery = chunkScenery(scene, P.far < 400 ? 150 : Infinity);
 
   scene.fog = new THREE.Fog(srgb(P.fog), P.near, P.far);
   const sky = makeSky(scene, P, tod === 'night');
@@ -236,6 +240,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     env.u = rig.progress;
     stepMedium(dt);
     if (world.update) world.update(dt, env);
+    scenery.cull(env.camPos, scene.fog.far * 1.05);
     // what the lens drifts towards next: the nearest creature worth a look, else the route's own point
     let poiD = 80;
     poi = null;
@@ -438,6 +443,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     shots: () => S.shots,
     aimAt: (p) => rig.aimAt(p),
     shoot, feed: throwFeed, finish,
+    stats: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, ratio: RES.ratio }),
     hud, rig, scene, world,
     dispose() {
       if (S.dead) return;
@@ -457,6 +463,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
           }
         }
         if (o.isLight && o.dispose) o.dispose();
+        if (o.isInstancedMesh) o.dispose();           // its instance buffers
       });
       keepers.forEach((k) => k && k.dispose && k.dispose());
       scene.clear();

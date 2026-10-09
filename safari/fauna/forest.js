@@ -119,8 +119,9 @@ function gait(legs, ph, w, amp = 0.5, bend = 0.7) {
 // Enormous amber eyes (they glow orange after dark), thin membranous ears, long fingers with
 // round pads, a long naked tail with a tuft. The head swivels almost 180 degrees to follow the van.
 export function buildTarsier(K, home, opts = {}) {
-  const fur = K.mat(0x8c6c55, { roughness: 0.9 }), pale = K.mat(0xa8927f, { roughness: 0.92 });
-  const skin = K.mat(0xa9786a, { roughness: 0.7 }), face = K.mat(0x5e4436, { roughness: 0.85 });
+  // it sits in the canopy's deep shade, so the coat gives off a faint warmth of its own to read there
+  const fur = K.mat(0x8c6c55, { roughness: 0.9, emissive: 0x2e2018 }), pale = K.mat(0xa8927f, { roughness: 0.92, emissive: 0x3a2e24 });
+  const skin = K.mat(0xa9786a, { roughness: 0.7, emissive: 0x2a1814 }), face = K.mat(0x5e4436, { roughness: 0.85 });
   const bark = K.mat(0x5a4636, { roughness: 0.95 }), moss = K.mat(0x55703a, { roughness: 0.95 });
   const ear = K.fin(0xd58c5a, 0.88, 0.25);
   const flare = K.glow(0xff8a1c, 6, { roughness: 0.15 });

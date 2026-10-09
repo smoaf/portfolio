@@ -15,6 +15,7 @@ export const THUMB = { w: 216, h: 162 };               // the little polaroid in
 
 const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3(), eye = new THREE.Vector3();
 const ray = new THREE.Raycaster();
+ray.layers.enableAll();                               // the colliders include scenery the lens skips (chunked)
 
 // how much of the frame height the creature covers
 function framing(camera, radius, dist) {

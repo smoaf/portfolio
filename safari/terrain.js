@@ -114,8 +114,55 @@ export function instanced(geo, mat, items) {
   im.count = items.length;
   im.instanceMatrix.needsUpdate = true;
   im.computeBoundingSphere();
+  im.userData.scenery = true;                          // the engine may cut it into chunks (chunkScenery)
   return im;
 }
+
+// Scenery spread along a whole route is one InstancedMesh per kind, so its bounds cover the route
+// and it is always drawn in full: on the jungle that was ~500k triangles every frame. After the
+// build, each big set is cut into square chunks: the chunks are drawn and culled on their own (by
+// the lens, and by `cull` beyond the fog), the instances a route hid (scale 0) are left out, and
+// the original stays where it was as the collider the photo rays test, on a layer the lens skips.
+// A route that hides the original (`visible = false`) hides its chunks with it.
+const SKIP = 1;                                        // the layer of the originals: never drawn
+export function chunkScenery(scene, size = 150, min = 24) {
+  const chunks = [], sets = [];
+  if (!isFinite(size)) return { chunks, cull() {} };
+  scene.traverse((o) => { if (o.isInstancedMesh && o.userData.scenery && o.count >= min) sets.push(o); });
+  const at = new THREE.Vector3(), q0 = new THREE.Quaternion();
+  for (const im of sets) {
+    const cells = new Map();
+    for (let i = 0; i < im.count; i++) {
+      im.getMatrixAt(i, m4);
+      m4.decompose(at, q0, sc);
+      if (sc.x * sc.y * sc.z === 0) continue;
+      const k = Math.floor(at.x / size) + ',' + Math.floor(at.z / size);
+      if (!cells.has(k)) cells.set(k, []);
+      cells.get(k).push(i);
+    }
+    if (cells.size < 2) continue;
+    for (const list of cells.values()) {
+      const c = new THREE.InstancedMesh(im.geometry, im.material, list.length);
+      list.forEach((i, j) => {
+        im.getMatrixAt(i, m4); c.setMatrixAt(j, m4);
+        if (im.instanceColor) { im.getColorAt(i, col); c.setColorAt(j, col); }
+      });
+      c.renderOrder = im.renderOrder;
+      c.computeBoundingSphere();
+      im.add(c);
+      chunks.push(c);
+    }
+    im.layers.set(SKIP);
+  }
+  return {
+    chunks,
+    // hide what lies wholly beyond the fog: the frustum alone keeps everything up to the far plane
+    cull(eye, far) {
+      for (const c of chunks) c.visible = c.boundingSphere.center.distanceTo(eye) - c.boundingSphere.radius < far;
+    },
+  };
+}
+const col = new THREE.Color();
 
 // Caustics: a moving net of light on everything below the water line (a texture effect, so no
 // shadows move). Patches a Lambert or Standard material; `u.time` drives it.

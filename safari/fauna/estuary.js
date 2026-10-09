@@ -709,7 +709,7 @@ export function buildCrocodile(K, home, opts = {}) {
   K.mesh(K.cone(0.22, 2.2, 6), skin, [0, -0.12, -2.0], far, [-PI / 2, 0, 0], [1, 1, 0.7]);
   K.place(root, home);
 
-  const st = { px: home.x, pz: home.z, ph: 0, gape: 0, lift: bask ? 0.42 : 0, roll: 0, sp: 0, hp: 0, lunge: 0 };
+  const st = { px: home.x, pz: home.z, ph: 0, gape: 0, lift: bask ? 0.42 : 0.12, roll: 0, sp: 0, hp: 0, lunge: 0 };
   const c = K.makeCreature({
     species: SPECIES.crocodile, root, home, radius: 2.1, eye: new THREE.Vector3(0, 0.1, 1.25), flyer: !bask,
     ground: K.groundY, speed: bask ? 0.5 : 0.6, roam: bask ? 3 : 10, fleeAt: 7, curiousAt: 30, shy: bask ? 0.6 : 0.15, rareChance: 0.5,
@@ -726,7 +726,7 @@ export function buildCrocodile(K, home, opts = {}) {
       const moving = spd > 0.05;
       P.y = bask ? K.groundY(P.x, P.z) : surfAt(K, P.x, P.z, home.y);
       // in the water it floats at the line, sinks out of sight when it flees; on land it lies flat
-      let lift = bask ? 0.42 : 0;
+      let lift = bask ? 0.42 : 0.12;                   // afloat the back, eyes and nostrils ride above the water
       if (!bask && c.state === 'flee') lift = c.t < c.hold - 1 ? -0.75 : 0;
       st.lift = damp(st.lift, lift, 2, dt);
       B.position.y = st.lift + (bask ? 0 : Math.sin(t * 0.7 + c.bob) * 0.012);
