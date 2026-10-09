@@ -455,7 +455,7 @@ export function buildBongoAntelope(K, home, opts = {}) {
 export function buildGiantAnteater(K, home, opts = {}) {
   const fur = K.mat(0x6f665e, { roughness: 0.95 }), pale = K.mat(0xb3ada3, { roughness: 0.92 });
   const black = K.mat(0x161414, { roughness: 0.9 }), whiteB = K.glow(0xe8f0f4, 0.3, { roughness: 0.8 });   // the white edge glows a little after dark
-  const tailM = K.mat(0x463c35, { roughness: 1 });
+  const tailM = K.mat(0x5f5349, { roughness: 1 });
   const tongueM = K.sheen(0xc4607a, { roughness: 0.3 });
 
   const root = new THREE.Group(), near = K.group(null, root), far = K.group(null, root);

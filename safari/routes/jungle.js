@@ -237,7 +237,7 @@ export const ROUTE = {
     const crownA = instanced(crownGeo, lam({ color: dark(0x2f5a2a), flatShading: true }),
       treeSpots.map((t) => ({ p: t.p.clone().setY(t.p.y + 18 * t.s[1] + 0.5), s: [8 + rand() * 5, 3.6 + rand() * 2, 8 + rand() * 5], ry: rand() * 6 })));
     const crownB = instanced(crownGeo, lam({ color: dark(0x3e6e2e), flatShading: true }),
-      treeSpots.flatMap((t) => [0, 1].map(() => ({ p: t.p.clone().add(new THREE.Vector3((rand() - 0.5) * 9, 18 * t.s[1] - 3.5 - rand() * 6, (rand() - 0.5) * 9)), s: [4 + rand() * 3.5, 2.2 + rand() * 1.2, 4 + rand() * 3.5], ry: rand() * 6 }))));
+      treeSpots.flatMap((t) => [0, 1].map(() => ({ p: t.p.clone().add(new THREE.Vector3((rand() - 0.5) * 9, 18 * t.s[1] - 2 - rand() * 4, (rand() - 0.5) * 9)), s: [4 + rand() * 3.5, 2.2 + rand() * 1.2, 4 + rand() * 3.5], ry: rand() * 6 }))));
     // shrubs: the dark green mass that fills the gaps between the trunks
     const shrubs = instanced(geo(new THREE.IcosahedronGeometry(1, 0).scale(1, 0.75, 1)), lam({ color: dark(0x2c4f26), flatShading: true }),
       near(520, 5, 60, (q) => (land(q, 5) ? { s: [1.4 + rand() * 2.2, 1.2 + rand() * 1.8, 1.4 + rand() * 2.2], lift: 0.4 } : null)));
@@ -380,8 +380,12 @@ export const ROUTE = {
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 808 });
     const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS };
     const creatures = [];
+    // everything starts out turned towards the road (give or take), so a perched animal never
+    // shows the van its back for the whole drive
+    const facing = (h) => { const q = path.getPointAt(uNear(h.x, h.z)); return Math.atan2(q.x - h.x, q.z - h.z); };
     const spawn = (id, home, opts = {}, extra = {}) => {
       if (!B[id]) return null;
+      if (opts.yaw === undefined) opts = { ...opts, yaw: facing(home) + (rand() - 0.5) * 0.8 };
       const c = B[id](K, home, opts);
       if (!c) return null;
       Object.assign(c, extra);
@@ -438,18 +442,25 @@ export const ROUTE = {
       branchItems.push({ p: foot.clone().setY(tip.y).addScaledVector(dir, 0.5), s: [1, len, 1], rz: Math.PI / 2, ry: Math.atan2(-dir.z, dir.x) });
       return tip.clone().setY(tip.y + 0.16);
     };
+    // a tree right by the road and a spot on its bark, on the side that faces the road, h up
+    const onTrunk = (u, side, h) => {
+      const foot = beside(u, side), q = path.getPointAt(u);
+      perchItems.push({ p: foot, s: [0.9, 1, 0.9] });
+      const dir = new THREE.Vector3(q.x - foot.x, 0, q.z - foot.z).normalize();
+      return foot.clone().addScaledVector(dir, 0.9 * (0.6 - 0.2 * h / 12) + 0.02).setY(foot.y + h);
+    };
 
     // the south forest
     const uA = (k) => lerp(0.02, uIn - 0.04, k);
-    spawn('tarsier', perch(uA(0.12), -9, 4.2), {}, small);
-    spawn('treehopper', perch(uA(0.2), 8, 3.4), {}, small);
+    spawn('tarsier', perch(uA(0.12), -6.5, 3.4), {}, small);
+    spawn('treehopper', perch(uA(0.2), 6.5, 2.9), {}, small);
     spawn('giant-panda', beside(uNear(-24, -392), -12));
     spawn('giant-panda', beside(uNear(-24, -392) + 0.012, -17));
     spawn('flower-mantis', beside(uA(0.33), 6.5, 0.9), { perch: true }, small);
     spawn('bongo-antelope', beside(uA(0.48), 13)); spawn('bongo-antelope', beside(uA(0.52), 16));
     spawn('giant-anteater', beside(uA(0.6), -11));
-    spawn('eyespot-moth', perch(uA(0.7), -8, 5), {}, small);
-    spawn('tarsier', perch(uA(0.8), 9, 5.2), {}, small);
+    spawn('eyespot-moth', onTrunk(uA(0.7), -6, 3.2), { stub: false }, small);
+    spawn('tarsier', perch(uA(0.8), 6.5, 3.6), {}, small);
     spawn('flower-mantis', beside(uA(0.9), -6.5, 0.9), { perch: true }, small);
     if (night) { spawn('poodle-moth', beside(uA(0.4), -5, 3), {}, small); spawn('poodle-moth', beside(uA(0.75), 6, 3.4), {}, small); }
 
@@ -470,9 +481,9 @@ export const ROUTE = {
     // the north forest
     const uC = (k) => lerp(uOut + 0.04, 0.98, k);
     spawn('giant-anteater', beside(uC(0.1), 12));
-    spawn('tarsier', perch(uNear(56, 236), -8, 6), {}, small);
-    spawn('eyespot-moth', perch(uNear(56, 236) + 0.006, 8, 4.4), {}, small);
-    spawn('treehopper', perch(uC(0.35), -7, 3.6), {}, small);
+    spawn('tarsier', perch(uNear(56, 236), -6.5, 3.8), {}, small);
+    spawn('eyespot-moth', onTrunk(uNear(56, 236) + 0.006, 6, 2.8), { stub: false }, small);
+    spawn('treehopper', perch(uC(0.35), -6, 3), {}, small);
     spawn('bongo-antelope', beside(uC(0.5), -14));
     spawn('giant-panda', beside(uNear(62, 300), 13));
     spawn('flower-mantis', beside(uC(0.7), 6.5, 0.9), { perch: true }, small);
@@ -487,7 +498,7 @@ export const ROUTE = {
     // the forest (or right round it), so the photo moments are not lost behind a leaf
     const lanes = [], pathLen = path.getLength();
     for (const c of creatures) {
-      if (c.flock || c.flyer) continue;
+      if (c.flock || c.species.id === 'frigatebird') continue;            // the sea birds are up in the open sky
       const h = c.home, u = uNear(h.x, h.z);
       if (path.getPointAt(u).y < WATER - 0.2 && groundY(h.x, h.z) < WATER) continue;   // out on the water there is nothing to clear
       // a fan of sight lines: from where the van is level with it, and from 15 and 30 m before and after
@@ -512,8 +523,8 @@ export const ROUTE = {
       mesh.instanceMatrix.needsUpdate = true;
       for (const [m, per] of linked) { for (const i of gone) for (let k = 0; k < per; k++) m.setMatrixAt(i * per + k, zero); m.instanceMatrix.needsUpdate = true; }
     };
-    clear(ferns, 0.8); clear(bigLeaves, 1.2); clear(shrubs, 1.6); clear(bamboo, 0.3, [[bambooLeaves, 1]]);
-    clear(trunks, 0.9, [[crownA, 1], [crownB, 2]]); clear(palmTrunks, 0.5, [[fronds, 1]]); clear(lianas, 0.2);
+    clear(ferns, 2); clear(bigLeaves, 2); clear(shrubs, 2.5); clear(bamboo, 0.3, [[bambooLeaves, 1]]);
+    clear(trunks, 3, [[crownA, 1], [crownB, 2]]); clear(palmTrunks, 0.5, [[fronds, 1]]); clear(lianas, 0.2);
 
     const colliders = [ground, trunks, crownA, crownB, shrubs, palmTrunks, bigLeaves, mangroveRoots, mangroveCrowns, perchTrunks];
     const open = ROUTE.open[tod] || ROUTE.open.day;
