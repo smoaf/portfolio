@@ -88,6 +88,22 @@ function perch(c) {
   return c;
 }
 
+// a walk that was started without a goal (a forced state) gets one, so nothing reads a null target
+function needTarget(c, state) {
+  if ((state === 'wander' || state === 'flee') && !c.target) {
+    const a = Math.random() * PI * 2;
+    c.target = c.home.clone().add(vA.set(Math.cos(a), 0, Math.sin(a)).multiplyScalar(Math.max(4, c.roam)));
+  }
+}
+
+// fold a still group's meshes into its parent (keeping where they are), so the bake can merge
+// them with the parent's: one draw call per material instead of one per little group
+function fold(g) {
+  g.updateMatrix();
+  for (const m of [...g.children]) if (m.isMesh) { m.applyMatrix4(g.matrix); g.parent.add(m); }
+  return g;
+}
+
 // the gait: legs = [{ hip, knee, ph, front }]; w = how much they swing (smoothed by the caller)
 function gait(legs, ph, w, amp = 0.5, bend = 0.7) {
   for (const L of legs) {
@@ -112,11 +128,12 @@ export function buildTarsier(K, home, opts = {}) {
   const root = new THREE.Group(), near = K.group(null, root), far = K.group(null, root);
   const TX = -0.2, TZ = -0.13;                                  // the stem's axis, beside and behind
   if (opts.stub !== false) {
-    const st = K.group([TX, 0.25, TZ], near, [0.12, 0, 0.22]);
+    const st = K.group([TX, 0.25, TZ], near, [-0.12, 0, 0.22]);
     K.mesh(K.cyl(0.085, 0.12, 3.2, 8), bark, [0, 0, 0], st);
     K.mesh(K.cyl(0.03, 0.05, 0.9, 6), bark, [0.25, 0.6, 0], st, [0, 0, -0.9]);
-    K.mesh(K.sphere(1, 8, 6), moss, [0.04, -0.5, 0.08], st, null, [0.11, 0.26, 0.07]);
-    K.mesh(K.cyl(0.085, 0.12, 3.2, 6), bark, [TX, 0.25, TZ], far, [0.12, 0, 0.22]);
+    K.mesh(K.sphere(1, 8, 6), moss, [0.05, -0.75, 0.05], st, null, [0.09, 0.18, 0.06]);
+    fold(st);
+    K.mesh(K.cyl(0.085, 0.12, 3.2, 6), bark, [TX, 0.25, TZ], far, [-0.12, 0, 0.22]);
   }
   // orbit: the body can scuttle round the stem to hide; b: the body itself (hops up the stem)
   const orbit = K.group([TX, 0, TZ], near);
@@ -170,13 +187,12 @@ export function buildTarsier(K, home, opts = {}) {
   K.mesh(K.sphere(1, 8, 6), fur, [0, 0.52, 0.02], far, null, 0.15);
   K.mesh(K.sphere(1, 8, 6), K.glow(0xc0862a, 0.55), [0, 0.53, 0.13], far, null, [0.13, 0.065, 0.04]);
 
-  K.lod({}, near, far);
   K.place(root, home);
   const irisMeshes = irises();
   const baseIris = irisMeshes[0] && irisMeshes[0].material;
 
   const c = K.makeCreature({
-    species: SPECIES.tarsier, root, home, radius: 0.5, eye: new THREE.Vector3(0, 0.52, 0.08), flyer: true,
+    species: SPECIES.tarsier, onState: needTarget, root, home, radius: 0.5, eye: new THREE.Vector3(0, 0.52, 0.08), flyer: true,
     speed: 0.0001, roam: 0, fleeAt: 5, curiousAt: 32, shy: 0.4, rareChance: 0.6, rareAt: 'night', yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);
@@ -257,7 +273,7 @@ export function buildGiantPanda(K, home, opts = {}) {
     { ...leg(K, hip, [0.2, -0.06, 0.02], { r1: 0.12, l1: 0.26, r2: 0.1, l2: 0.2, m1: black, foot: pawH }), ph: 0 },
   ];
   // the bamboo cane in the right front paw: a jointed stalk with a spray of leaves at the top
-  const bam = K.group([0, -0.26, 0.08], legs[1].knee, [0.5, 0, -0.1]);
+  const bam = K.group([0, -0.26, 0.06], legs[1].knee, [PI - 0.3, 0, 0.35]);
   K.mesh(K.cyl(0.026, 0.03, 1.2, 7), cane, [0, 0.3, 0], bam);
   for (let i = 0; i < 4; i++) K.mesh(K.cyl(0.034, 0.034, 0.025, 7), cane, [0, -0.12 + i * 0.26, 0], bam);
   const leafPts = [[0, 0], [0.04, 0.1], [0.03, 0.3], [0, 0.38], [-0.02, 0.28], [-0.03, 0.1]];
@@ -272,7 +288,7 @@ export function buildGiantPanda(K, home, opts = {}) {
 
   let sit = 1, w = 0, ph = 0;
   const c = K.makeCreature({
-    species: SPECIES['giant-panda'], root, home, radius: 0.95, eye: new THREE.Vector3(0, 1.0, 0.55), ground: K.groundY,
+    species: SPECIES['giant-panda'], onState: needTarget, root, home, radius: 0.95, eye: new THREE.Vector3(0, 1.0, 0.55), ground: K.groundY,
     speed: 0.85, roam: 5, fleeAt: 6, curiousAt: 26, shy: 0.25, rareChance: 0.7, yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);
@@ -305,12 +321,12 @@ export function buildGiantPanda(K, home, opts = {}) {
       gait(legs, ph, w, 0.45, 0.6);
       const raise = 0.15 + 0.08 * Math.sin(env.t * 2.6 + c.bob);
       const wave = back ? Math.sin(c.t * 5) * 0.4 : 0;
-      const sitPose = [[-0.05 + wave, 0.3], [-1.15 - raise, -1.35], [-0.2 - wave, 0], [-0.2 + wave, 0]];
+      const sitPose = [[-0.05 + wave, 0.3], [-0.6 - raise, -1.5], [-0.2 - wave, 0], [-0.2 + wave, 0]];
       legs.forEach((L, i) => {
         const k = Math.max(sit, back);
         L.hip.rotation.x = L.hip.rotation.x * (1 - k) + sitPose[i][0] * k + (back ? -0.9 * back + (i < 2 ? -0.6 : 0.2) : 0);
         L.knee.rotation.x = L.knee.rotation.x * (1 - k) + sitPose[i][1] * k;
-        L.hip.rotation.z = (i % 2 ? -1 : 1) * (0.12 * sit + 0.35 * back);
+        L.hip.rotation.z = (i % 2 ? 1 : -1) * ((i === 1 ? 0.4 : 0.12) * sit + 0.35 * back);
       });
       bam.scale.setScalar(Math.max(0.001, smooth((sit - 0.35) / 0.5)));
     },
@@ -325,7 +341,7 @@ export function buildGiantPanda(K, home, opts = {}) {
 export function buildBongoAntelope(K, home, opts = {}) {
   const coat = K.mat(0xa4471c, { roughness: 0.75 }), dark = K.mat(0x2a1a12, { roughness: 0.8 });
   const stripe = K.glow(0xf5efe2, 0.18, { roughness: 0.7 }), flash = K.glow(0xfff6dc, 2.6, { roughness: 0.4 });
-  const horn = K.sheen(0x3b2b1e, { roughness: 0.45 }), muzzle = K.mat(0x3e3330, { roughness: 0.6 });
+  const horn = K.sheen(0x3b2b1e, { roughness: 0.45 });
 
   const root = new THREE.Group(), near = K.group(null, root), far = K.group(null, root);
   K.shadow(root, 0.6, 1.1);
@@ -342,26 +358,25 @@ export function buildBongoAntelope(K, home, opts = {}) {
     }
     return [bx, by];
   };
-  for (let i = 0; i < 12; i++) {
-    const z = 0.36 - i * 0.07, [rx, ry] = sect(z);
-    K.mesh(K.torus(1, 0.035, 3, 14, PI * 1.25), stripe, [0, 0.02, z], tor, [0, 0.12 - i * 0.012, -PI * 0.125], [rx * 1.025, ry * 1.0, 0.4]);
+  for (let i = 0; i < 13; i++) {
+    const z = 0.3 - i * 0.052 - (i % 3) * 0.006, [rx, ry] = sect(z);
+    K.mesh(K.torus(1, 0.022, 3, 14, PI * 1.2), stripe, [0, 0.0, z], tor, [0, 0.1 - i * 0.012, -PI * 0.1], [rx * 1.01, ry * 0.99, 0.5]);
   }
-  K.mesh(K.box(0.05, 0.06, 0.95), dark, [0, 0.34, -0.02], tor);                  // the dark spinal crest
+  K.mesh(K.box(0.03, 0.03, 0.9), dark, [0, 0.315, -0.02], tor);                  // the dark spinal crest
   K.mesh(K.torus(1, 0.04, 3, 12, PI * 0.9), stripe, [0, 0.18, 0.62], tor, [-0.55, 0, PI * 1.05], [0.17, 0.15, 0.6]);  // chest crescent
   const strMesh = () => withMat(tor, stripe);
 
   // neck and head
   const neck = K.group([0, 1.12, 0.52], body);
   K.mesh(K.capsule(0.12, 0.38, 3, 8), coat, [0, 0.17, 0.08], neck, [0.55, 0, 0]);
-  K.mesh(K.box(0.035, 0.05, 0.42), dark, [0, 0.3, 0.0], neck, [-0.95, 0, 0]);
-  const head = K.group([0, 0.38, 0.26], neck);
+  const hb = K.group([0, 0.38, 0.26], neck), head = K.group(null, hb);
   K.mesh(K.sphere(1, 12, 9), coat, [0, 0, 0], head, null, [0.12, 0.13, 0.16]);
   K.mesh(K.capsule(0.075, 0.14, 3, 8), coat, [0, -0.07, 0.15], head, [1.25, 0, 0]);
-  K.mesh(K.sphere(1, 10, 8), muzzle, [0, -0.1, 0.25], head, null, [0.08, 0.075, 0.07]);
+  K.mesh(K.sphere(1, 10, 8), dark, [0, -0.085, 0.27], head, null, [0.06, 0.05, 0.045]);
   K.mesh(K.sphere(1, 8, 6), dark, [0, -0.07, 0.305], head, null, [0.045, 0.025, 0.02]);
   K.mesh(K.box(0.022, 0.15, 0.02), stripe, [-0.035, 0.0, 0.17], head, [0.9, 0, -0.65]);    // the white chevron
   K.mesh(K.box(0.022, 0.15, 0.02), stripe, [0.035, 0.0, 0.17], head, [0.9, 0, 0.65]);
-  for (const s of [-1, 1]) K.mesh(K.sphere(1, 8, 6), stripe, [s * 0.1, -0.06, 0.07], head, null, [0.012, 0.03, 0.03]);
+  for (const s of [-1, 1]) K.mesh(K.sphere(1, 8, 6), stripe, [s * 0.105, -0.045, 0.06], head, null, [0.012, 0.022, 0.022]);
   K.mesh(K.sphere(1, 8, 6), stripe, [0, -0.15, 0.2], head, null, [0.06, 0.02, 0.06]);
   const eyes = eyePair(K, head, [0, 0.03, 0.08], { dx: 0.1, r: 0.03, dark: true });
   for (const s of [-1, 1]) {
@@ -369,7 +384,7 @@ export function buildBongoAntelope(K, home, opts = {}) {
     K.mesh(K.tube('bongoHorn' + s, pts.map(([x, y], i) => [x, y, -0.03 - i * 0.05]), 0.035, 0.012, 6, 14), horn, null, head);
     K.mesh(K.cone(0.012, 0.07, 5), stripe, [s * 0.17, 0.75, -0.24], head, [-0.4, 0, 0]);
   }
-  const earPts = [[0, 0], [0.06, 0.04], [0.1, 0.13], [0.09, 0.23], [0.04, 0.27], [-0.01, 0.2], [-0.03, 0.08]];
+  const earPts = Array.from({ length: 14 }, (_, i) => { const a = (i / 14) * PI * 2; return [0.035 + Math.sin(a) * 0.065 * (1 - 0.25 * Math.cos(a)), 0.14 - Math.cos(a) * 0.14]; });
   const ears = [-1, 1].map((s) => {
     const g = K.group([s * 0.1, 0.07, -0.04], head, [0.1, s * 0.25, -s * 1.15]);
     K.mesh(K.shape('bongoEar' + s, s > 0 ? earPts : mirror(earPts), 0.015), coat, [0, 0, 0], g);
@@ -382,7 +397,7 @@ export function buildBongoAntelope(K, home, opts = {}) {
   const legs = [L(-0.15, 0.45, 0, true), L(0.15, 0.45, PI, true), L(-0.15, -0.46, PI, false), L(0.15, -0.46, 0, false)];
   const tail = K.group([0, 1.08, -0.68], body, [0.3, 0, 0]);
   K.mesh(K.capsule(0.025, 0.3, 2, 6), coat, [0, -0.17, 0], tail);
-  K.mesh(K.sphere(1, 8, 6), dark, [0, -0.36, 0], tail, null, [0.04, 0.08, 0.04]);
+  K.mesh(K.sphere(1, 8, 6), coat, [0, -0.36, 0], tail, null, [0.04, 0.08, 0.04]);
 
   // far
   K.mesh(K.sphere(1, 10, 7), coat, [0, 0.98, 0], far, null, [0.28, 0.34, 0.8]);
@@ -394,7 +409,7 @@ export function buildBongoAntelope(K, home, opts = {}) {
 
   let w = 0, ph = 0, alert = 0;
   const c = K.makeCreature({
-    species: SPECIES['bongo-antelope'], root, home, radius: 1.0, eye: new THREE.Vector3(0, 1.55, 0.85), ground: K.groundY,
+    species: SPECIES['bongo-antelope'], onState: needTarget, root, home, radius: 1.0, eye: new THREE.Vector3(0, 1.55, 0.85), ground: K.groundY,
     speed: 1.7, roam: 8, fleeAt: 12, curiousAt: 30, shy: 0.85, rareChance: 0.5, yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);
@@ -409,15 +424,15 @@ export function buildBongoAntelope(K, home, opts = {}) {
       alert = damp(alert, c.state === 'rare' ? 1 : 0, 5, dt);
       const grazing = (c.state === 'eat' && !moving) || (c.state === 'idle' && Math.sin(env.t * 0.21 + c.bob) > 0.35);
       neck.rotation.x = damp(neck.rotation.x, grazing ? 1.35 : (fleeing ? 0.35 : -0.45 * alert), 3, dt);
-      head.position.y = 0.38 + alert * 0.06;
+      hb.position.y = 0.38 + alert * 0.06;
       K.look(c, head, env, dt, { yaw: 0.9, pitch: 0.45, rate: 3, force: alert > 0.5 });
       // rare: a stamp and a bark (the head jerks), and the stripes flare
       if (c.state === 'rare') {
         const bark = Math.max(0, Math.sin(c.t * 4.5)) ** 8;
-        head.rotation.x -= bark * 0.15;
+        hb.rotation.x = -bark * 0.25;
         legs[0].hip.rotation.x = -0.5 * smooth(Math.sin(c.t * 3) * 2);
         swap(stripesNow, Math.sin(c.t * 9) > -0.6 ? flash : stripe);
-      } else swap(stripesNow, stripe);
+      } else { swap(stripesNow, stripe); hb.rotation.x = 0; }
       const br = 1 + Math.sin(env.t * 1.8 + c.bob) * 0.012;
       tor.scale.set(br, br, 1);
       ears.forEach((e, i) => {
@@ -438,11 +453,10 @@ export function buildBongoAntelope(K, home, opts = {}) {
 // a huge brushy flag of a tail, and the black shoulder wedge edged in white. Eating: the tongue
 // flicks. Rare: rears up on its hind legs with its claws open, braced on its tail.
 export function buildGiantAnteater(K, home, opts = {}) {
-  const fur = K.mat(0x5a5049, { roughness: 0.95 }), pale = K.mat(0xa29d94, { roughness: 0.92 });
-  const black = K.mat(0x161414, { roughness: 0.9 }), whiteB = K.mat(0xe2e0da, { roughness: 0.9 });
-  const tailM = K.mat(0x3c332d, { roughness: 1 }), nose = K.sheen(0x2a2422, { roughness: 0.4 });
-  const tongueM = K.sheen(0xc4607a, { roughness: 0.3 }), claw = K.mat(0xcfc6b6, { roughness: 0.6 });
-  const glowM = K.glow(0x9be0ff, 0.5);
+  const fur = K.mat(0x6f665e, { roughness: 0.95 }), pale = K.mat(0xb3ada3, { roughness: 0.92 });
+  const black = K.mat(0x161414, { roughness: 0.9 }), whiteB = K.glow(0xe8f0f4, 0.3, { roughness: 0.8 });   // the white edge glows a little after dark
+  const tailM = K.mat(0x463c35, { roughness: 1 });
+  const tongueM = K.sheen(0xc4607a, { roughness: 0.3 });
 
   const root = new THREE.Group(), near = K.group(null, root), far = K.group(null, root);
   K.shadow(root, 0.55, 1.4);
@@ -451,15 +465,14 @@ export function buildGiantAnteater(K, home, opts = {}) {
   K.mesh(K.sphere(1, 14, 10), fur, [0, 0.05, 0.42], hip, null, [0.25, 0.31, 0.62]);
   K.mesh(K.sphere(1, 12, 9), fur, [0, 0.02, 0.02], hip, null, [0.24, 0.29, 0.3]);
   // the shoulder wedge: a black band slanting from the chest up and back, white on its rear edge
-  K.mesh(K.torus(1, 0.12, 4, 18), black, [0, 0.03, 0.66], hip, [-0.75, 0, 0], [0.235, 0.33, 0.45]);
-  K.mesh(K.torus(1, 0.05, 4, 18), whiteB, [0, 0.07, 0.56], hip, [-0.75, 0, 0], [0.24, 0.335, 0.4]);
-  K.mesh(K.box(0.03, 0.02, 0.5), glowM, [0, 0.32, 0.2], hip);                     // a faint glowing seam (the twist)
+  K.mesh(K.torus(1, 0.14, 4, 18), black, [0, 0.0, 0.68], hip, [-1.0, 0, 0], [0.245, 0.33, 0.45]);
+  K.mesh(K.torus(1, 0.05, 4, 18), whiteB, [0, 0.06, 0.55], hip, [-1.0, 0, 0], [0.262, 0.345, 0.4]);
   // neck tapering into the head and snout
   K.mesh(K.capsule(0.15, 0.3, 3, 8), fur, [0, 0.0, 0.95], hip, [1.75, 0, 0]);
-  const head = K.group([0, -0.02, 1.15], hip);
+  const nod = K.group([0, -0.02, 1.15], hip), head = K.group(null, nod);
   K.mesh(K.sphere(1, 12, 9), fur, [0, 0, 0], head, null, [0.1, 0.11, 0.14]);
   K.mesh(K.tube('antSnout', [[0, 0, 0.05], [0, -0.03, 0.25], [0, -0.09, 0.45], [0, -0.17, 0.6]], 0.085, 0.03, 8, 10), fur, null, head);
-  K.mesh(K.sphere(1, 8, 6), nose, [0, -0.17, 0.6], head, null, 0.032);
+  K.mesh(K.sphere(1, 8, 6), black, [0, -0.17, 0.6], head, null, 0.032);
   for (const s of [-1, 1]) K.mesh(K.sphere(1, 8, 6), fur, [s * 0.075, 0.08, -0.04], head, null, [0.035, 0.04, 0.02]);
   const eyes = eyePair(K, head, [0, 0.03, 0.06], { dx: 0.085, r: 0.016, dark: true });
   const tongue = K.group([0, -0.17, 0.6], head, [0.45, 0, 0]);
@@ -469,7 +482,7 @@ export function buildGiantAnteater(K, home, opts = {}) {
   const fore = (g, y) => {
     K.mesh(K.sphere(1, 10, 8), black, [0, y + 0.02, 0.02], g, null, [0.09, 0.1, 0.1]);
     K.mesh(K.sphere(1, 10, 8), black, [0, y - 0.04, 0.04], g, null, [0.09, 0.06, 0.12]);
-    for (const s of [-1, 0, 1]) K.mesh(K.cone(0.018, 0.12, 5), claw, [s * 0.035, y - 0.02, -0.03], g, [-2.2, 0, 0]);
+    for (const s of [-1, 0, 1]) K.mesh(K.cone(0.018, 0.12, 5), black, [s * 0.035, y - 0.02, -0.03], g, [-2.2, 0, 0]);
   };
   const hind = (g, y) => K.mesh(K.sphere(1, 10, 8), black, [0, y - 0.03, 0.05], g, null, [0.08, 0.05, 0.13]);
   const legs = [
@@ -479,12 +492,11 @@ export function buildGiantAnteater(K, home, opts = {}) {
     { ...leg(K, hip, [0.16, -0.06, 0.0], { r1: 0.11, l1: 0.22, r2: 0.08, l2: 0.18, m1: fur, m2: black, foot: hind }), ph: 0 },
   ];
   // the flag tail: two segments of tall, flat, hanging brush
-  const tail1 = K.group([0, 0.12, -0.24], hip, [0.35, 0, 0]);
-  K.mesh(K.sphere(1, 12, 9), tailM, [0, -0.06, -0.26], tail1, null, [0.1, 0.27, 0.32]);
-  const tail2 = K.group([0, -0.06, -0.52], tail1, [0.2, 0, 0]);
-  K.mesh(K.sphere(1, 12, 9), tailM, [0, -0.08, -0.22], tail2, null, [0.075, 0.27, 0.3]);
-  for (let i = 0; i < 5; i++) K.mesh(K.cone(0.05, 0.22, 4), tailM, [0, -0.32, -0.05 - i * 0.09], tail2, [0.15 + i * 0.05, 0, PI]);
-
+  const tail1 = K.group([0, 0.1, -0.24], hip, [-0.3, 0, 0]);
+  K.mesh(K.sphere(1, 12, 9), tailM, [0, -0.05, -0.36], tail1, null, [0.075, 0.24, 0.42]);
+  const tail2 = K.group([0, -0.06, -0.68], tail1, [-0.15, 0, 0]);
+  K.mesh(K.sphere(1, 12, 9), tailM, [0, -0.08, -0.22], tail2, null, [0.06, 0.27, 0.36]);
+  for (let i = 0; i < 3; i++) K.mesh(K.sphere(1, 8, 6), tailM, [0, -0.22 - i * 0.02, 0.3 - i * 0.3], tail2, [0.1, 0, 0], [0.035, 0.12, 0.3]);   // the hanging fringe
   // far
   K.mesh(K.sphere(1, 10, 7), fur, [0, 0.64, 0.1], far, null, [0.26, 0.32, 0.9]);
   K.mesh(K.cone(0.1, 0.8, 6), fur, [0, 0.48, 1.18], far, [2.0, 0, 0]);
@@ -495,7 +507,7 @@ export function buildGiantAnteater(K, home, opts = {}) {
 
   let w = 0, ph = 0, rear = 0;
   const c = K.makeCreature({
-    species: SPECIES['giant-anteater'], root, home, radius: 1.0, eye: new THREE.Vector3(0, 0.62, 0.85), ground: K.groundY,
+    species: SPECIES['giant-anteater'], onState: needTarget, root, home, radius: 1.0, eye: new THREE.Vector3(0, 0.62, 0.85), ground: K.groundY,
     speed: 1.0, roam: 9, fleeAt: 7, curiousAt: 24, shy: 0.45, rareChance: 0.6, yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);
@@ -511,8 +523,8 @@ export function buildGiantAnteater(K, home, opts = {}) {
       hip.rotation.x = -1.05 * rear;
       hip.position.y = 0.62 + 0.04 * rear;
       legs[2].hip.rotation.x += 1.05 * rear; legs[3].hip.rotation.x += 1.05 * rear;
-      tail1.rotation.x = 0.35 + 1.15 * rear + Math.sin(env.t * 0.8 + c.bob) * 0.04;
-      tail2.rotation.x = 0.2 - 0.2 * rear;
+      tail1.rotation.x = -0.3 + 1.0 * rear + Math.sin(env.t * 0.8 + c.bob) * 0.04;
+      tail2.rotation.x = -0.15 + 0.2 * rear;
       tail1.rotation.y = Math.sin(env.t * 0.7 + c.bob) * 0.12 * (1 - rear) + Math.sin(ph) * 0.1 * w;
       const claws = c.state === 'rare' ? Math.sin(c.t * 3.2) * 0.25 : 0;
       clawsOpen.forEach((L, i) => {
@@ -525,7 +537,7 @@ export function buildGiantAnteater(K, home, opts = {}) {
       const eating = c.state === 'eat' && !moving;
       const sniff = (c.state === 'wander' || c.state === 'idle') ? 0.25 + Math.sin(env.t * 1.3 + c.bob) * 0.15 : 0;
       K.look(c, head, env, dt, { yaw: 0.7, pitch: 0.35, rate: 2.5, force: rear > 0.5 });
-      head.rotation.x += (eating ? 0.55 : sniff) * (1 - rear) + 0.6 * rear;
+      nod.rotation.x = damp(nod.rotation.x, (eating ? 0.55 : sniff) * (1 - rear) + 0.6 * rear, 4, dt);
       const flick = eating || (c.state === 'idle' && Math.sin(env.t * 0.5 + c.bob) > 0.6) ? Math.max(0, Math.sin(env.t * 11)) : 0;
       tongue.scale.z = Math.max(0.001, flick);
       const br = 1 + Math.sin(env.t * 1.7 + c.bob) * 0.012;
@@ -543,7 +555,7 @@ export function buildGiantAnteater(K, home, opts = {}) {
 export function buildFlowerMantis(K, home, opts = {}) {
   const cream = K.mat(0xf1e8de, { roughness: 0.6 }), mint = K.mat(0xbfd9b8, { roughness: 0.6 });
   const petal = K.glow(0xeea0c6, 0.3, { roughness: 0.5, side: THREE.DoubleSide });
-  const red = K.mat(0x8a2a3e, { roughness: 0.55, side: THREE.DoubleSide }), legM = K.mat(0x7a3540, { roughness: 0.6 });
+  const legM = K.mat(0x82303e, { roughness: 0.55, side: THREE.DoubleSide });
   const green = K.mat(0x436d36, { roughness: 0.8, side: THREE.DoubleSide }), eyeM = K.sheen(0xe7b3c8, { roughness: 0.2 });
   const wingM = K.fin(0xe6f0de, 0.72, 0.25), spotM = K.mat(0x3b1832, { side: THREE.DoubleSide }), spotG = K.glow(0xffd24a, 1.4, { side: THREE.DoubleSide });
   const bloom = K.mat(0xf3b6d2, { roughness: 0.55, side: THREE.DoubleSide }), bud = K.glow(0xffe07a, 0.5);
@@ -560,6 +572,7 @@ export function buildFlowerMantis(K, home, opts = {}) {
       const f = K.group([fx, fy, fz], near, [0.4, fr, 0]);
       for (let p = 0; p < 5; p++) K.mesh(K.shape('mantPetal', petalPts), bloom, [0, 0, 0], f, [0, 0, (p / 5) * PI * 2]);
       K.mesh(K.sphere(1, 6, 5), bud, [0, 0, 0.02], f, null, 0.035);
+      fold(f);
       K.mesh(K.cyl(0.012, 0.012, Math.hypot(fx, fy - 1.15, fz + 0.1) + 0.05, 4), green, [fx / 2, (fy + 1.15) / 2, (fz - 0.1) / 2], near,
         [Math.atan2(fz + 0.1, fy - 1.15), 0, -Math.atan2(fx, fy - 1.15)]);
     }
@@ -568,6 +581,7 @@ export function buildFlowerMantis(K, home, opts = {}) {
   }
   // the mantis: m sways (the whole insect), front holds the neck and head, arms and wings move
   const m = K.group([0, SEAT, 0], near);
+  m.scale.setScalar(1.3);
   // abdomen: tilted up at the back, leafy side flaps with pink rims
   K.mesh(K.capsule(0.06, 0.3, 3, 8), cream, [0, 0.2, -0.2], m, [2.0, 0, 0]);
   K.mesh(K.capsule(0.045, 0.16, 3, 8), mint, [0, 0.32, -0.42], m, [2.5, 0, 0]);
@@ -581,7 +595,7 @@ export function buildFlowerMantis(K, home, opts = {}) {
     const kx = s * 0.22, kz = z + (z > 0 ? 0.12 : -0.1);
     K.mesh(K.tube('mantFem' + s + z, [[s * 0.03, 0.16, z], [kx, 0.26, kz]], 0.012, 0.01, 5, 3), legM, null, m);
     K.mesh(K.tube('mantTib' + s + z, [[kx, 0.26, kz], [s * 0.3, 0.0, kz + (z > 0 ? 0.08 : -0.08)]], 0.009, 0.007, 5, 3), legM, null, m);
-    K.mesh(K.shape('mantLobe' + s, s > 0 ? lobePts : mirror(lobePts)), petal, [s * 0.1, 0.2, (z + kz) / 2], m, [0.3, -s * 0.6, -s * 1.2], 1.15);
+    K.mesh(K.shape('mantLobe' + s, s > 0 ? lobePts : mirror(lobePts)), petal, [s * 0.09, 0.22, (z + kz) / 2], m, [-0.5, s * 0.5, -s * 1.3], 1.8);
   }
   // wings: one fan for both, folded flat along the back (narrow) or raised and spread (rare)
   const wings = K.group([0, 0.22, -0.02], m, [-1.35, 0, 0]);
@@ -597,8 +611,7 @@ export function buildFlowerMantis(K, home, opts = {}) {
   const shieldPts = [[0, -0.02], [0.1, 0.06], [0.13, 0.16], [0.07, 0.26], [0, 0.3], [-0.07, 0.26], [-0.13, 0.16], [-0.1, 0.06]];
   K.mesh(K.shape('mantShield', shieldPts, 0.02), cream, [0, 0.12, 0.03], front);
   K.mesh(K.shape('mantShieldIn', shieldPts.map(([x, y]) => [x * 0.6, y * 0.7 + 0.04])), mint, [0, 0.12, 0.042], front);
-  K.mesh(K.shape('mantShieldRim', [[-0.1, 0.06], [0, -0.02], [0.1, 0.06], [0.06, 0.07], [0, 0.03], [-0.06, 0.07]]), green, [0, 0.12, 0.043], front);
-  const head = K.group([0, 0.42, 0.01], front, [0.85, 0, 0]);
+  const head = K.group(null, K.group([0, 0.42, 0.01], front, [0.85, 0, 0]));
   K.mesh(K.sphere(1, 10, 8), cream, [0, 0, 0.01], head, null, [0.07, 0.05, 0.04]);
   K.mesh(K.cone(0.04, 0.08, 6), mint, [0, -0.05, 0.03], head, [PI, 0, 0]);
   K.mesh(K.cone(0.012, 0.1, 5), legM, [0, 0.07, 0.0], head);                                    // the frontal horn
@@ -606,29 +619,28 @@ export function buildFlowerMantis(K, home, opts = {}) {
     K.mesh(K.cone(0.035, 0.09, 8), eyeM, [s * 0.065, 0.03, 0.0], head, [0, 0, -s * 0.35]);       // conical eyes
     K.mesh(K.tube('mantAnt' + s, [[s * 0.02, 0.04, 0.03], [s * 0.08, 0.2, 0.02], [s * 0.16, 0.34, -0.04]], 0.005, 0.003, 4, 6), legM, null, head);
   }
-  const headEyes = K.group([0, 0.035, 0.03], head);
-  for (const s of [-1, 1]) K.mesh(K.sphere(1, 6, 5), K.sheen(0x2a0d18), [s * 0.07, 0, 0.0], headEyes, null, 0.012);
+  for (const s of [-1, 1]) K.mesh(K.sphere(1, 6, 5), spotM, [s * 0.075, 0.035, 0.03], head, null, 0.013);   // the dark pseudopupils
   // the hunting arms: coxa, a femur with the petal lobe outside and the red shield inside, tibia folded
   const arms = [-1, 1].map((s) => {
     const a = K.group([s * 0.04, 0.3, 0.03], front, [0.4, 0, 0]);
-    K.mesh(K.capsule(0.022, 0.14, 3, 6), cream, [0, -0.08, 0.02], a, [0.3, 0, 0]);
+    K.mesh(K.capsule(0.022, 0.14, 3, 6), cream, [s * 0.04, 0.3 - 0.08 * Math.cos(0.7), 0.03 + 0.08 * Math.sin(0.7)], front, [0.7, 0, 0]);
     const fem = K.group([0, -0.17, 0.05], a, [-2.6, 0, 0]);
     K.mesh(K.capsule(0.02, 0.2, 3, 6), cream, [0, 0.12, 0], fem);
-    K.mesh(K.shape('mantArmLobe' + s, (s > 0 ? lobePts : mirror(lobePts)).map(([x, y]) => [x * 1.3, y * 1.4])), petal, [s * 0.025, 0.02, 0], fem, [0, s * 1.4, 0]);
-    K.mesh(K.shape('mantArmRed' + s, [[0, 0], [s * -0.06, 0.06], [s * -0.07, 0.18], [0, 0.24]]), red, [-s * 0.02, 0.02, 0.0], fem, [0, s * 1.2, 0]);
+    K.mesh(K.shape('mantArmLobe' + s, (s > 0 ? lobePts : mirror(lobePts)).map(([x, y]) => [x * 1.3, y * 1.4])), petal, [s * 0.03, 0.02, 0.01], fem, [0, s * 0.35, 0]);
+    K.mesh(K.shape('mantArmRed' + s, [[0, 0], [s * -0.06, 0.06], [s * -0.07, 0.18], [0, 0.24]]), legM, [-s * 0.02, 0.02, 0.0], fem, [0, s * 1.2, 0]);
     K.mesh(K.capsule(0.013, 0.16, 3, 5), cream, [0, 0.2, 0.07], fem, [2.6, 0, 0]);
     return { a, fem };
   });
 
+  fold(front);                                                  // the neck stays put; arms and head move
   // far
   K.mesh(K.capsule(0.07, 0.5, 2, 6), cream, [0, SEAT + 0.25, -0.05], far, [1.0, 0, 0]);
   K.mesh(K.box(0.4, 0.04, 0.3), petal, [0, SEAT + 0.2, 0], far);
-  K.lod({}, near, far);
   K.place(root, home);
 
   let strike = 0, fan = 0;
   const c = K.makeCreature({
-    species: SPECIES['flower-mantis'], root, home, radius: 0.6, eye: new THREE.Vector3(0, SEAT + 0.55, 0.3), flyer: true,
+    species: SPECIES['flower-mantis'], onState: needTarget, root, home, radius: 0.6, eye: new THREE.Vector3(0, SEAT + 0.7, 0.35), flyer: true,
     speed: 0.0001, roam: 0, fleeAt: 3, curiousAt: 20, shy: 0.2, rareChance: 0.7, yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);
@@ -637,7 +649,6 @@ export function buildFlowerMantis(K, home, opts = {}) {
       m.rotation.x = Math.sin(env.t * 0.8 + c.bob * 2) * 0.04;
       m.position.z = Math.sin(env.t * 2.2 + c.bob) * 0.015;
       K.look(c, head, env, dt, { yaw: 1.2, pitch: 0.4, rate: 4 });
-      K.blink(c, [headEyes], dt);
       // rare: the strike in the first half second, then the display
       let armX = 0, armZ = 0, femX = -2.6;
       if (c.state === 'rare') {
@@ -652,12 +663,12 @@ export function buildFlowerMantis(K, home, opts = {}) {
         a.rotation.z = s * armZ;
         fem.rotation.x = femX + (fan > 0.5 ? Math.sin(env.t * 3 + i) * 0.1 : 0);
       });
-      front.rotation.x = -0.85 + 0.25 * fan - 0.2 * strike;
       wings.rotation.x = -1.35 + 1.15 * fan;
       wings.scale.x = 0.25 + 0.75 * fan;
       wings.scale.y = 0.8 + 0.2 * fan;
       // fleeing mantises flatten down onto the flower
       m.position.y = SEAT + damp(m.position.y - SEAT, c.state === 'flee' ? -0.08 : 0, 4, dt);
+      m.scale.setScalar(1.3);
     },
   });
   return perch(K.lod(c, near, far, 40));
@@ -672,7 +683,7 @@ export function buildTreehopper(K, home, opts = {}) {
   const orange = K.sheen(0xf0a020, { roughness: 0.4, side: THREE.DoubleSide }), wingM = K.sheen(0xb9cad6, { roughness: 0.35, side: THREE.DoubleSide });
   const vein = K.mat(0x26303a, { roughness: 0.6 }), bodyM = K.mat(0x52685e, { roughness: 0.7 }), legM = K.mat(0xd9e6e0, { roughness: 0.8 });
   const bark = K.mat(0x7a6650, { roughness: 0.95 });
-  const glowA = K.glow(0x8ff5e6, 2.6), glowR = K.glow(0xff3b2a, 3.2);
+  const glowA = K.glow(0x6fe8d8, 1.3), glowR = K.glow(0xff3b2a, 2.0);
 
   const root = new THREE.Group(), near = K.group(null, root), far = K.group(null, root);
   if (opts.stub !== false) {
@@ -680,7 +691,7 @@ export function buildTreehopper(K, home, opts = {}) {
     K.mesh(K.cyl(0.015, 0.025, 0.5, 5), bark, [0.1, 0.05, -0.45], near, [0.6, 0, -0.9]);
     K.mesh(K.cyl(0.04, 0.05, 1.5, 5), bark, [0, -0.04, 0], far, [PI / 2, 0, 0]);
   }
-  const b = K.group([0, 0, 0], near);
+  const turn = K.group(null, near), b = K.group(null, turn);
   // body under the helmet, head with red eyes
   K.mesh(K.capsule(0.05, 0.22, 3, 8), bodyM, [0, 0.085, -0.02], b, [PI / 2, 0, 0]);
   K.mesh(K.sphere(1, 10, 8), aqua, [0, 0.09, 0.15], b, null, [0.07, 0.065, 0.05]);
@@ -694,15 +705,15 @@ export function buildTreehopper(K, home, opts = {}) {
   for (const s of [-1, 1]) {
     const wg = K.group([s * 0.062, 0, 0], b, [0, -PI / 2, s * 0.12]);
     K.mesh(K.shape('hopWing', wPts), wingM, [0, 0, 0], wg);
-    for (let i = 0; i < 4; i++) K.mesh(K.box(0.3 - i * 0.04, 0.005, 0.004), vein, [-0.07 - i * 0.02, 0.05 + i * 0.025, s * 0.003], wg, [0, 0, 0.2 + i * 0.05]);
-    for (let i = 0; i < 4; i++) K.mesh(K.box(0.005, 0.08, 0.004), vein, [-0.18 + i * 0.07, 0.07, s * 0.003], wg, [0, 0, 0.5]);
-    K.mesh(K.box(0.3, 0.012, 0.004), orange, [-0.05, 0.13, s * 0.004], wg, [0, 0, 0.3]);
+    for (let i = 0; i < 4; i++) K.mesh(K.box(0.3 - i * 0.04, 0.005, 0.004), vein, [-0.07 - i * 0.02, 0.05 + i * 0.025, -s * 0.003], wg, [0, 0, 0.2 + i * 0.05]);
+    for (let i = 0; i < 4; i++) K.mesh(K.box(0.005, 0.08, 0.004), vein, [-0.18 + i * 0.07, 0.07, -s * 0.003], wg, [0, 0, 0.5]);
+    K.mesh(K.box(0.3, 0.012, 0.004), orange, [-0.05, 0.13, -s * 0.004], wg, [0, 0, 0.3]);
   }
   // the helmet: a laterally flat slab sweeping up into a horn, with the red flame and orange rim
   const helm = K.group([0, 0, 0], b);
-  const hPts = [[-0.28, 0.06], [-0.2, 0.12], [-0.02, 0.18], [0.1, 0.3], [0.2, 0.5], [0.27, 0.6], [0.31, 0.6], [0.31, 0.55], [0.22, 0.36], [0.17, 0.2], [0.16, 0.12], [0.12, 0.1], [-0.05, 0.12], [-0.24, 0.06]];
+  const hPts = [[-0.3, 0.05], [-0.22, 0.12], [-0.05, 0.2], [0.04, 0.3], [0.12, 0.42], [0.2, 0.53], [0.27, 0.6], [0.33, 0.61], [0.36, 0.56], [0.32, 0.48], [0.25, 0.38], [0.2, 0.28], [0.18, 0.18], [0.17, 0.1], [0.12, 0.08], [-0.05, 0.11], [-0.25, 0.05]];
   K.mesh(K.shape('hopHelm', hPts, 0.075), aqua, [0, 0, 0], helm, [0, -PI / 2, 0]);
-  const flame = [[-0.12, 0.16], [0.02, 0.2], [0.13, 0.32], [0.24, 0.52], [0.28, 0.57], [0.26, 0.5], [0.15, 0.27], [0.05, 0.17]];
+  const flame = [[-0.15, 0.15], [0.02, 0.21], [0.12, 0.35], [0.22, 0.5], [0.29, 0.57], [0.31, 0.52], [0.23, 0.4], [0.16, 0.27], [0.06, 0.17]];
   const rim = [[-0.27, 0.07], [-0.05, 0.135], [0.12, 0.115], [0.15, 0.13], [-0.05, 0.15], [-0.26, 0.085]];
   for (const s of [-1, 1]) {
     K.mesh(K.shape('hopFlame', flame), redM, [s * 0.039, 0, 0], helm, [0, -PI / 2, 0]);
@@ -711,18 +722,17 @@ export function buildTreehopper(K, home, opts = {}) {
   // far
   K.mesh(K.shape('hopHelm', hPts, 0.075), aqua, [0, 0, 0], far, [0, -PI / 2, 0]);
   K.mesh(K.capsule(0.06, 0.24, 2, 6), wingM, [0, 0.08, -0.04], far, [PI / 2, 0, 0]);
-  K.lod({}, near, far);
   K.place(root, home);
   const helmMeshes = withMat(helm, aqua), flameMeshes = withMat(helm, redM);
 
   const c = K.makeCreature({
-    species: SPECIES.treehopper, root, home, radius: 0.4, eye: new THREE.Vector3(0, 0.2, 0.12), flyer: true,
+    species: SPECIES.treehopper, onState: needTarget, root, home, radius: 0.4, eye: new THREE.Vector3(0, 0.2, 0.12), flyer: true,
     speed: 0.0001, roam: 0, fleeAt: 3.5, curiousAt: 20, shy: 0.35, rareChance: 0.7, yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);
       K.blink(c, [eyes], dt);
       // it turns a little on its twig to keep the van in view, and pumps its body (it 'sings' through the stem)
-      K.look(c, b, env, dt, { yaw: 0.45, pitch: 0.05, rate: 1.5, glance: false });
+      K.look(c, turn, env, dt, { yaw: 0.45, pitch: 0.05, rate: 1.5, glance: false });
       const pump = Math.max(0, Math.sin(env.t * 9 + c.bob)) * (Math.sin(env.t * 0.7 + c.bob) > 0.3 ? 1 : 0);
       helm.rotation.x = -pump * 0.04;
       let hop = 0;
@@ -751,7 +761,7 @@ export function buildEyespotMoth(K, home, opts = {}) {
   const light = K.mat(0x7c9da0, { roughness: 0.9, side: THREE.DoubleSide }), amber = K.glow(0xd88e2a, 0.35, { side: THREE.DoubleSide });
   const pupil = K.sheen(0x06090c, { roughness: 0.2, side: THREE.DoubleSide }), blue = K.glow(0x4a7cff, 0.8, { side: THREE.DoubleSide });
   const furM = K.mat(0x22363b, { roughness: 1 }), bark = K.mat(0x5d4b3c, { roughness: 0.95 }), lichen = K.mat(0x8e9a72, { roughness: 1 });
-  const amberHot = K.glow(0xffa83a, 3.2, { side: THREE.DoubleSide }), blueHot = K.glow(0x6aa0ff, 4, { side: THREE.DoubleSide });
+  const amberHot = K.glow(0xff9a20, 1.5, { side: THREE.DoubleSide }), blueHot = K.glow(0x5a8cff, 2.2, { side: THREE.DoubleSide });
 
   const root = new THREE.Group(), near = K.group(null, root), far = K.group(null, root);
   if (opts.stub !== false) {
@@ -782,12 +792,12 @@ export function buildEyespotMoth(K, home, opts = {}) {
     K.mesh(K.shape('mothFore' + s, M(fore)), base, [0, 0, 0.004], g);
     K.mesh(K.shape('mothHind' + s, M(hind)), base, [0, 0, 0], g);
     // scalloped wave bands, dark and pale, curving across both wings
-    const waves = [[0.0, -0.1, 0.24], [0.0, -0.1, 0.34], [0.05, -0.12, 0.44], [0.05, -0.15, 0.52]];
+    const waves = [[0.0, -0.1, 0.2], [0.0, -0.1, 0.28], [0.02, -0.1, 0.36], [0.04, -0.12, 0.43]];
     waves.forEach(([cx, cy, r], i) => {
-      K.mesh(K.shape(`mothWave${s}${i}`, M(band(cx, cy, r, 0.022, -1.2, 0.35 + i * 0.12, 9))), wave, [0, 0, 0.008], g);
-      K.mesh(K.shape(`mothPale${s}${i}`, M(band(cx, cy, r - 0.035, 0.012, -1.1, 0.3 + i * 0.1, 9))), light, [0, 0, 0.008], g);
+      K.mesh(K.shape(`mothWave${s}${i}`, M(band(cx, cy, r, 0.022, -0.8 + i * 0.1, 0.35 + i * 0.1, 9))), wave, [0, 0, 0.008], g);
+      K.mesh(K.shape(`mothPale${s}${i}`, M(band(cx, cy, r - 0.035, 0.012, -0.75 + i * 0.1, 0.3 + i * 0.1, 9))), light, [0, 0, 0.008], g);
     });
-    for (let i = 0; i < 6; i++) K.mesh(K.shape(`mothDash${s}${i}`, M(ell(0.6 - i * 0.02, 0.28 - i * 0.07, 0.035, 0.012, 6))), wave, [0, 0, 0.008], g, [0, 0, s * 0.4]);
+    for (let i = 0; i < 5; i++) K.mesh(K.shape(`mothDash${s}${i}`, M(ell(0.62 - i * 0.03, 0.26 - i * 0.06, 0.03, 0.011, 6))), wave, [0, 0, 0.008], g);
     // the eyespot: pale ring, amber crescent, black pupil, blue sheen
     K.mesh(K.shape('mothRing' + s, M(ell(0.45, 0.16, 0.14, 0.12))), light, [0, 0, 0.01], g);
     K.mesh(K.shape('mothAmb' + s, M(ell(0.45, 0.16, 0.12, 0.1))), amber, [0, 0, 0.013], g);
@@ -803,12 +813,11 @@ export function buildEyespotMoth(K, home, opts = {}) {
   K.mesh(K.shape('mothFarH', [...mirror(hind).reverse(), ...hind]), base, [0, 0.04, 0.0], far);
   K.mesh(K.shape('mothFarS', ell(0, 0, 0.12, 0.1)), amber, [0.45, 0.2, 0.012], far);
   K.mesh(K.shape('mothFarS', ell(0, 0, 0.12, 0.1)), amber, [-0.45, 0.2, 0.012], far);
-  K.lod({}, near, far);
   K.place(root, home);
   const spots = wingsG.map((g) => ({ amb: withMat(g, amber), blu: withMat(g, blue) }));
 
   const c = K.makeCreature({
-    species: SPECIES['eyespot-moth'], root, home, radius: 0.75, eye: new THREE.Vector3(0, 0.1, 0.1), flyer: true,
+    species: SPECIES['eyespot-moth'], onState: needTarget, root, home, radius: 0.75, eye: new THREE.Vector3(0, 0.1, 0.1), flyer: true,
     speed: 0.0001, roam: 0, fleeAt: 4, curiousAt: 18, shy: 0.3, rareChance: 0.8, rareAt: 'dusk', yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);
@@ -878,12 +887,13 @@ export function buildPoodleMoth(K, home, opts = {}) {
   const hw = [[0, -0.03], [0.1, -0.06], [0.22, -0.12], [0.25, -0.2], [0.18, -0.26], [0.08, -0.2], [0.01, -0.1]];
   const big = (pts, k) => pts.map(([x, y]) => [x * k, y * k - 0.004]);
   const wings = [-1, 1].map((s) => {
-    const g = K.group([s * 0.06, 0.05, -0.03], b, [-1.2, 0, 0]);
+    const g = K.group([s * 0.06, 0.05, -0.03], b), pl = K.group(null, g, [1.2, 0, 0]);
     const M = (p) => (s > 0 ? p : mirror(p));
-    K.mesh(K.shape('poodFw' + s, M(fw)), cream, [0, 0, 0.004], g);
-    K.mesh(K.shape('poodFwR' + s, M(big(fw, 1.06))), rim, [0, 0, 0.0], g);
-    K.mesh(K.shape('poodHw' + s, M(hw)), cream, [0, 0, -0.002], g, [0, 0, -s * 0.15]);
-    K.mesh(K.shape('poodHwR' + s, M(big(hw, 1.07))), rim, [0, 0, -0.005], g, [0, 0, -s * 0.15]);
+    // the plane faces down, so the lowest layer is the one seen from above
+    K.mesh(K.shape('poodFw' + s, M(fw)), cream, [0, 0, -0.009], pl);
+    K.mesh(K.shape('poodFwR' + s, M(big(fw, 1.06))), rim, [0, 0, -0.006], pl);
+    K.mesh(K.shape('poodHw' + s, M(hw)), cream, [0, 0, -0.003], pl, [0, 0, -s * 0.15]);
+    K.mesh(K.shape('poodHwR' + s, M(big(hw, 1.07))), rim, [0, 0, 0], pl, [0, 0, -s * 0.15]);
     return g;
   });
   b.scale.setScalar(1.35);
@@ -891,7 +901,6 @@ export function buildPoodleMoth(K, home, opts = {}) {
   K.mesh(K.sphere(1, 8, 6), felt, [0, 0, -0.03], far, null, [0.15, 0.14, 0.22]);
   K.mesh(K.box(0.9, 0.02, 0.3), cream, [0, 0.06, -0.04], far);
   K.mesh(K.box(0.4, 0.02, 0.06), brown, [0, 0.15, 0.17], far);
-  K.lod({}, near, far);
   K.place(root, home);
   root.position.set(0, 0, 0);                                    // the world is the moth's frame now
   root.rotation.set(0, 0, 0);
@@ -907,6 +916,7 @@ export function buildPoodleMoth(K, home, opts = {}) {
   c.photoPoint = (out) => head.getWorldPosition(out);
   c.forward = (out) => out.set(Math.sin(mroot.rotation.y), 0, Math.cos(mroot.rotation.y));
   c.step = (dt, env) => {
+    root.position.set(0, 0, 0); root.rotation.set(0, 0, 0);    // the moth flies in world space
     c.t += dt;
     const d = env.dist;
     if (c.state !== 'flee' && c.state !== 'rare' && d < c.fleeAt) c.go('flee', 2.5);

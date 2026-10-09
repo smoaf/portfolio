@@ -286,6 +286,43 @@ export const ROUTE = {
     scene.add(motesWater, motesAir);
     keep(motesWater.geometry); keep(motesWater.material); keep(motesAir.geometry); keep(motesAir.material);
 
+    // ---- a waterfall down the far wall into the pool: a ribbon laid over the rock bands, its
+    // streaks scrolling down, and a cloud of spray where it lands
+    const fallTex = (() => {
+      const c = document.createElement('canvas'); c.width = 64; c.height = 256;
+      const g = c.getContext('2d');
+      g.fillStyle = 'rgba(210, 238, 240, 0.55)'; g.fillRect(0, 0, 64, 256);
+      for (let i = 0; i < 90; i++) {
+        g.fillStyle = `rgba(255, 255, 255, ${0.25 + rand() * 0.6})`;
+        g.fillRect(rand() * 64, rand() * 256, 1 + rand() * 3, 12 + rand() * 60);
+      }
+      const t = keep(new THREE.CanvasTexture(c));
+      t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 6); t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    })();
+    const FALL_Z = 318, fv = [], fuv = [], fi = [];
+    const dTop = wallStart(FALL_Z) + WALL + 3, dBot = wallStart(FALL_Z) - 6, STEPS = 48;
+    for (let i = 0; i <= STEPS; i++) {
+      const d = lerp(dTop, dBot, i / STEPS);
+      for (const [j, w] of [[0, -4.5], [1, 4.5]]) {
+        const z = FALL_Z + w * (1 - i / STEPS * 0.3), x = XC(z) + d;
+        fv.push(x, Math.max(groundY(x, z), WATER) + 0.6, z);
+        fuv.push(j, 1 - i / STEPS);
+      }
+      if (i < STEPS) { const k = i * 2; fi.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    const fg = geo(new THREE.BufferGeometry());
+    fg.setAttribute('position', new THREE.Float32BufferAttribute(fv, 3));
+    fg.setAttribute('uv', new THREE.Float32BufferAttribute(fuv, 2));
+    fg.setIndex(fi); fg.computeVertexNormals();
+    const fall = new THREE.Mesh(fg, keep(new THREE.MeshBasicMaterial({ map: fallTex, transparent: true, opacity: night ? 0.55 : 0.85, depthWrite: false, side: THREE.DoubleSide, color: night ? 0x7a9ab0 : 0xffffff })));
+    scene.add(fall);
+    const spray = motes({ n: 160, box: 1, color: 0xf2fbff, size: 0.5, opacity: night ? 0.25 : 0.45, drift: [0, 0, 0] });
+    { const pa = spray.geometry.attributes.position; for (let i = 0; i < pa.count; i++) pa.setXYZ(i, (rand() - 0.5) * 18, rand() * 7, (rand() - 0.5) * 16); }
+    spray.position.set(XC(FALL_Z) + dBot + 6, WATER, FALL_Z);
+    keep(spray.geometry); keep(spray.material);
+    scene.add(spray);
+
     // ---- the road band (not under water: there the van drives on the pool's own floor)
     const band = new THREE.Mesh(geo(roadBand(path, HALF - 0.4, 0.07)), lam({ color: night ? 0x6a5c52 : 0xc9a881 }));
     band.visible = false;                                      // the track is painted into the ground colours instead
@@ -410,7 +447,9 @@ export const ROUTE = {
       },
       update(dt, env) {
         T.time.value = env.t;
+        fallTex.offset.y = env.t * 0.9;
         const under = env.under > 0.5;
+        spray.visible = !under;
         shaftMesh.visible = under || env.camPos.y < 6;
         motesWater.visible = under; motesAir.visible = !under;
         (under ? motesWater : motesAir).step(dt, env.camPos, env.t);
