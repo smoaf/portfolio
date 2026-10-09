@@ -248,7 +248,7 @@ export const ROUTE = {
       }
       return geo(mergeGeometries(parts.map((g) => { g.deleteAttribute('uv'); return g; }), false));
     })();
-    const bigLeaves = instanced(bigLeafGeo, leafMat(0x2f6a34, { amp: 0.1, speed: 1.3, height: 2.5 }), near(420, 4.2, 36, (q) => (land(q, 4.2) ? { s: 1 + rand() * 1.4 } : null)));
+    const bigLeaves = instanced(bigLeafGeo, leafMat(0x2f6a34, { amp: 0.1, speed: 1.3, height: 2.5 }), near(420, 4.2, 36, (q) => (land(q, 4.2) ? { s: 0.8 + rand() * 0.9 } : null)));
     // bamboo: a grove in the panda's clearing and clumps elsewhere
     const bambooItems = [];
     const grove = (x, z, n, r) => { for (let i = 0; i < n; i++) { const a = rand() * 6.28, d = Math.sqrt(rand()) * r; const bx = x + Math.cos(a) * d, bz = z + Math.sin(a) * d; if (road.at(bx, bz).d < 5) continue; bambooItems.push({ p: new THREE.Vector3(bx, groundY(bx, bz), bz), s: [1, 0.7 + rand() * 0.6, 1], rx: (rand() - 0.5) * 0.15, rz: (rand() - 0.5) * 0.15 }); } };
@@ -356,6 +356,34 @@ export const ROUTE = {
       return q;
     };
     const onWater = (u, side, lift = 0) => { const q = beside(u, side); q.y = WATER + lift; return q; };
+    // a spot on the mudflats or a sandbank near the point `side` metres beside u: the nearest place
+    // whose ground lies between lo and hi (so the waders stand in the shallows, not on the river bed)
+    const shore = (u, side, lo = -0.25, hi = 0.8) => {
+      const q0 = beside(u, side);
+      for (let r = 0; r < 60; r += 1.5) {
+        const n = Math.max(1, Math.round(r * 0.8));
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + r, x = q0.x + Math.cos(a) * r, z = q0.z + Math.sin(a) * r;
+          const y = groundY(x, z);
+          if (y > lo && y < hi && road.at(x, z).d > 6) return new THREE.Vector3(x, y, z);
+        }
+      }
+      return q0;
+    };
+    // shore animals stay where their feet reach the bottom; a fleeing heron lands back on it
+    const wade = (c, deep = -0.45) => {
+      if (!c) return c;
+      c.keep = (x, z) => groundY(x, z) > deep;
+      const on = c.onState;
+      c.onState = (c, st) => {
+        if (on) on(c, st);
+        if (st === 'flee' && c.target) {
+          const from = c.root.position.clone(), to = c.target.clone();
+          for (let k = 10; k >= 0; k--) { c.target.lerpVectors(from, to, k / 10); if (c.keep(c.target.x, c.target.z)) break; }
+        }
+      };
+      return c;
+    };
     const small = { seeAt: 80 };
 
     // perches: a tree right by the road with a bare branch reaching out over it, at the height
@@ -386,16 +414,17 @@ export const ROUTE = {
 
     // the river: the mudflat by the south bank, the open water, the islands, the north bank
     const uR = (k) => lerp(uIn, uOut, k);
-    spawn('heron', beside(uR(0.08), 14)); spawn('heron', beside(uR(0.14), 22)); spawn('heron', beside(uR(0.86), -16));
-    spawn('mudskipper', beside(uR(0.1), -15)); spawn('mudskipper', beside(uR(0.9), 14));
-    spawn('fiddler-crab', beside(uR(0.05), 11)); spawn('fiddler-crab', beside(uR(0.95), -12));
-    spawn('crocodile', onWater(uR(0.22), -16)); spawn('crocodile', beside(uR(0.62), -30), { bask: true });
+    wade(spawn('heron', shore(uR(0.08), 14, -0.4, 0.3))); wade(spawn('heron', shore(uR(0.14), 22, -0.4, 0.3))); wade(spawn('heron', shore(uR(0.86), -16, -0.4, 0.3)));
+    wade(spawn('mudskipper', shore(uR(0.1), -15, 0.02, 0.6)), -0.05); wade(spawn('mudskipper', shore(uR(0.9), 14, 0.02, 0.6)), -0.05);
+    wade(spawn('fiddler-crab', shore(uR(0.05), 11, 0.05, 0.7)), 0); wade(spawn('fiddler-crab', shore(uR(0.95), -12, 0.05, 0.7)), 0);
+    spawn('crocodile', onWater(uR(0.22), -16)); wade(spawn('crocodile', shore(uR(0.62), -30, 0.1, 0.8), { bask: true }), -1.2);
     spawn('crocodile', onWater(uR(0.74), 20));
     spawn('river-dolphin', onWater(uR(0.38), 12, -1.2)); spawn('river-dolphin', onWater(uR(0.5), -14, -1.2)); spawn('river-dolphin', onWater(uR(0.56), 18, -1.2));
     spawn('archerfish', onWater(uR(0.3), 9, -0.3)); spawn('archerfish', onWater(uR(0.8), -9, -0.3));
     spawn('frigatebird', onWater(uR(0.45), 30, 22), {}, { seeAt: 320 });
     spawn('frigatebird', onWater(uR(0.6), -40, 28), {}, { seeAt: 320 });
-    if (B['frigatebird-group']) spawn('frigatebird-group', new THREE.Vector3(420, 30, 0), {}, { seeAt: 420 });
+    // sea birds coming in from the coast: a few riding one thermal over the mouth
+    { const g = ESTUARY.GROUPS.frigatebird(K, new THREE.Vector3(300, 0, 10), { n: 5, r: 40, alt: 34 }); g.seeAt = 420; creatures.push(g); }
 
     // the north forest
     const uC = (k) => lerp(uOut + 0.04, 0.98, k);
@@ -412,6 +441,38 @@ export const ROUTE = {
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);
     scene.add(perchTrunks, branches);
+
+    // clear lines of sight: no fern, leaf, shrub or trunk stands between the road and an animal in
+    // the forest (or right round it), so the photo moments are not lost behind a leaf
+    const lanes = [], pathLen = path.getLength();
+    for (const c of creatures) {
+      if (c.flock || c.flyer) continue;
+      const h = c.home, u = uNear(h.x, h.z);
+      if (path.getPointAt(u).y < WATER - 0.2 && groundY(h.x, h.z) < WATER) continue;   // out on the water there is nothing to clear
+      // a fan of sight lines: from where the van is level with it, and from 15 and 30 m before and after
+      for (const m of [-30, -15, 0, 15, 30]) {
+        const p = path.getPointAt(THREE.MathUtils.clamp(u + m / pathLen, 0, 1));
+        lanes.push({ ax: p.x, az: p.z, bx: h.x, bz: h.z, r: (m ? 0.9 : 1.4) + (c.radius || 0.6) * 1.4 });
+      }
+    }
+    const blocked = (x, z, pad) => lanes.some((l) => {
+      const dx = l.bx - l.ax, dz = l.bz - l.az, L = dx * dx + dz * dz || 1;
+      const k = Math.max(0, Math.min(1, ((x - l.ax) * dx + (z - l.az) * dz) / L));
+      return Math.hypot(x - l.ax - dx * k, z - l.az - dz * k) < l.r + pad;
+    });
+    const m4 = new THREE.Matrix4(), zero = new THREE.Matrix4().makeScale(0, 0, 0), at = new THREE.Vector3();
+    // hides the instances in a lane; `per` links meshes that share one placement list (n per spot)
+    const clear = (mesh, pad, linked = []) => {
+      const gone = [];
+      for (let i = 0; i < mesh.count; i++) {
+        mesh.getMatrixAt(i, m4); at.setFromMatrixPosition(m4);
+        if (blocked(at.x, at.z, pad)) { mesh.setMatrixAt(i, zero); gone.push(i); }
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      for (const [m, per] of linked) { for (const i of gone) for (let k = 0; k < per; k++) m.setMatrixAt(i * per + k, zero); m.instanceMatrix.needsUpdate = true; }
+    };
+    clear(ferns, 0.8); clear(bigLeaves, 1.2); clear(shrubs, 1.6); clear(bamboo, 0.3, [[bambooLeaves, 1]]);
+    clear(trunks, 0.9, [[crownA, 1], [crownB, 2]]); clear(palmTrunks, 0.5, [[fronds, 1]]); clear(lianas, 0.2);
 
     const colliders = [ground, trunks, crownA, crownB, shrubs, palmTrunks, bigLeaves, mangroveRoots, mangroveCrowns, perchTrunks];
     const open = ROUTE.open[tod] || ROUTE.open.day;

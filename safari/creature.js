@@ -37,6 +37,7 @@ export function makeCreature(def) {
     target: null, pellet: null, bob: Math.random() * 6.28,
     pose: def.pose || (() => {}),
     onState: def.onState || null,
+    keep: def.keep || null,                             // (x, z) => false where it must not walk (deep water)
     visible: true,
   };
   c.root.position.copy(c.home);
@@ -63,7 +64,9 @@ export function makeCreature(def) {
     if (d < 0.25) return true;
     turnTo(p.x, p.z, dt);
     const step = Math.min(d, c.speed * k * dt);
-    c.root.position.addScaledVector(vA.normalize(), step);
+    vA.normalize();
+    if (c.keep && !c.keep(c.root.position.x + vA.x * step, c.root.position.z + vA.z * step)) return true;   // stops at the edge
+    c.root.position.addScaledVector(vA, step);
     if (!c.flyer) c.root.position.y = c.ground(c.root.position.x, c.root.position.z);
     return false;
   };
