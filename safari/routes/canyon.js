@@ -244,10 +244,12 @@ export const ROUTE = {
       if (rand() < 0.45) continue;
       // find the cut face on that side and let the slab stick out of it over the road
       const y0 = p.y + 5.2 + rand() * 1.8;
+      // (past the first ledge: the slab's back end has to sit in rock that rises above it, or it
+      // floats off the lip of a step)
       let o = 5;
-      while (o < 16 && groundY(p.x + s.x * o, p.z + s.z * o) < y0) o += 0.5;
-      if (o >= 16) continue;
-      over.push({ p: p.clone().addScaledVector(s, o + 0.6).setY(y0), s: [3.4 + rand() * 1.2, 0.9 + rand() * 0.7, 3.5 + rand() * 3], ry: Math.atan2(s.x, s.z) + (rand() - 0.5) * 0.3 });
+      while (o < 20 && groundY(p.x + s.x * o, p.z + s.z * o) < y0 + 1.6) o += 0.5;
+      if (o >= 20) continue;
+      over.push({ p: p.clone().addScaledVector(s, o + 0.4).setY(y0), s: [3.4 + rand() * 1.2, 0.9 + rand() * 0.7, 3.5 + rand() * 3], ry: Math.atan2(s.x, s.z) + (rand() - 0.5) * 0.3 });
     }
     const overhangs = instanced(geo(new THREE.DodecahedronGeometry(1, 0)), rockMat, over);
     // the floor's plants: sage bushes, flat-crowned trees by the water, reeds on the banks
