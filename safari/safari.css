@@ -1,0 +1,156 @@
+/* The safari HUD: the viewfinder the visitor looks through, and the few readouts around it. It only
+   loads with the safari and goes again on exit. Same fonts and spaced capitals as the rest of the
+   site, but its own dark field-camera palette, because the whole screen is the viewfinder now. */
+.safari {
+  position: fixed; inset: 0; z-index: 25; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+  color: #f3ece0; font-family: var(--font-display, sans-serif); cursor: crosshair;
+  --vf: rgba(255, 244, 228, 0.82);
+  --vf-dim: rgba(255, 244, 228, 0.45);
+  --pad: max(14px, env(safe-area-inset-left, 0px));
+}
+.safari * { box-sizing: border-box; }
+.safari button { font-family: inherit; color: inherit; background: rgba(12, 11, 9, 0.5); border: 1px solid var(--vf-dim);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); padding: 10px 12px; min-height: 44px; cursor: pointer;
+  font-size: 11px; font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; font-stretch: 108%; font-variation-settings: 'wdth' 108; }
+.safari button:hover { border-color: var(--vf); }
+.safari button:focus-visible { outline: 2px solid var(--vf); outline-offset: 2px; }
+.safari .sf-caps { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-stretch: 108%; font-variation-settings: 'wdth' 108; }
+
+/* the frame: corner marks, a thin cross in the middle, a darker rim, like looking into a finder */
+.sf-finder { position: absolute; inset: 0; pointer-events: none; }
+.sf-finder::after { content: ""; position: absolute; inset: 0;
+  box-shadow: inset 0 0 90px 30px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 244, 228, 0.1); }
+.sf-corner { position: absolute; width: 34px; height: 34px; border: 2px solid var(--vf); opacity: 0.85; }
+.sf-corner.tl { top: 5%; left: 6%; border-right: 0; border-bottom: 0; }
+.sf-corner.tr { top: 5%; right: 6%; border-left: 0; border-bottom: 0; }
+.sf-corner.bl { bottom: 11%; left: 6%; border-right: 0; border-top: 0; }
+.sf-corner.br { bottom: 11%; right: 6%; border-left: 0; border-top: 0; }
+.sf-cross { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; opacity: 0.7; }
+.sf-cross::before, .sf-cross::after { content: ""; position: absolute; background: var(--vf); }
+.sf-cross::before { left: 50%; top: 0; bottom: 0; width: 1px; margin-left: -0.5px; }
+.sf-cross::after { top: 50%; left: 0; right: 0; height: 1px; margin-top: -0.5px; }
+.sf-cross span { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 1px solid var(--vf); border-radius: 50%; }
+.sf-grain { position: absolute; inset: 0; opacity: 0.1; mix-blend-mode: overlay;
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.5) 0 1px, transparent 1px 3px); }
+
+/* readouts: film left and zoom on the left, the run clock on the right, all small */
+.sf-read { position: absolute; top: calc(var(--pad) + env(safe-area-inset-top, 0px)); left: var(--pad); display: flex; gap: 8px; align-items: center; pointer-events: none; }
+.sf-chip { background: rgba(12, 11, 9, 0.5); border: 1px solid var(--vf-dim); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  padding: 8px 10px; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.sf-chip b { font-weight: 600; }
+.sf-chip.low { border-color: #e2705a; color: #ffc9ba; }
+.sf-top-right { position: absolute; top: calc(var(--pad) + env(safe-area-inset-top, 0px)); right: var(--pad); display: flex; gap: 8px; }
+.sf-rail { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255, 244, 228, 0.14); }
+.sf-rail i { display: block; height: 100%; width: 0; background: var(--vf); transition: width .4s linear; }
+
+/* the controls: feed and exit, reachable with a thumb on a phone */
+.sf-tools { position: absolute; left: var(--pad); right: var(--pad); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex; gap: 8px; align-items: flex-end; justify-content: space-between; }
+.sf-tools .sf-left, .sf-tools .sf-right { display: flex; gap: 8px; }
+/* the shot that just slid out of the camera, bottom right, stacked a few deep */
+.sf-feed { position: absolute; right: var(--pad); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); width: 132px; display: grid; gap: 8px; pointer-events: none; }
+.sf-shot { background: #f6f2ea; color: #1d1b18; padding: 6px 6px 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  transform: translateX(120%); opacity: 0; transition: transform .45s cubic-bezier(.2,.7,.2,1), opacity .45s; }
+.sf-shot.in { transform: none; opacity: 1; }
+.sf-shot.out { opacity: 0; transform: translateY(-6px); }
+.sf-shot canvas, .sf-shot img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
+.sf-shot .sf-cap { display: flex; justify-content: space-between; gap: 6px; margin-top: 5px; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; }
+.sf-shot .sf-cap b { color: #1d1b18; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* flash, and the word that comes up when a shot lands */
+.sf-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.sf-flash.on { animation: sf-flash .32s ease-out; }
+@keyframes sf-flash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+.sf-say { position: absolute; left: 50%; top: 58%; transform: translate(-50%, 0); text-align: center; pointer-events: none; max-width: min(62vw, 440px);
+  font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0; transition: opacity .3s, transform .3s; text-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+.sf-say.on { opacity: 1; transform: translate(-50%, -8px); }
+.sf-say b { display: block; font-size: 26px; letter-spacing: 0.06em; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+/* the name of the stretch the van rolls into, top middle */
+.sf-title { position: absolute; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translate(-50%, -6px); text-align: center;
+  pointer-events: none; opacity: 0; text-shadow: 0 2px 12px rgba(0,0,0,0.55); max-width: calc(100vw - 32px); }
+.sf-title b { display: block; font-size: 22px; letter-spacing: 0.08em; font-weight: 600; }
+.sf-title span { display: block; margin-top: 4px; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vf); }
+.sf-title.on { animation: sf-title 3.6s ease both; }
+@keyframes sf-title { 0% { opacity: 0; transform: translate(-50%, -6px); } 12%, 78% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 4px); } }
+
+/* below the surface: the frame goes blue-green at the rim, like a porthole */
+.sf-sea { position: absolute; inset: 0; pointer-events: none; opacity: var(--under, 0);
+  background: radial-gradient(ellipse at 50% 46%, rgba(20, 80, 90, 0) 48%, rgba(6, 40, 52, 0.55) 86%, rgba(3, 22, 30, 0.85) 100%); }
+/* the hatches: two armoured shutters close over the view and open again */
+.sf-hatch { position: absolute; inset: 0; pointer-events: none; }
+.sf-hatch i { position: absolute; left: 0; right: 0; height: 51%; background:
+  repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 46px), linear-gradient(#3b3a36, #24231f);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.6); transform: translateY(-101%); }
+.sf-hatch i:nth-child(2) { bottom: 0; transform: translateY(101%); }
+.sf-hatch i:nth-child(1) { top: 0; border-bottom: 3px solid #d8a542; }
+.sf-hatch i:nth-child(2) { border-top: 3px solid #d8a542; }
+.sf-hatch span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: #ffd27a; opacity: 0; white-space: nowrap; text-shadow: 0 0 8px rgba(255, 190, 80, 0.7); }
+.sf-hatch.shut i:nth-child(1) { animation: sf-shut-a 2.1s ease-in-out both; }
+.sf-hatch.shut i:nth-child(2) { animation: sf-shut-b 2.1s ease-in-out both; }
+.sf-hatch.shut span { animation: sf-shut-t 2.1s ease both; }
+@keyframes sf-shut-a { 0% { transform: translateY(-101%); } 30%, 62% { transform: translateY(0); } 100% { transform: translateY(-101%); } }
+@keyframes sf-shut-b { 0% { transform: translateY(101%); } 30%, 62% { transform: translateY(0); } 100% { transform: translateY(101%); } }
+@keyframes sf-shut-t { 0%, 26% { opacity: 0; } 34%, 60% { opacity: 1; } 70%, 100% { opacity: 0; } }
+
+/* the field report at the end: the best shot per species, in the polaroid style of the van */
+.sf-report { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; background: rgba(14, 12, 10, 0.86);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); padding: calc(20px + env(safe-area-inset-top, 0px)) var(--pad) 28px;
+  opacity: 0; transition: opacity .4s; cursor: default; }
+.sf-report.on { opacity: 1; }
+.sf-report .sf-wrap { max-width: 880px; margin: 0 auto; }
+.sf-report h2 { font: 700 30px/1.1 var(--font-display, sans-serif); margin: 6px 0 2px; }
+.sf-report .sf-sub { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--vf-dim); margin-bottom: 18px; }
+.sf-total { display: flex; align-items: baseline; gap: 10px; border-top: 1px solid rgba(255,244,228,0.2); border-bottom: 1px solid rgba(255,244,228,0.2); padding: 12px 0; margin-bottom: 18px; }
+.sf-total b { font: 700 34px/1 var(--font-display, sans-serif); font-variant-numeric: tabular-nums; }
+.sf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.sf-card { background: #f6f2ea; color: #1d1b18; padding: 8px 8px 10px; box-shadow: 0 8px 22px rgba(0,0,0,0.4); }
+.sf-card canvas, .sf-card img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
+.sf-card .sf-main canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
+.sf-card .sf-name { font: 600 13px/1.2 var(--font-display, sans-serif); margin-top: 7px; }
+.sf-alts { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
+.sf-alt { padding: 0; min-height: 0; border: 1px solid rgba(29,27,24,0.25); background: none; line-height: 0; cursor: pointer; }
+.sf-alt canvas { display: block; width: 34px; height: auto; aspect-ratio: 4 / 3; }
+.sf-alt[aria-pressed="true"] { outline: 2px solid #1d1b18; outline-offset: 1px; }
+.sf-card .sf-meta { display: flex; justify-content: space-between; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; margin-top: 3px; }
+.sf-card .sf-meta b { color: #1d1b18; font-variant-numeric: tabular-nums; }
+.sf-empty { color: var(--vf-dim); font-size: 13px; margin-bottom: 20px; }
+.sf-board { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 20px; }
+@media (min-width: 680px) { .sf-board { grid-template-columns: 1fr 1fr; } }
+.sf-board h3 { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--vf-dim); font-weight: 500; margin: 0 0 8px; }
+.sf-entry { display: grid; gap: 8px; grid-template-columns: 1fr auto; align-items: center; }
+.sf-entry input { font: 400 16px/1.3 var(--font-display, sans-serif); color: inherit; background: rgba(255,255,255,0.08);
+  border: 1px solid var(--vf-dim); border-radius: 0; padding: 11px 12px; width: 100%; }
+.sf-entry input:focus-visible { outline: 2px solid var(--vf); outline-offset: -1px; }
+.sf-list { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.sf-list li { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; padding: 7px 0; border-top: 1px solid rgba(255,244,228,0.14); font-variant-numeric: tabular-nums; }
+.sf-list li.me { color: #ffd6a0; }
+.sf-list .sf-rank { color: var(--vf-dim); }
+.sf-done { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.sf-done button { background: rgba(255,244,228,0.1); }
+
+/* while the report is up, the viewfinder and the tools are out of the way */
+.safari.reporting .sf-finder, .safari.reporting .sf-read, .safari.reporting .sf-top-right,
+.safari.reporting .sf-title, .safari.reporting .sf-sea,
+.safari.reporting .sf-tools, .safari.reporting .sf-feed, .safari.reporting .sf-help, .safari.reporting .sf-rail { display: none; }
+
+/* a short line of help on the first run, gone after a few seconds */
+.sf-help { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  max-width: calc(100vw - 32px); text-align: center; pointer-events: none; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  background: rgba(12, 11, 9, 0.5); border: 1px solid var(--vf-dim); padding: 8px 12px; transition: opacity .6s; }
+.sf-help.gone { opacity: 0; }
+
+@media (max-width: 560px) {
+  .sf-corner { width: 24px; height: 24px; }
+  .sf-feed { width: 96px; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+  .sf-feed .sf-shot:nth-last-child(n+3) { display: none; }      /* two prints is enough on a phone */
+  .sf-say { top: 50%; max-width: 52vw; }
+  .sf-say b { font-size: 22px; }
+  .sf-report h2 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .safari .sf-shot, .sf-flash.on, .sf-say { transition: none; animation: none; }
+  .sf-hatch.shut i, .sf-hatch.shut span { animation-duration: .01s; }
+  .sf-title.on { animation: none; opacity: 1; }
+}

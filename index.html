@@ -179,6 +179,87 @@
   .panel .note { font-family: var(--font-display); }
   .status { font-family: var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; font-size: 11px; }
   @media (max-width: 720px) { .panel { height: 62% !important; } }
+
+  /* ---- camp interactions (Phase 1): back control, hint, speech bubble, message form, album, fade */
+  body.camp-sub .nav, body.camp-sub .gear, body.camp-sub .controls, body.camp-sub .skypanel, body.camp-sub .markers { display: none !important; }
+  .campback { position: fixed; z-index: 22; left: 16px; top: calc(var(--hh, 77px) + 12px); color: var(--glass-ink); background: var(--glass-strong);
+              border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); font-size: 11px; }
+  .camp-hint { position: fixed; z-index: 19; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); pointer-events: none;
+               font: 400 10.5px/1.3 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--glass-ink); text-align: center;
+               background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 8px 12px;
+               max-width: calc(100vw - 32px); transition: opacity .6s; }
+  .camp-hint.gone { opacity: 0; }
+  /* the camp's choices as plain buttons, for the keyboard and screen readers: out of sight until one
+     of them has focus, then a row at the bottom like the hint */
+  .camp-keys { position: fixed; z-index: 22; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+               display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: max-content; max-width: calc(100vw - 32px); }
+  .camp-keys:not(:focus-within) { clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; }
+  .camp-keys button { color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line); font-size: 11px;
+                      -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  body.safari-on .camp-keys { display: none !important; }
+  .bubble { position: fixed; z-index: 19; left: 0; top: 0; width: max-content; max-width: min(300px, calc(100vw - 32px)); color: var(--glass-ink);
+            background: var(--glass-strong); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 14px 16px 12px;
+            transform: translate(-50%, -100%); opacity: 0; transition: opacity .35s; }
+  .bubble.on { opacity: 1; }
+  .bubble::after { content: ""; position: absolute; left: var(--tail, 50%); bottom: -8px; width: 14px; height: 14px; background: inherit; border: inherit; border-top: 0; border-left: 0;
+                   transform: translateX(-50%) rotate(45deg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .bubble p { margin: 0 0 10px; font: 500 17px/1.3 var(--font-display); }
+  .bubble-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .msg-form { display: grid; gap: 14px; max-width: 460px; }
+  .msg-field { display: grid; gap: 6px; }
+  .msg-field em { font-style: normal; text-transform: none; letter-spacing: 0.02em; }
+  .msg-field input, .msg-field textarea { font: 400 16px/1.4 var(--font-display); color: var(--glass-ink); background: rgba(255, 255, 255, 0.38); border: 1px solid var(--glass-line);
+            border-bottom-color: currentColor; border-radius: 0; padding: 10px 12px; width: 100%; box-sizing: border-box; resize: vertical; }
+  body.is-night .msg-field input, body.is-night .msg-field textarea { background: rgba(0, 0, 0, 0.22); }
+  .msg-field input:focus-visible, .msg-field textarea:focus-visible { outline: 2px solid currentColor; outline-offset: -1px; }
+  .msg-field [aria-invalid="true"] { border-color: #b3402d; }
+  .msg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .msg-send[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+  .msg-form .note { margin: 0; }
+  .msg-status { margin: 0; min-height: 1.4em; font: 400 13px/1.4 var(--font-display); color: var(--glass-soft); }
+  .msg-status[data-kind="error"] { color: #b3402d; }
+  body.is-night .msg-status[data-kind="error"] { color: #f08a72; }
+  /* the safari owns the screen: its HUD is the only GUI while a run is on */
+  body.safari-on .site, body.safari-on .gear, body.safari-on .controls, body.safari-on .skypanel,
+  body.safari-on .nav, body.safari-on .markers, body.safari-on .campback, body.safari-on .camp-hint, body.safari-on .tip { display: none !important; }
+  .fade { position: fixed; inset: 0; z-index: 30; background: #0d0c0a; opacity: 0; pointer-events: none; transition: opacity .28s; }
+  .fade.on { opacity: 1; }
+  /* the album: a travel scrapbook over the paused scene; it never grows past the photos' own pixels */
+  .album { position: fixed; inset: 0; z-index: 18; display: grid; grid-template-rows: 1fr auto; padding-top: var(--hh, 77px);
+           background: rgba(24, 20, 16, 0.58); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); opacity: 0; transition: opacity .3s; }
+  .album.open { opacity: 1; }
+  .album-stage { display: grid; place-items: center; min-height: 0; padding: 12px 16px 0; }
+  .album-book { position: relative; width: calc(var(--pw) * 2); height: calc(var(--pw) * 1.3); perspective: calc(var(--pw) * 5); touch-action: pan-y;
+                box-shadow: 0 0 0 calc(var(--pw) * 0.022) #3d4a3e, 0 18px 50px rgba(0, 0, 0, 0.45); user-select: none; -webkit-user-select: none; cursor: grab; }
+  .album-book.single { width: var(--pw); }
+  .album-sheet { position: absolute; inset: 0; display: flex; }
+  .album-page { position: relative; flex: none; width: var(--pw); height: calc(var(--pw) * 1.3); overflow: hidden; box-sizing: border-box;
+                background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), transparent 60%), repeating-linear-gradient(0deg, rgba(120, 100, 70, 0.025) 0 2px, transparent 2px 5px), #efe6d3; }
+  .album-sheet .album-page:nth-child(1):not(:last-child) { box-shadow: inset calc(var(--pw) * -0.06) 0 calc(var(--pw) * 0.05) calc(var(--pw) * -0.04) rgba(60, 40, 20, 0.35); }
+  .album-sheet .album-page:nth-child(2) { box-shadow: inset calc(var(--pw) * 0.06) 0 calc(var(--pw) * 0.05) calc(var(--pw) * -0.04) rgba(60, 40, 20, 0.35); }
+  .album-photo { position: absolute; margin: 0; box-sizing: border-box; padding: calc(var(--pw) * 0.016); background: #fbf9f4; box-shadow: 0 1px 3px rgba(40, 30, 20, 0.28), 0 4px 10px rgba(40, 30, 20, 0.12); }
+  .album-photo img { display: block; width: 100%; height: auto; max-width: none; background: #d8d0c0; }
+  .album-tape { position: absolute; height: calc(var(--pw) * 0.042); box-shadow: 0 1px 1px rgba(60, 40, 20, 0.12);
+                background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 3px, transparent 3px 7px);
+                clip-path: polygon(2% 0, 98% 4%, 100% 50%, 97% 100%, 1% 96%, 0 50%); }
+  .album-no { position: absolute; bottom: calc(var(--pw) * 0.03); right: calc(var(--pw) * 0.05); font: 400 11px/1 var(--font-display); letter-spacing: 0.12em; color: rgba(60, 50, 40, 0.5); }
+  .album-sheet .album-page:nth-child(1):not(:last-child) .album-no { right: auto; left: calc(var(--pw) * 0.05); }
+  .album-page.blank .album-no { display: none; }
+  .album-flip { position: absolute; top: 0; left: var(--pw); width: var(--pw); height: 100%; transform-style: preserve-3d; transform-origin: left center;
+                transition: transform .62s cubic-bezier(.35, .1, .25, 1); }
+  .album-flip.back { left: 0; transform-origin: right center; }
+  .album-flip.fwd.go { transform: rotateY(-180deg); }
+  .album-flip.back.go { transform: rotateY(180deg); }
+  .album-book.single .album-flip { left: 0; transform-origin: left center; }
+  .album-book.single .album-flip.from { transform: rotateY(-180deg); }
+  .album-book.single .album-flip.from.go { transform: rotateY(0deg); }
+  .album-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 0 24px rgba(0, 0, 0, 0.18); }
+  .album-face.back { transform: rotateY(180deg); }
+  .album-bar { display: flex; justify-content: center; align-items: stretch; margin: 14px auto calc(16px + env(safe-area-inset-bottom, 0px)); color: var(--glass-ink);
+               background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  .album-bar button { color: inherit; font-size: 18px; letter-spacing: 0; min-width: 52px; min-height: 44px; }
+  .album-count { display: grid; place-items: center; min-width: 110px; padding: 0 12px; border-left: 1px solid var(--glass-line); border-right: 1px solid var(--glass-line);
+                 font: 400 11px/1 var(--font-display); letter-spacing: 0.16em; font-variant-numeric: tabular-nums; }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
@@ -223,6 +304,20 @@
 <div class="skypanel" id="skypanel" hidden aria-label="Sky settings"></div>
 <div class="markers" id="markers" hidden></div>
 <div class="tip" id="tip" hidden></div>
+<div class="tip" id="camp-tip" hidden></div>
+<div class="camp-hint" id="camp-hint" hidden></div>
+<button class="btn campback" id="camp-back" hidden>‹ Back</button>
+<div class="camp-keys" id="camp-keys" role="group" aria-label="Camp" hidden></div>
+<div class="bubble" id="bubble" hidden role="dialog" aria-label="The figure at the camp">
+  <p>Hi! Want to leave a message?</p>
+  <div class="bubble-actions"><button class="btn" id="bubble-yes">Yes</button><button class="btn ghost" id="bubble-no">Not now</button></div>
+</div>
+<aside class="panel" id="msg-panel" aria-hidden="true" aria-label="Leave a message">
+  <button class="btn ghost panel-close" id="msg-close" aria-label="Close">Close ✕</button>
+  <div id="msg-body"></div>
+</aside>
+<div class="album" id="album" hidden role="dialog" aria-label="Photo album"></div>
+<div class="fade" id="fade"></div>
 <nav class="nav" id="nav" aria-label="Places" hidden>
   <button id="nav-prev" aria-label="Previous place">‹</button>
   <button class="where" id="nav-where" aria-label="Open the content of this place"></button>
@@ -514,9 +609,13 @@ function setupFire() {
 function stepFire(now) {
   if (!fire.mesh || !fire.mesh.visible) return;
   const t = now / 1000;
+  const dt = fire.last ? Math.min(0.1, (now - fire.last) / 1000) : 0; fire.last = now;
+  fire.flare = (fire.flare || 0) * Math.exp(-dt * 1.7);                // poked: flares up, then settles
+  const fl = fire.flare;
   const f = 0.75 + 0.15 * Math.sin(t * 7.3) + 0.1 * Math.sin(t * 13.1 + 1.3) + 0.06 * Math.sin(t * 23.7);
-  fire.light.intensity = 9 * f;
-  fire.mesh.scale.set(1, 0.85 + 0.2 * f, 1);
+  fire.light.intensity = 9 * f * (1 + 1.6 * fl);
+  fire.mesh.scale.set(1 + 0.45 * fl, (0.85 + 0.2 * f) * (1 + 1.1 * fl), 1 + 0.45 * fl);
+  fire.mesh.material.emissiveIntensity = 2.2 * (1 + 0.8 * fl);
   fire.mesh.rotation.y = Math.sin(t * 1.7) * 0.15;
 }
 // --- the showroom gets dark when its roof slats and window fins are closed (Smo). The closed slats
@@ -684,7 +783,8 @@ function setupPerson(root) {
     if (o.name === 'campcarry_case' || o.name === 'campcarry_case_black') person.box.push(o);
     if (!mat && o.material && o.material.name === 'plaster' && /^library/.test(o.name)) mat = o.material;
   });
-  const { root: r, j } = buildPerson(mat || new THREE.MeshStandardMaterial({ color: 0xede7dc, roughness: 0.92 }));
+  // its own copy of the plaster: the figure glows a little when it can be clicked (camp interactions)
+  const { root: r, j } = buildPerson(mat ? mat.clone() : new THREE.MeshStandardMaterial({ color: 0xede7dc, roughness: 0.92 }));
   person.root = r; person.j = j;
   scene.add(r);
   person.blob = blobShadow(0.75, 0.75);
@@ -773,6 +873,7 @@ function stepPerson(now) {
   person.last = Math.max(person.last, now);
   if (person.wantSit !== (mode === 'night')) setNight(mode === 'night');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (person.talk && stepTalk(dt)) { stepBlobs(); return; }
   const seg = person.cur;
   const k = dt * (reduce ? 0 : 1);
   if (seg.walk) {
@@ -833,7 +934,9 @@ function stepPerson(now) {
     }
     if (person.t >= seg.dur) nextSegment();
   }
-  // contact shadows follow the figure and the case
+  stepBlobs();
+}
+function stepBlobs() {                                               // contact shadows follow the figure and the case
   person.blob.position.set(person.root.position.x, person.root.position.y + 0.02, person.root.position.z);
   person.blob.visible = !person.seated;
   const bx = person.box[0];
@@ -1359,6 +1462,7 @@ const onModel = (gltf) => {
   scene.add(gltf.scene);
   setupPerson(gltf.scene);
   setupAccents(gltf.scene); setupPrinter(gltf.scene);   // accents first: cloning a material copies its clip planes
+  setupCamp(gltf.scene);
   collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
   setupFire();
@@ -1452,7 +1556,8 @@ const PLACES = [
   { id: 'relay', name: 'Relay station', zone: { c: [46.0, 9.0, 31.0], r: 11 },
     view: { type: 'object', pos: [30.0, 13.0, 4.0], target: [46.0, 8.0, 31.0], az: 80, polar: [40, 86], dist: [15, 50], fit: 22 } },
   { id: 'camp', name: 'Camp', zone: { c: [25.4, 1.5, -5.4], r: 5.5 },
-    view: { type: 'object', pos: [17.0, 6.5, -19.0], target: [25.2, 1.2, -5.2], az: 70, polar: [40, 86], dist: [8, 28], fit: 12 } },
+    view: { type: 'object', pos: [17.0, 6.5, -19.0], target: [25.2, 1.2, -5.2], az: 70, polar: [40, 86], dist: [8, 28], fit: 12 },
+    onEnter: () => campHint() },
   { id: 'workshop', name: 'Workshop', zone: { c: [10.85, 4.4, 0.0], r: 5.6 },
     view: { type: 'cutaway', pos: [10.85, 6.2, -13.0], target: [10.85, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 },
     onEnter: () => { PRN.t = 0; } },               // a new print starts when you arrive
@@ -1470,6 +1575,7 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 const portrait = () => host.clientWidth < host.clientHeight;
 function baseFov() {
   if (nav.mode === 'inside') return look.fov;
+  if (nav.mode === 'fixed') return camp.fov;
   return portrait() ? 50 : 32;
 }
 // on narrow screens, step back along the view line until `fit` metres of width are in frame
@@ -1543,6 +1649,7 @@ function stepTween(now) {
 }
 
 function enter(p) {
+  campReset();
   nav.place = p; nav.mode = p.view.type;
   closePanel();
   document.body.classList.add('in-place');
@@ -1561,6 +1668,7 @@ function enter(p) {
   }
 }
 function leave() {
+  campReset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
   document.body.classList.remove('in-place');
@@ -1640,6 +1748,7 @@ el.addEventListener('pointerup', (ev) => {
   downAt = null;
   if (!tap) return;
   if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }
+  if (nav.place.id === 'camp') { campTap(ev); return; }
   if (nav.place.id === 'showroom' && hitRoof(ev)) setRoof(!roof.closed);
 });
 el.addEventListener('wheel', (ev) => {
@@ -1670,6 +1779,7 @@ function hover(ev) {
     if (tween.active) return setTip(null);
     if (!nav.place) return setTip(zoneAt(ev));
     if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = hitRoof(ev) ? 'pointer' : ''; return; }
+    if (nav.place.id === 'camp') { tip.hidden = true; campHover(ev); return; }
     setTip(null);
   });
 }
@@ -1710,6 +1820,7 @@ function stepMarkers() {
 const dTmp = new THREE.Vector3();
 function stepPlaces(now) {
   if (tween.active) stepTween(now);
+  else if (nav.mode === 'fixed') { /* camp views: the camera stays where its flight ended */ }
   else if (nav.mode === 'inside') {
     camera.position.copy(look.eye);
     controls.target.copy(look.eye).add(lookDir(dTmp).multiplyScalar(0.5));
@@ -1721,6 +1832,526 @@ function stepPlaces(now) {
 overviewControls();
 { const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update(); }
 if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0);
+
+// --- camp interactions (Phase 1, Smo): at the camp the figure, the fire and the van can be clicked.
+// Mouse: hovering shows a glow and a label, a click acts. Touch: the first tap shows them, a second
+// tap on the same thing acts. Each one moves the camera to its own view; Back (or Esc) returns.
+//   fire:   sit in the chair the figure never uses, a stick held towards the fire; tap the fire to poke it
+//   figure: it stops, turns to the camera and asks for a message (the form is camp/message.js)
+//   van:    step inside (camp/van.js, loaded on first use): the start screen, the album, the camera
+const camp = { view: null, seq: 0, home: null, hover: null, armed: null, fov: 50, last: 0, van: null, vanLoading: null, index: null,
+  vanMeshes: [], fireMeshes: [], fireLit: false, stick: null, jab: null, album: null, msgOpen: false, safari: null, safariStarting: false };
+const VAN = { x: 27.0, y: 4.2, heading: THREE.MathUtils.degToRad(80) };       // where vehicle.py stands the van (model coordinates)
+const vanAt = (x, y, z, out = new THREE.Vector3()) => {                      // van coordinates (x forward, y left, z up) -> viewer
+  const c = Math.cos(VAN.heading), s = Math.sin(VAN.heading);
+  return out.copy(W2T(VAN.x + x * c - y * s, VAN.y + x * s + y * c, z));
+};
+const SEAT2 = W2T(23.4 + 1.6 * Math.cos(Math.PI * 1.25), 6.3 + 1.6 * Math.sin(Math.PI * 1.25));   // the chair the figure never uses
+const campEls = { tip: document.getElementById('camp-tip'), hint: document.getElementById('camp-hint'), back: document.getElementById('camp-back'),
+  bubble: document.getElementById('bubble'), msg: document.getElementById('msg-panel'), msgBody: document.getElementById('msg-body'),
+  album: document.getElementById('album'), fade: document.getElementById('fade') };
+function setupCamp(root) {
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    // own materials for the van and the fire pit, so they can glow without lighting up the rest of the plaster
+    if (/^van/.test(o.name)) { o.material = o.material.clone(); camp.vanMeshes.push(o); }
+    if (/^firepit(ring|logs)$/.test(o.name)) { o.material = o.material.clone(); camp.fireMeshes.push(o); }
+  });
+}
+const GLOW = new THREE.Color(0xffa95e);
+function setGlow(t, on) {
+  if (!t) return;
+  t.mats().forEach((m) => {
+    if (!m.emissive) return;
+    if (!m.userData.e0) m.userData.e0 = { c: m.emissive.clone(), i: m.emissiveIntensity };
+    if (on) { m.emissive.copy(GLOW); m.emissiveIntensity = 0.3; } else { m.emissive.copy(m.userData.e0.c); m.emissiveIntensity = m.userData.e0.i; }
+  });
+}
+// ---- what can be clicked in each camp view: a ray test, the materials that glow, where the label sits
+const sTmp = new THREE.Sphere(), hTmp = new THREE.Vector3();
+const sphereHit = (c, r) => (ray.ray.intersectSphere(sTmp.set(c, r), hTmp) ? ray.ray.origin.distanceTo(hTmp) : Infinity);
+const isSeated = () => person.seated || (person.cur && person.cur.act === 'sitdown');
+function interiorHit(id) {
+  if (!camp.van) return Infinity;
+  const h = ray.intersectObject(camp.van.root, true)[0];
+  return h && h.object.userData.pick === id ? h.distance : Infinity;
+}
+const TARGETS = {
+  figure: { label: 'Say hi', hit: () => (person.root ? sphereHit(vA.copy(person.root.position).setY(person.root.position.y + (isSeated() ? 0.75 : 0.95)), 0.55) : Infinity),
+    mats: () => (person.root ? [person.j.hips.children[0].material] : []), anchor: (o) => o.copy(person.root.position).setY(person.root.position.y + (isSeated() ? 1.55 : 2.05)) },
+  fire: { label: 'Sit by the fire', hit: () => sphereHit(vA.copy(CAMP.fire).setY(0.35), 0.8), mats: () => camp.fireMeshes.map((m) => m.material),
+    anchor: (o) => o.copy(CAMP.fire).setY(1.35) },
+  poke: { label: 'Poke the fire', hit: () => sphereHit(vA.copy(CAMP.fire).setY(0.35), 0.7), mats: () => camp.fireMeshes.map((m) => m.material),
+    anchor: (o) => o.copy(CAMP.fire).setY(0.95) },
+  van: { label: 'Get in the van', hit: () => { const h = ray.intersectObjects(camp.vanMeshes, false)[0]; return h ? h.distance : Infinity; },
+    mats: () => camp.vanMeshes.map((m) => m.material), anchor: (o) => vanAt(-0.4, 0, 4.0, o) },
+  screen: { label: 'Start screen', hit: () => interiorHit('screen'), mats: () => [], anchor: (o) => camp.van.screen.centre(o).add(vB.set(0, 0.32, 0)) },
+  album: { label: 'Photo album', hit: () => interiorHit('album'), mats: () => (camp.van ? camp.van.albumMats : []),
+    anchor: (o) => camp.van.albumAt(o).add(vB.set(0, 0.18, 0)) },
+};
+const VIEW_TARGETS = { null: ['figure', 'fire', 'van'], fire: ['poke'], van: ['screen', 'album'] };
+function campPick(ev) {
+  setRay(ev);
+  let best = null, d = Infinity;
+  (VIEW_TARGETS[camp.view] || []).forEach((id) => { const k = TARGETS[id].hit(); if (k < d) { d = k; best = id; } });
+  return best;
+}
+function setCampHover(id) {
+  if (id === camp.hover) return;
+  if (camp.hover) setGlow(TARGETS[camp.hover], false);
+  camp.hover = id;
+  if (id) setGlow(TARGETS[id], true);
+  campEls.tip.hidden = !id;
+  if (id) campEls.tip.textContent = TARGETS[id].label;
+  el.style.cursor = id ? 'pointer' : '';
+}
+function screenUV(ev) {                                // where on the start screen the pointer is (or null)
+  if (!camp.van) return null;
+  setRay(ev);
+  const h = ray.intersectObject(camp.van.screen.mesh, false)[0];
+  return h ? h.uv : null;
+}
+function campHover(ev) {
+  if (tween.active || camp.view === 'figure' || camp.view === 'album') return setCampHover(null);
+  if (camp.view === 'screen') { const id = camp.van.screen.hover(screenUV(ev)); el.style.cursor = id ? 'pointer' : ''; return; }
+  setCampHover(campPick(ev));
+}
+function campTap(ev) {
+  if (camp.view === 'screen') { camp.van.screen.press(screenUV(ev)); return; }
+  const id = campPick(ev);
+  if (!id) { camp.armed = null; setCampHover(null); return; }
+  // touch and pen: the first tap only shows what it is, the second one acts
+  if (ev.pointerType !== 'mouse' && camp.armed !== id) { camp.armed = id; setCampHover(id); return; }
+  camp.armed = null; setCampHover(null);
+  ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum })[id]();
+}
+// the same choices for the keyboard: a row of buttons that follows the view (and the screen's menu)
+const campKeys = { el: document.getElementById('camp-keys'), sig: '' };
+function stepCampKeys() {
+  const atCamp = nav.place && nav.place.id === 'camp' && !camp.safari && !tween.active;
+  const v = camp.view, scr = v === 'screen' && camp.van ? camp.van.screen : null;
+  const ids = !atCamp ? [] : scr ? scr.items().map((q) => q.id) : (v === null || v === 'fire' || v === 'van') ? VIEW_TARGETS[v] : [];
+  const sig = (scr ? scr.state() + ':' : '') + ids.join(',');
+  if (sig === campKeys.sig) return;
+  const had = campKeys.el.contains(document.activeElement);
+  campKeys.sig = sig; campKeys.el.innerHTML = ''; campKeys.el.hidden = !ids.length;
+  const labels = scr ? Object.fromEntries(scr.items().map((q) => [q.id, q.label])) : {};
+  ids.forEach((id) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn';
+    b.textContent = scr ? labels[id].charAt(0) + labels[id].slice(1).toLowerCase() : TARGETS[id].label;
+    b.addEventListener('click', () => {
+      if (scr) { scr.pressId(id); return; }
+      ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum })[id]();
+    });
+    campKeys.el.appendChild(b);
+  });
+  if (had && campKeys.el.firstChild) campKeys.el.firstChild.focus({ preventScroll: true });   // the menu moved on: stay in it
+}
+function campHint() {
+  const h = campEls.hint;
+  h.textContent = (matchMedia('(hover: hover)').matches ? 'Click' : 'Tap') + ' the figure, the fire or the van';
+  h.hidden = false; h.classList.remove('gone');
+  clearTimeout(campHint.t); campHint.t = setTimeout(() => h.classList.add('gone'), 6000);
+}
+
+// ---- views: a token per move, so a flight that was overtaken never finishes its old job
+function setSub(view) {
+  camp.view = view;
+  document.body.classList.toggle('camp-sub', !!view);
+  campEls.back.hidden = !view || view === 'leaving';
+  campEls.hint.hidden = true;
+  camp.armed = null; setCampHover(null);
+}
+function rememberHome() { if (!camp.view) camp.home = { pos: camera.position.clone(), target: controls.target.clone(), maxD: controls.maxDistance }; }
+function lookFrom(eye, at) {                           // stand at `eye` and look round freely, starting towards `at`
+  const d = vB.copy(at).sub(eye).normalize();
+  look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y);
+  nav.mode = 'inside';
+}
+const ahead = (eye, at) => eye.clone().add(at.clone().sub(eye).normalize().multiplyScalar(0.5));
+const fade = (on) => new Promise((res) => { campEls.fade.classList.toggle('on', on); setTimeout(res, reduceMotion() ? 0 : 300); });
+function backToCamp() {
+  const tok = ++camp.seq, v = PLACES.find((q) => q.id === 'camp').view;
+  const h = camp.home || (() => { const f = fitPose(new THREE.Vector3(...v.pos), new THREE.Vector3(...v.target), v.fit); return { pos: f.pos, target: f.target, maxD: Math.max(v.dist[1], f.d * 1.2) }; })();
+  setSub('leaving'); nav.mode = 'fixed';
+  flyTo(h.pos.clone(), h.target.clone(), portrait() ? 50 : 32, () => {
+    if (tok !== camp.seq) return;
+    nav.mode = 'object'; placeControls(v); controls.maxDistance = h.maxD;
+    lightFire(false); setSub(null);
+  });
+}
+function campBack() {
+  ({ fire: backToCamp, figure: endTalk, van: leaveVan, screen: backInVan, album: closeAlbum })[camp.view]?.();
+}
+campEls.back.addEventListener('click', campBack);
+window.addEventListener('keydown', (e) => {
+  if (!camp.view || camp.view === 'leaving' || camp.safari) return;        // the safari takes its own keys
+  const typing = e.target.closest && e.target.closest('input, textarea');
+  if (camp.album && !typing && camp.album.key(e)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+  if (e.key === 'Escape') { e.stopImmediatePropagation(); campBack(); return; }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopImmediatePropagation();   // no place switching from inside a camp view
+}, true);
+// leaving the camp some other way (menu, browser back): put everything back at once
+function campReset() {
+  if (camp.safari) {
+    const s = camp.safari; camp.safari = null; s.dispose();
+    document.body.classList.remove('safari-on');
+    station.resume(); markShadows(); resize();
+  }
+  if (!camp.view && !camp.fireLit) return;
+  camp.seq++;
+  person.talk = null;
+  showBubble(false); closeMsg();
+  if (camp.album) { camp.album.close(); camp.album = null; setPaused(false); }
+  if (camp.van) inVan(false);
+  if (camp.stick) camp.stick.visible = false;
+  camera.clearViewOffset();
+  campEls.fade.classList.remove('on');
+  lightFire(false); setSub(null);
+}
+
+// ---- 1a. by the fire: the other chair, a stick, poke to flare and throw sparks
+function lightFire(on) {
+  if (camp.fireLit === on) return;
+  camp.fireLit = on; apply();
+  if (on) markShadows();
+}
+function goFire() {
+  rememberHome(); const tok = ++camp.seq; setSub('fire'); nav.mode = 'fixed';
+  const d = vA.copy(CAMP.fire).sub(SEAT2).setY(0).normalize();
+  const eye = SEAT2.clone().addScaledVector(d, -0.2).setY(groundY(SEAT2) + 1.12);   // leaning back a little
+  const at = CAMP.fire.clone().setY(0.55);
+  lightFire(true);
+  placeStick(eye, d);
+  look.fov = portrait() ? 70 : 55;
+  flyTo(eye, ahead(eye, at), look.fov, () => { if (tok === camp.seq) lookFrom(eye, at); });
+}
+function placeStick(eye, d) {
+  // a forked branch (Smo's reference: a dark, knotty stick) from the right hand into the pit
+  if (!camp.stick) {
+    const g = new THREE.Group(), wood = new THREE.MeshStandardMaterial({ color: 0x6b4630, roughness: 0.85 });
+    const ember = new THREE.MeshStandardMaterial({ color: 0x1c1410, roughness: 0.9, emissive: 0xff5a1a, emissiveIntensity: 0.7 });
+    const L = 1.0;
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.018, L + 0.5, 7), wood); shaft.position.y = (L - 0.5) / 2; g.add(shaft);   // runs on past the hand
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.011, 0.07, 7), ember); tip.position.y = L + 0.03; g.add(tip);
+    const twig = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.009, 0.13, 6), wood); twig.position.set(0.035, 0.74, 0); twig.rotation.z = -0.55; g.add(twig);
+    for (const [y, a] of [[0.3, 1], [0.52, 4]]) { const k = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 5), wood); k.position.set(Math.cos(a) * 0.012, y, Math.sin(a) * 0.012); g.add(k); }
+    g.userData.len = L;
+    scene.add(g); camp.stick = g;
+  }
+  const right = vB.crossVectors(d, UP).normalize();
+  const hand = eye.clone().addScaledVector(right, 0.24).add(new THREE.Vector3(0, -0.5, 0)).addScaledVector(d, 0.28);
+  const tip = CAMP.fire.clone().addScaledVector(d, -0.12).setY(0.2);
+  const dir = tip.clone().sub(hand), len = dir.length(); dir.normalize();
+  const s = camp.stick;
+  s.scale.set(1, len / s.userData.len, 1);
+  s.quaternion.setFromUnitVectors(UP, dir);
+  s.position.copy(hand);
+  s.userData.hand = hand; s.userData.dir = dir;
+  s.visible = true;
+}
+function pokeFire() {
+  if (camp.jab) return;
+  camp.jab = { t: 0, burst: false };
+}
+const sparks = { pts: null, n: 90, vel: null, life: null, max: null };
+function burstSparks() {
+  if (!sparks.pts) {
+    const n = sparks.n, g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3).fill(-100), 3));
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 4), 4));                 // with alpha: sparks fade out
+    const c = document.createElement('canvas'); c.width = c.height = 32;
+    const x = c.getContext('2d'), r = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+    r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,0.6)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = r; x.fillRect(0, 0, 32, 32);
+    // normal blending, not additive: the sparks have to show against the pale day ground too
+    sparks.pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.085, map: new THREE.CanvasTexture(c), vertexColors: true, transparent: true,
+      depthWrite: false, fog: false, toneMapped: false }));
+    sparks.pts.frustumCulled = false;
+    sparks.vel = new Float32Array(n * 3); sparks.life = new Float32Array(n).fill(9); sparks.max = new Float32Array(n).fill(1);
+    scene.add(sparks.pts);
+  }
+  const p = sparks.pts.geometry.attributes.position;
+  for (let i = 0; i < sparks.n; i++) {
+    const a = Math.random() * Math.PI * 2, r = Math.random() * 0.25;
+    p.setXYZ(i, CAMP.fire.x + Math.cos(a) * r, 0.2 + Math.random() * 0.25, CAMP.fire.z + Math.sin(a) * r);
+    sparks.vel.set([(Math.random() - 0.5) * 0.9, 1.1 + Math.random() * 2.0, (Math.random() - 0.5) * 0.9], i * 3);
+    sparks.life[i] = 0; sparks.max[i] = 0.7 + Math.random() * 1.1;
+  }
+  sparks.pts.visible = true;
+  fire.flare = 1;
+}
+function stepSparks(dt, t) {
+  if (!sparks.pts || !sparks.pts.visible) return;
+  const p = sparks.pts.geometry.attributes.position, c = sparks.pts.geometry.attributes.color, v = sparks.vel;
+  let alive = 0;
+  for (let i = 0; i < sparks.n; i++) {
+    sparks.life[i] += dt;
+    const k = 1 - sparks.life[i] / sparks.max[i];
+    if (k <= 0) { p.setY(i, -100); continue; }
+    alive++;
+    v[i * 3] *= 1 - 1.4 * dt; v[i * 3 + 2] *= 1 - 1.4 * dt; v[i * 3 + 1] *= 1 - 0.9 * dt;
+    v[i * 3] += Math.sin(t * 6 + i) * 0.6 * dt;                                    // a little flutter in the hot air
+    p.setXYZ(i, p.getX(i) + v[i * 3] * dt, p.getY(i) + v[i * 3 + 1] * dt, p.getZ(i) + v[i * 3 + 2] * dt);
+    c.setXYZW(i, 1, 0.22 + 0.45 * k, 0.04 + 0.2 * k * k, Math.min(1, k * 1.8));
+  }
+  p.needsUpdate = true; c.needsUpdate = true;
+  if (!alive) sparks.pts.visible = false;
+}
+function stepJab(dt) {
+  const j = camp.jab, s = camp.stick;
+  if (!j || !s) return;
+  j.t += dt;
+  const u = Math.min(1, j.t / 0.42);
+  s.position.copy(s.userData.hand).addScaledVector(s.userData.dir, Math.sin(Math.PI * u) * 0.24);
+  if (!j.burst && u > 0.42) { j.burst = true; burstSparks(); }
+  if (u >= 1) camp.jab = null;
+}
+
+// ---- 1b. the figure: it stops, turns to the camera, asks; yes opens the form, closing it lets it walk on
+const OBSTACLES = () => [
+  ...[-1.8, 0, 1.8].map((x) => [vanAt(x, 0, 0), 1.3]), [CAMP.fire, 1.05], [CAMP.chair, 0.55], [SEAT2, 0.55],
+  [W2T(23.9, 2.45), 0.8], [W2T(29.3, 2.45), 0.8],
+];
+function clearSpot(p, dir0, dist) {                    // turn the camera direction until nothing stands in between
+  const obs = OBSTACLES().filter(([c, r]) => Math.hypot(c.x - p.x, c.z - p.z) > r + 0.1);
+  for (const k of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8, 9]) {
+    const a = k * THREE.MathUtils.degToRad(20), d = dir0.clone().applyAxisAngle(UP, a);
+    let ok = true;
+    for (let s = 0.2; s <= 1.0001 && ok; s += 0.1) {
+      const q = vB.copy(p).addScaledVector(d, dist * s);
+      ok = obs.every(([c, r]) => Math.hypot(c.x - q.x, c.z - q.z) > r + 0.25);
+    }
+    if (ok) return d;
+  }
+  return dir0;
+}
+function goFigure() {
+  if (!person.root) return;
+  rememberHome(); const tok = ++camp.seq; setSub('figure'); nav.mode = 'fixed';
+  const p = person.root.position.clone(), seated = isSeated();
+  const head = groundY(p) + (seated ? 1.15 : 1.62);
+  // standing: from the side the visitor looked from; seated: half round from the fire, so the fire is not in the way
+  const from = seated ? vA.copy(CAMP.fire).sub(CAMP.chair).setY(0).normalize().applyAxisAngle(UP, 0.9).clone()
+                      : vA.copy(camera.position).sub(p).setY(0).normalize().clone();
+  const dist = seated ? 2.5 : 2.3, d = clearSpot(p, from, dist);
+  const eye = p.clone().addScaledVector(d, dist).setY(head + (seated ? 0.2 : -0.05));
+  const at = p.clone().setY(head - (seated ? 0.3 : 0.2));
+  person.talk = { face: eye.clone(), on: false, t: 0, look: 0, head };
+  camp.fov = portrait() ? 50 : 36;
+  flyTo(eye, at, camp.fov, () => { if (tok === camp.seq) showBubble(true); });
+}
+// stepped from stepPerson while the figure talks; false while it still finishes a short action first
+function stepTalk(dt) {
+  const T = person.talk, seg = person.cur;
+  if (!T.on) { if (!(seg.walk || ['idle', 'work', 'sit'].includes(seg.act))) return false; T.on = true; T.t = 0; }
+  T.t += dt;
+  const face = angTo(person.root.position, T.face);
+  if (person.seated) {                                                // seated: only the head turns
+    let d = face - person.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+    T.look += (THREE.MathUtils.clamp(d, -1.1, 1.1) - T.look) * Math.min(1, dt * 3);
+    pose({ ...SIT, look: T.look });
+    return true;
+  }
+  turnTo(face, dt, 3);
+  if (person.carrying) {
+    pose({ lean: -0.04, arL: -0.7, arR: -0.7, faL: -0.3, faR: -0.3, spread: 0.22 });
+    handsPos(vB); person.box.forEach((b) => { b.position.copy(vB); b.quaternion.copy(qYaw(person.yaw)).multiply(person.boxRel); });
+  } else {
+    const w = THREE.MathUtils.smoothstep(T.t, 0.3, 0.8) * (1 - THREE.MathUtils.smoothstep(T.t, 2.3, 2.9));   // waves hello
+    pose({ ...STAND, arR: STAND.arR + (-2.7 - STAND.arR) * w, faR: STAND.faR + (-0.45 + 0.35 * Math.sin(T.t * 10) - STAND.faR) * w });
+  }
+  return true;
+}
+function showBubble(on) {
+  const b = campEls.bubble;
+  if (!on) { b.classList.remove('on'); b.hidden = true; return; }
+  b.hidden = false; requestAnimationFrame(() => b.classList.add('on'));
+  placeBubble();
+  setTimeout(() => { if (!b.hidden) document.getElementById('bubble-yes').focus({ preventScroll: true }); }, 50);
+}
+function placeBubble() {
+  const b = campEls.bubble, T = person.talk;
+  if (b.hidden || !T) return;
+  vTmp.copy(person.root.position).setY(T.head + 0.32).project(camera);
+  const w = el.clientWidth, h = el.clientHeight, bw = b.offsetWidth, bh = b.offsetHeight;
+  const x = (vTmp.x + 1) / 2 * w, y = (1 - vTmp.y) / 2 * h;
+  const top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 77) + 60;
+  const cx = Math.max(16 + bw / 2, Math.min(w - 16 - bw / 2, x)), cy = Math.max(top + bh, y);
+  b.style.left = cx + 'px'; b.style.top = cy + 'px';
+  b.style.setProperty('--tail', Math.max(18, Math.min(bw - 18, bw / 2 + x - cx)) + 'px');
+}
+document.getElementById('bubble-yes').addEventListener('click', openMsg);
+document.getElementById('bubble-no').addEventListener('click', () => endTalk());
+async function openMsg() {
+  showBubble(false);
+  const tok = camp.seq;
+  const { mountMessage } = await import('./camp/message.js');
+  if (tok !== camp.seq) return;
+  const opts = { onDone: () => endTalk() };
+  if (window.__formEndpoint !== undefined) opts.endpoint = window.__formEndpoint;     // tests: see the sent and failed states
+  const form = mountMessage(campEls.msgBody, opts);
+  campEls.msg.classList.add('open'); campEls.msg.setAttribute('aria-hidden', 'false'); campEls.msg.scrollTop = 0;
+  camp.msgOpen = true; shiftView();
+  setTimeout(() => { if (camp.msgOpen) form.focus(); }, 480);
+}
+function closeMsg() {
+  if (!camp.msgOpen) return;
+  camp.msgOpen = false;
+  campEls.msg.classList.remove('open'); campEls.msg.setAttribute('aria-hidden', 'true');
+  camera.clearViewOffset();
+}
+function shiftView() {                                 // keep the figure in view beside (or above) the form
+  if (!camp.msgOpen) return;
+  const w = el.clientWidth, h = el.clientHeight;
+  if (phoneMenu()) camera.setViewOffset(w, h, 0, h * 0.26, w, h); else camera.setViewOffset(w, h, Math.min(560, w / 2) / 2, 0, w, h);
+}
+window.addEventListener('resize', shiftView);
+document.getElementById('msg-close').addEventListener('click', () => endTalk());
+function endTalk() {
+  closeMsg(); showBubble(false);
+  person.talk = null;                                  // walks on from where it stopped
+  backToCamp();
+}
+
+// ---- 1c. the van: fly to the side door, step in, look round; the screen and the album have their own views
+function albumIndex() {
+  return camp.index || (camp.index = fetch('assets/album/index.json').then((r) => r.json()).catch(() => ({ polaroids: [], pages: [] })));
+}
+function loadVan() {
+  return camp.vanLoading || (camp.vanLoading = Promise.all([import('./camp/van.js'), albumIndex()]).then(([m, idx]) => {
+    const v = m.buildVanInterior({ polaroids: idx.polaroids || [], timeOfDay, onRoute: startExploration });
+    const outer = new THREE.Group();
+    outer.position.copy(W2T(VAN.x, VAN.y, 0)); outer.rotation.y = VAN.heading;
+    v.root.rotation.x = -Math.PI / 2;                    // van coordinates are z up, like the model
+    outer.add(v.root); outer.visible = false; scene.add(outer);
+    v.outer = outer;
+    v.at = (x, y, z, o = new THREE.Vector3()) => { outer.updateMatrixWorld(true); return v.root.localToWorld(o.set(x, y, z)); };
+    v.albumMats = []; v.root.traverse((o) => { if (o.isMesh && o.userData.pick === 'album') v.albumMats.push(o.material); });
+    v.albumAt = (o) => v.at(0.17, 0.02, 1.8, o);
+    camp.van = v;
+    return v;
+  }));
+}
+function inVan(on) {
+  const v = camp.van;
+  camp.vanMeshes.forEach((m) => m.layers.set(on ? GHOST_LAYER : 0));   // the body still casts its shadow, the camera sees through it
+  v.outer.visible = on;
+  if (on) { v.setLight(skyState.d); v.start(); } else { v.stop(); v.screen.reset(); }
+}
+function vanSeat() {
+  const s = camp.van.views.seat;
+  return { eye: camp.van.at(...s.eye), at: camp.van.at(...s.look) };
+}
+function goVan() {
+  rememberHome(); const tok = ++camp.seq; setSub('van'); nav.mode = 'fixed';
+  const ready = loadVan();
+  const out = vanAt(0.05, 2.4, 2.3), door = vanAt(0.05, 0, 2.15);
+  camp.fov = portrait() ? 60 : 45;
+  flyTo(out, door, camp.fov, async () => {
+    if (tok !== camp.seq) return;
+    await fade(true);
+    const v = await ready;
+    if (tok !== camp.seq) { fade(false); return; }
+    inVan(true);
+    const s = vanSeat();
+    look.fov = portrait() ? 80 : 66;
+    camera.position.copy(s.eye); controls.target.copy(ahead(s.eye, s.at)); camera.fov = look.fov; camera.updateProjectionMatrix();
+    lookFrom(s.eye, s.at);
+    fade(false);
+  });
+}
+async function leaveVan() {
+  const tok = ++camp.seq; setSub('leaving'); nav.mode = 'fixed';
+  await fade(true);
+  if (tok !== camp.seq) return;
+  if (camp.van) inVan(false);
+  const out = vanAt(0.05, 2.4, 2.3), door = vanAt(0.05, 0, 2.15);
+  camera.position.copy(out); controls.target.copy(door); camera.lookAt(door);
+  fade(false);
+  backToCamp();
+}
+function backInVan() {                                 // from the screen or the album back to the seat
+  const tok = ++camp.seq; setSub('van'); nav.mode = 'fixed';
+  const s = vanSeat();
+  flyTo(s.eye, ahead(s.eye, s.at), look.fov, () => { if (tok === camp.seq) lookFrom(s.eye, s.at); });
+}
+function goScreen() {
+  setSub('screen'); nav.mode = 'fixed';
+  const v = camp.van, c = v.screen.centre(new THREE.Vector3()), n = v.screen.normal(new THREE.Vector3());
+  camp.fov = portrait() ? 60 : 45;
+  // close enough that the screen fills the view: readable on a phone
+  const vf = THREE.MathUtils.degToRad(camp.fov), aspect = el.clientWidth / el.clientHeight;
+  const hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
+  const d = Math.max((v.screen.size.w * 0.56) / Math.tan(hf / 2), (v.screen.size.h * 0.75) / Math.tan(vf / 2));
+  camp.seq++;
+  flyTo(c.clone().addScaledVector(n, d), c, camp.fov);
+}
+function goAlbum() {
+  const tok = ++camp.seq; setSub('album'); nav.mode = 'fixed';
+  const a = camp.van.views.album;
+  camp.fov = portrait() ? 60 : 45;
+  const ready = Promise.all([import('./camp/album.js'), albumIndex()]);
+  flyTo(camp.van.at(...a.eye), camp.van.at(...a.look), camp.fov, async () => {
+    const [m, idx] = await ready;
+    if (tok !== camp.seq) return;
+    camp.album = m.openAlbum(campEls.album, idx);
+    setTimeout(() => { if (camp.album && tok === camp.seq) setPaused(true); }, 320);   // the scene rests while the book is open
+  });
+}
+function closeAlbum() {
+  if (camp.album) { camp.album.close(); camp.album = null; }
+  setPaused(false);
+  backInVan();
+}
+// ---- the start screen picks a route, and the Photo Safari takes over (Phase 2). The station keeps
+// its scene in memory, paused, while the safari runs on the same renderer; leaving disposes the
+// safari and the station picks up exactly where it stood, with the visitor back in the van.
+async function startExploration(route, tod) {
+  if (camp.safari || camp.safariStarting) return;
+  camp.safariStarting = true;
+  const tok = ++camp.seq;
+  await fade(true);
+  try {
+    const { startSafari } = await import('./safari/index.js');
+    if (tok !== camp.seq) { camp.safariStarting = false; fade(false); return; }
+    station.pause();
+    document.body.classList.add('safari-on');
+    camp.safari = await startSafari({ renderer, route, tod, host, onExit: endSafari });
+  } catch (err) {
+    console.error('The safari could not start', err);
+    document.body.classList.remove('safari-on');
+    station.resume();
+  }
+  camp.safariStarting = false;
+  fade(false);
+}
+async function endSafari(opts = {}) {
+  const s = camp.safari;
+  if (!s) return;
+  const again = opts.again ? { route: s.route.id, tod: s.tod } : null;
+  await fade(true);
+  camp.safari = null;
+  s.dispose();
+  document.body.classList.remove('safari-on');
+  station.resume(); markShadows(); resize();
+  if (again) { await startExploration(again.route, again.tod); return; }
+  if (camp.van) camp.van.screen.reset();
+  fade(false);
+}
+
+function stepCamp(now) {
+  const dt = camp.last ? Math.min(0.1, (now - camp.last) / 1000) : 0; camp.last = now;
+  stepJab(dt); stepSparks(dt, now / 1000); stepCampKeys();
+  placeBubble();
+  const id = camp.hover;
+  if (id && !campEls.tip.hidden) {
+    TARGETS[id].anchor(vTmp).project(camera);
+    campEls.tip.style.left = ((vTmp.x + 1) / 2 * el.clientWidth) + 'px'; campEls.tip.style.top = ((1 - vTmp.y) / 2 * el.clientHeight) + 'px';
+  }
+  if (camp.van && camp.van.outer.visible && now - (camp.lightAt || 0) > 500) { camp.lightAt = now; camp.van.setLight(skyState.d); }
+}
 
 // --- site GUI (Smo): menu with categories that roll down, content card and panel, settings icon.
 // Placeholder texts until the real content is written (marked as such in the page).
@@ -1843,7 +2474,8 @@ function apply() {
   document.body.classList.toggle('is-night', night);
   press('btn-day', !night); press('btn-night', night);
   if (PROJ.units.length && (PROJ.to === 1) !== night) setProjectors(night);
-  if (fire.mesh) { fire.mesh.visible = night; if (fire.light) fire.light.intensity = night ? 9 : 0; }
+  const burning = night || camp.fireLit;                            // by day too while someone sits by it
+  if (fire.mesh) { fire.mesh.visible = burning; if (fire.light) fire.light.intensity = burning ? 9 : 0; }
 }
 function paintBackground() { scene.background = null; }           // the sky sphere is the backdrop now
 function jumpTo(t) {
@@ -1873,7 +2505,7 @@ window.addEventListener('resize', resize);
 resize();
 function frame(now) {
   stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now);
-  stepPlaces(now); stepSky(now); stepShowDark(now); stepPerson(now); stepPrinter(now); stepFps(now);
+  stepPlaces(now); stepSky(now); stepShowDark(now); stepPerson(now); stepPrinter(now); stepCamp(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
   if (roof.start || PROJ.start) markShadows();                      // things that cast shadows are moving
@@ -1885,9 +2517,38 @@ let paused = false;
 function setPaused(on) {
   if (on === paused) return;
   paused = on;
-  renderer.setAnimationLoop(on ? null : frame);
+  renderer.setAnimationLoop(on || station.held ? null : frame);
   if (!on) { quality.settle = performance.now() + 3000; }      // no quality step from the gap
 }
+// --- station pause / resume (Global rule 1, ready for the Photo Safari in Phase 2). While held the
+// station draws and steps nothing: no render loop, no composer, no figure, lights, fire or sky, no
+// timers. It stays in memory as it is; on resume every clock restarts from now, so nothing jumps and
+// the view is the same. (A hidden tab stops the render loop by itself.)
+function timeOfDay() {                                 // what the safari takes over: dawn, day, dusk or night
+  if (sunDir.y > 0.12) return 'day';
+  if (sunDir.y < -0.07) return 'night';
+  return SKY.time < 0.5 ? 'dawn' : 'dusk';
+}
+const station = {
+  held: false,
+  pause() {
+    if (station.held) return;
+    station.held = true;
+    renderer.setAnimationLoop(null);
+    if (camp.van) camp.van.stop();
+  },
+  resume() {
+    if (!station.held) return;
+    station.held = false;
+    const now = performance.now();
+    skyState.last = person.last = turbine.last = PRN.last = showDark.last = camp.last = now;
+    if (fire.last) fire.last = now;
+    quality.settle = now + 3000;
+    if (camp.van && camp.van.outer.visible) camp.van.start();
+    if (!paused) renderer.setAnimationLoop(frame);
+  },
+  timeOfDay, renderer, scene, camera,
+};
 renderer.setAnimationLoop(frame);
 
 // hooks used for test renders
@@ -1904,6 +2565,16 @@ window.__personRun = (sec) => { let t = person.last || performance.now(); for (l
 window.__look = (yawDeg, pitchDeg) => { look.yaw += yawDeg * Math.PI / 180; look.pitch = Math.max(-1.1, Math.min(1.1, look.pitch + (pitchDeg || 0) * Math.PI / 180)); };
 window.__zoneScreen = (id) => { const p = PLACES.find((q) => q.id === id); const q = new THREE.Vector3(...p.zone.c).project(camera);
   const r = renderer.domElement.getBoundingClientRect(); return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height]; };
+window.__station = station;
+const campScreen = (id) => {                           // tests: where on screen a camp target is
+  const c = { figure: () => vTmp.copy(person.root.position).setY(person.root.position.y + (isSeated() ? 0.75 : 1.0)), fire: () => vTmp.copy(CAMP.fire).setY(0.35),
+    poke: () => vTmp.copy(CAMP.fire).setY(0.35), van: () => vanAt(-0.6, 0, 2.0, vTmp), screen: () => camp.van.screen.centre(vTmp), album: () => camp.van.albumAt(vTmp) }[id]();
+  c.project(camera); const r = el.getBoundingClientRect();
+  return [r.left + (c.x + 1) / 2 * r.width, r.top + (1 - c.y) / 2 * r.height];
+};
+window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => camp.armed, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
+window.__safari = () => camp.safari;
+window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
 window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
 
