@@ -17,6 +17,7 @@ import { createHud } from './hud.js';
 import { createAudio, mutedByDefault } from './audio.js';
 import { judge, verdict, grab } from './photo.js';
 import { localStore } from './leaderboard.js';
+import { survey, record } from './fieldlog.js';
 
 const FILM = 30, PELLETS = 8;
 const vA = new THREE.Vector3(), vB = new THREE.Vector3();
@@ -119,10 +120,11 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   const audio = createAudio({ ambience: world.ambience, muted: mutedByDefault() });
   hud.setMuted(audio.muted);
   const store = localStore();
+  survey(R, world.creatures);                           // the van's field log learns what this route has
 
   // ---- state
   const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false,
-    under: 0, diving: false, section: -1 };
+    under: 0, diving: false, section: -1, fresh: 0 };
   const pellets = [];
   const pelletGeo = keep(new THREE.SphereGeometry(0.16, 8, 6));
   const pelletMat = keep(new THREE.MeshStandardMaterial({ color: 0xd9b36a, emissive: dark ? 0x3a2a10 : 0x000000, roughness: 0.8 }));
@@ -212,7 +214,9 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     hud.flash(); audio.shutter();
     S.shots.push(shot);
     hud.addShot(shot);
-    hud.say(shot.points ? `+${shot.points}` : '0', shot.best ? `${shot.best.species.name} · ${verdict(shot)}` : 'nothing in frame');
+    const fresh = record(R.id, shot);
+    if (fresh) S.fresh++;
+    hud.say(shot.points ? `+${shot.points}` : '0', shot.best ? `${shot.best.species.name} · ${fresh ? 'new in the field log' : verdict(shot)}` : 'nothing in frame');
     if (!S.film) hud.help('Last frame used. The report comes at the end of the drive.');
   }
 
@@ -260,7 +264,28 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
     renderer.render(scene, rig.camera);
     if (S.pending) takeShot();
+    adapt(now);
     if (rig.done && !S.over) finish();
+  }
+
+  // ---- the frame rate: slow phones get fewer pixels instead of a stutter. Every two seconds the
+  // average frame time is checked; above ~34 ms (under 30 fps) the pixel ratio steps down, and
+  // with plenty of headroom it steps back up, never past the starting ratio.
+  const RES = { top: Math.min(window.devicePixelRatio, 1.35), min: 0.6, t0: 0, n: 0 };
+  RES.ratio = RES.top;
+  function adapt(now) {
+    if (!RES.t0) { RES.t0 = now; RES.n = 0; return; }
+    RES.n++;
+    if (now - RES.t0 < 2000) return;
+    const ms = (now - RES.t0) / RES.n;
+    RES.t0 = now; RES.n = 0;
+    let r = RES.ratio;
+    if (ms > 34) r = Math.max(RES.min, r * 0.85);
+    else if (ms < 20) r = Math.min(RES.top, r * 1.1);
+    if (Math.abs(r - RES.ratio) < 0.01) return;
+    RES.ratio = r;
+    renderer.setPixelRatio(r);
+    renderer.setSize(host.clientWidth, host.clientHeight, false);
   }
 
   // ---- the medium and the stretches of the route. The dive is announced a moment before the van
@@ -305,7 +330,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     S.over = true;
     audio.drive(0, 0);
     await hud.report({
-      shots: S.shots, route: R, tod, store,
+      shots: S.shots, route: R, tod, store, fresh: S.fresh,
       onDone: () => leave(),
       onAgain: () => leave({ again: true }),
     });
@@ -391,13 +416,13 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     if (S.dead || on === S.paused) return;
     S.paused = on;
     if (on) { renderer.setAnimationLoop(null); audio.suspend(); }
-    else { S.last = 0; renderer.setAnimationLoop(frame); audio.resume(); }
+    else { S.last = 0; RES.t0 = 0; renderer.setAnimationLoop(frame); audio.resume(); }
   }
 
   // ---- hand the renderer over: the station has already stopped its own loop
   const prev = { clear: renderer.getClearColor(new THREE.Color()), alpha: renderer.getClearAlpha(), ratio: renderer.getPixelRatio() };
   renderer.setClearColor(srgb(P.fog), 1);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
+  renderer.setPixelRatio(RES.ratio);
   renderer.setSize(host.clientWidth, host.clientHeight, false);
   rig.resize(host.clientWidth / Math.max(1, host.clientHeight));
   hud.setZoom(rig.state.fov, FOV.wide);
@@ -405,7 +430,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   return {
     route: R, tod,
-    state: () => ({ u: rig.progress, film: S.film, pellets: S.pellets, shots: S.shots.length,
+    state: () => ({ u: rig.progress, ratio: +RES.ratio.toFixed(2), film: S.film, pellets: S.pellets, shots: S.shots.length,
       points: S.shots.reduce((n, s) => n + s.points, 0), over: S.over, paused: S.paused,
       species: new Set(S.shots.filter((s) => s.best).map((s) => s.best.species.id)).size }),
     // test hooks: drive the run on without waiting two minutes

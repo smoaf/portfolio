@@ -8,6 +8,7 @@
 // Coordinates are the van's own, as in 3d/scripts/vehicle.py: x forward, y to the left, z up, the
 // ground at z = 0, the body floor at z = 0.95. The page places the group on the van in the model.
 import * as THREE from 'three';
+import { summary } from '../safari/fieldlog.js';
 
 // `ready` says whether the route has its terrain yet; the screen shows COMING SOON for the others.
 export const ROUTES = [
@@ -212,7 +213,7 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
   root.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
 
   // --- the start menu on the screen: amber monospace text on a dark CRT, a slight glow and scanlines
-  const UI = { state: 'home', hover: null, items: [], blink: true, route: null };
+  const UI = { state: 'home', hover: null, items: [], blink: true, route: null, log: [] };
   const TOD = { dawn: 'DAWN', day: 'DAY', dusk: 'DUSK', night: 'NIGHT' };
   function draw() {
     const W = canvas.width, H = canvas.height, g = ctx;
@@ -237,16 +238,35 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
       const w = text(label, 72, y, size, on ? '#1a1204' : amber, 700);
       if (sub) text(sub, 112, y + size * 0.62 + 12, 24, on ? '#2a1d06' : dim, 500);
       if (!on && UI.blink && UI.items.length === 0) { g.fillStyle = amber; g.fillRect(72 + w + 14, y - size * 0.4, size * 0.5, size * 0.8); }
-      UI.items.push({ id, y0: y - size * 0.72, y1: y + size * 0.72 + (sub ? 34 : 0) });
+      UI.items.push({ id, label: label.replace(/^[<>] /, ''), y0: y - size * 0.72, y1: y + size * 0.72 + (sub ? 34 : 0) });
     };
     if (UI.state === 'home') {
       text('RESEARCH VEHICLE READY.', 72, 200, 34, dim, 500);
       text('NO STEERING REQUIRED.', 72, 248, 34, dim, 500);
-      item('start', '> START EXPLORATION', 400, 56);
+      item('start', '> START EXPLORATION', 380, 56);
+      item('log', '> FIELD LOG', 510, 42);
     } else if (UI.state === 'routes') {
       text('SELECT ROUTE', 72, 165, 38, dim, 600);
       ROUTES.forEach((r, i) => item(r.id, '> ' + r.name, 250 + i * 118, 46, r.line));
       item('back', '< BACK', 600, 38);
+    } else if (UI.state === 'log') {
+      // the checklist: one row of cells per route (a lit cell per species photographed), the
+      // count, and the secret animals named once found, else only when they come out
+      text('FIELD LOG · SPECIES PHOTOGRAPHED', 72, 150, 32, dim, 600);
+      ROUTES.forEach((r, i) => {
+        const y = 230 + i * 160, L = UI.log[i];
+        text(r.name, 72, y, 44);
+        if (!L) { text('NOT SURVEYED YET. DRIVE IT ONCE.', 72, y + 58, 26, dim, 500); return; }
+        text(`${L.found}/${L.total}${L.rare ? ` · ${L.rare} RARE` : ''}`, 330, y, 32, L.found === L.total ? amber : dim, 600);
+        const x0 = 72, w = (W - 144) / Math.max(1, L.total);
+        for (let k = 0; k < L.total; k++) {
+          g.fillStyle = k < L.found ? amber : 'rgba(255, 189, 61, 0.16)';
+          g.fillRect(x0 + k * w + 2, y + 34, Math.max(2, w - 4), 16);
+        }
+        const sec = L.secrets.map((q) => (q.found ? q.name.toUpperCase() + ' *' : '??? AT ' + q.when)).join(' · ');
+        if (sec) text('SECRET: ' + sec, 72, y + 82, 24, dim, 500);
+      });
+      item('back', '< BACK', 590, 38);
     } else if (UI.state === 'soon') {
       const r = ROUTES.find((q) => q.id === UI.route) || ROUTES[0];
       text('ROUTE: ' + r.name, 72, 190, 46);
@@ -271,6 +291,7 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
   function press(id) {
     if (!id) return false;
     if (id === 'start') UI.state = 'routes';
+    else if (id === 'log') { UI.state = 'log'; UI.log = ROUTES.map((r) => summary(r.id)); }
     else if (id === 'back') UI.state = UI.state === 'soon' ? 'routes' : 'home';
     else {
       const r = ROUTES.find((q) => q.id === id);
@@ -293,6 +314,9 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
       normal: (out) => out.set(-1, 0, 0).applyQuaternion(face.getWorldQuaternion(new THREE.Quaternion())),
       hover(uv) { const id = itemAt(uv); if (id !== UI.hover) { UI.hover = id; draw(); } return id; },
       press: (uv) => press(itemAt(uv)),
+      // the same choices for the keyboard and screen readers: the page lists them as buttons
+      items: () => UI.items.map(({ id, label }) => ({ id, label })),
+      pressId: (id) => press(id),
       reset() { UI.state = 'home'; UI.hover = null; draw(); },
       state: () => UI.state,
     },

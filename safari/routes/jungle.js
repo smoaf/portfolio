@@ -49,6 +49,8 @@ export const ROUTE = {
   id: 'jungle',
   name: 'Jungle',
   seconds: 96,
+  // the animal that only comes out at one time of day (the van's field log hints at it)
+  secrets: [{ id: 'poodle-moth', name: 'Poodle moth', when: 'NIGHT' }],
   eyeHeight: 2.05,
   yawLimit: 2.7,
   palette: {

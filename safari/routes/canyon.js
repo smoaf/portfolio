@@ -96,6 +96,11 @@ export const ROUTE = {
   id: 'canyon',
   name: 'Canyon',
   seconds: 92,
+  // the animals that only come out at one time of day (the van's field log hints at them)
+  secrets: [
+    { id: 'goblin-shark', name: 'Goblin shark', when: 'NIGHT' },
+    { id: 'fire-salamander', name: 'Fire salamander', when: 'DAWN OR DUSK' },
+  ],
   eyeHeight: 2.05,
   yawLimit: 2.7,
   palette: {

@@ -10,6 +10,8 @@ import * as THREE from 'three';
 export const FOV = { wide: 62, long: 18 };
 const vA = new THREE.Vector3(), vB = new THREE.Vector3(), q = new THREE.Quaternion();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+// with reduced motion the van glides: no shake, no bob, only a trace of the swell
+const calm = matchMedia('(prefers-reduced-motion: reduce)');
 
 export function makeRig({ route, scene, aspect = 1.6 }) {
   const path = route.path;
@@ -39,10 +41,11 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
     rig.rotation.y = Math.atan2(-vB.x, -vB.z);           // the rig's -z is the way it drives, like the camera's
     // afloat, the van rocks on the swell instead of rattling on gravel
     const sway = route.swayAt ? route.swayAt(u) : 0;
-    const roll = Math.sin(S.t * 1.1) * 0.012 + S.bump * 0.03 * (1 - sway) + Math.sin(S.t * 0.9) * 0.045 * sway;
+    const m = calm.matches ? 0 : 1, sm = calm.matches ? 0.2 : 1;
+    const roll = (Math.sin(S.t * 1.1) * 0.012 + S.bump * 0.03 * (1 - sway)) * m + Math.sin(S.t * 0.9) * 0.045 * sway * sm;
     rig.rotation.z = roll;
-    rig.rotation.x = Math.sin(S.t * 0.7 + 1) * 0.03 * sway;
-    head.position.y = (route.eyeHeight ?? 1.95) + Math.sin(S.t * 6.2) * 0.012 * (0.3 + S.speed) + S.bump * 0.05;
+    rig.rotation.x = Math.sin(S.t * 0.7 + 1) * 0.03 * sway * sm;
+    head.position.y = (route.eyeHeight ?? 1.95) + (Math.sin(S.t * 6.2) * 0.012 * (0.3 + S.speed) + S.bump * 0.05) * m;
     S.bump *= Math.max(0, 1 - dt * 6);
   }
 

@@ -95,6 +95,7 @@ export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
     // speed 0..1 of the van, bump 0..1 from the road: the hum rises in pitch, the tyres get louder
     drive(speed, bump = 0) {
       if (!ctx || closed) return;
+      if (bump <= 0.01 && Math.abs(speed - state.speed) < 0.004) return;   // called every frame: only real changes queue automation
       state.speed = speed;
       const t = ctx.currentTime;
       parts.osc1.frequency.setTargetAtTime(44 + speed * 52, t, 0.25);

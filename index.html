@@ -189,6 +189,14 @@
                background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 8px 12px;
                max-width: calc(100vw - 32px); transition: opacity .6s; }
   .camp-hint.gone { opacity: 0; }
+  /* the camp's choices as plain buttons, for the keyboard and screen readers: out of sight until one
+     of them has focus, then a row at the bottom like the hint */
+  .camp-keys { position: fixed; z-index: 22; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+               display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: max-content; max-width: calc(100vw - 32px); }
+  .camp-keys:not(:focus-within) { clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; }
+  .camp-keys button { color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line); font-size: 11px;
+                      -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+  body.safari-on .camp-keys { display: none !important; }
   .bubble { position: fixed; z-index: 19; left: 0; top: 0; width: max-content; max-width: min(300px, calc(100vw - 32px)); color: var(--glass-ink);
             background: var(--glass-strong); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 14px 16px 12px;
             transform: translate(-50%, -100%); opacity: 0; transition: opacity .35s; }
@@ -299,6 +307,7 @@
 <div class="tip" id="camp-tip" hidden></div>
 <div class="camp-hint" id="camp-hint" hidden></div>
 <button class="btn campback" id="camp-back" hidden>‹ Back</button>
+<div class="camp-keys" id="camp-keys" role="group" aria-label="Camp" hidden></div>
 <div class="bubble" id="bubble" hidden role="dialog" aria-label="The figure at the camp">
   <p>Hi! Want to leave a message?</p>
   <div class="bubble-actions"><button class="btn" id="bubble-yes">Yes</button><button class="btn ghost" id="bubble-no">Not now</button></div>
@@ -1916,6 +1925,29 @@ function campTap(ev) {
   camp.armed = null; setCampHover(null);
   ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum })[id]();
 }
+// the same choices for the keyboard: a row of buttons that follows the view (and the screen's menu)
+const campKeys = { el: document.getElementById('camp-keys'), sig: '' };
+function stepCampKeys() {
+  const atCamp = nav.place && nav.place.id === 'camp' && !camp.safari && !tween.active;
+  const v = camp.view, scr = v === 'screen' && camp.van ? camp.van.screen : null;
+  const ids = !atCamp ? [] : scr ? scr.items().map((q) => q.id) : (v === null || v === 'fire' || v === 'van') ? VIEW_TARGETS[v] : [];
+  const sig = (scr ? scr.state() + ':' : '') + ids.join(',');
+  if (sig === campKeys.sig) return;
+  const had = campKeys.el.contains(document.activeElement);
+  campKeys.sig = sig; campKeys.el.innerHTML = ''; campKeys.el.hidden = !ids.length;
+  const labels = scr ? Object.fromEntries(scr.items().map((q) => [q.id, q.label])) : {};
+  ids.forEach((id) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn';
+    b.textContent = scr ? labels[id].charAt(0) + labels[id].slice(1).toLowerCase() : TARGETS[id].label;
+    b.addEventListener('click', () => {
+      if (scr) { scr.pressId(id); return; }
+      ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum })[id]();
+    });
+    campKeys.el.appendChild(b);
+  });
+  if (had && campKeys.el.firstChild) campKeys.el.firstChild.focus({ preventScroll: true });   // the menu moved on: stay in it
+}
 function campHint() {
   const h = campEls.hint;
   h.textContent = (matchMedia('(hover: hover)').matches ? 'Click' : 'Tap') + ' the figure, the fire or the van';
@@ -2311,7 +2343,7 @@ async function endSafari(opts = {}) {
 
 function stepCamp(now) {
   const dt = camp.last ? Math.min(0.1, (now - camp.last) / 1000) : 0; camp.last = now;
-  stepJab(dt); stepSparks(dt, now / 1000);
+  stepJab(dt); stepSparks(dt, now / 1000); stepCampKeys();
   placeBubble();
   const id = camp.hover;
   if (id && !campEls.tip.hidden) {

@@ -5,6 +5,8 @@
 import { verdict } from './photo.js';
 
 const TOD = { dawn: 'Dawn', day: 'Day', dusk: 'Dusk', night: 'Night' };
+// names on the board come back out of localStorage, so they go in as text, never as markup
+const esc = (v) => String(v).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html !== undefined) n.innerHTML = html; return n; };
 // the same frame can show up in the feed and twice in the report, so each place gets its own copy
 function copyThumb(src, shrink = 1) {
@@ -113,7 +115,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     help(text) { helpEl.textContent = text; helpEl.classList.remove('gone'); setTimeout(() => helpEl.classList.add('gone'), 5000); },
 
     // ---- the field report: best shot per species, the total, and the board for this route and time
-    async report({ shots, route: r, tod: t, store, onDone, onAgain }) {
+    async report({ shots, route: r, tod: t, store, fresh = 0, onDone, onAgain }) {
       if (report) return;
       report = el('div', 'sf-report');
       report.setAttribute('role', 'dialog');
@@ -135,7 +137,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       report.innerHTML = `<div class="sf-wrap">
         <div class="sf-sub">${r.name} · ${TOD[t] || 'Day'} · ${shots.length} shot${shots.length === 1 ? '' : 's'}</div>
         <h2>Field report</h2>
-        <div class="sf-total"><b id="sf-total">${total()}</b><span class="sf-caps">points · ${picks.length} species</span></div>
+        <div class="sf-total"><b id="sf-total">${total()}</b><span class="sf-caps">points · ${picks.length} species${fresh ? ` · ${fresh} new in the field log` : ''}</span></div>
         <div class="sf-grid" id="sf-picks"></div>
         <div class="sf-board">
           <div><h3>Your name for the board</h3>
@@ -191,7 +193,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         if (!rows.length) { listEl.innerHTML = '<li><span class="sf-rank">–</span><span>No runs yet</span><span>0</span></li>'; return; }
         rows.slice(0, 8).forEach((e, i) => {
           const li = el('li', e === mine || (mine && e.at === mine.at) ? 'me' : '',
-            `<span class="sf-rank">${i + 1}</span><span>${e.name}</span><span>${e.score}</span>`);
+            `<span class="sf-rank">${i + 1}</span><span>${esc(e.name)}</span><span>${esc(e.score)}</span>`);
           listEl.appendChild(li);
         });
       };
