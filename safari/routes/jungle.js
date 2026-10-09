@@ -55,10 +55,10 @@ export const ROUTE = {
     dawn: { top: 0x3c5a80, horizon: 0xe7b58e, ground: 0x4a4a32, fog: 0x9a9c84, near: 8, far: 150, sun: [0xffd6a8, 1.5, [0.9, 0.2, 0.2]], hemi: [0xd6e2d8, 0x3a3f26, 0.7], amb: 0.25 },
     day: { top: 0x7aa8d8, horizon: 0xd7e6df, ground: 0x4f5a34, fog: 0x8ea488, near: 10, far: 170, sun: [0xfff2d6, 2.3, [0.45, 0.85, 0.25]], hemi: [0xe2f0e4, 0x3c4a28, 0.85], amb: 0.2 },
     dusk: { top: 0x2b3762, horizon: 0xe59a68, ground: 0x3a3426, fog: 0x6e6658, near: 8, far: 140, sun: [0xffb070, 1.5, [-0.8, 0.25, -0.3]], hemi: [0xc8bcd0, 0x3a3424, 0.95], amb: 0.38 },
-    night: { top: 0x050a16, horizon: 0x16283f, ground: 0x2a3030, fog: 0x0f1a26, near: 6, far: 120, sun: [0x9ab4e8, 0.7, [-0.3, 0.6, -0.6]], hemi: [0x46608f, 0x141a14, 1.0], amb: 0.5 },
+    night: { top: 0x060b19, horizon: 0x1b2d4f, ground: 0x343a40, fog: 0x13203a, near: 8, far: 140, sun: [0x9ab4e8, 1.45, [-0.3, 0.6, -0.6]], hemi: [0x5a72a8, 0x223024, 1.3], amb: 0.55 },   // moonlit, like the canyon
   },
   // over the river the haze lifts and the sea comes into view
-  open: { dawn: [60, 900], day: [90, 1200], dusk: [50, 800], night: [24, 380] },
+  open: { dawn: [60, 900], day: [90, 1200], dusk: [50, 800], night: [40, 520] },
   ambience: {
     day: { wind: 0.03, windCut: 380, band: 0.024, bandHz: 3600 },          // leaves and insects
     dawn: { wind: 0.03, windCut: 340, band: 0.03, bandHz: 3100 },
@@ -73,7 +73,7 @@ export const ROUTE = {
     const T = { time: { value: 0 } };
     const lam = (o) => keep(new THREE.MeshLambertMaterial(o));
     const geo = (g) => keep(g);
-    const dark = (hex, k = 0.45) => (night ? new THREE.Color(hex).lerp(new THREE.Color(0x24303a), k) : new THREE.Color(hex));
+    const dark = (hex, k = 0.25) => (night ? new THREE.Color(hex).lerp(new THREE.Color(0x24303a), k) : new THREE.Color(hex));
 
     // ---- the road: on land it sits on the ground, on the river it floats at the surface
     const ctrl = ROAD.map(([x, z]) => new THREE.Vector3(x, Math.max(raw(x, z) + 0.05, WATER - 0.35), z));
@@ -122,6 +122,7 @@ export const ROUTE = {
     waterMat.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = T.time;
       for (const k in WC) sh.uniforms[k] = { value: WC[k] };
+      sh.uniforms.uGlow = { value: night ? 1 : tod === 'dusk' ? 0.45 : 0 };
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying vec3 vWp;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -131,8 +132,17 @@ export const ROUTE = {
           vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
-          uniform float uTime; uniform vec3 uRiver, uBrack, uSea, uDeep, uFoam;
+          uniform float uTime, uGlow; uniform vec3 uRiver, uBrack, uSea, uDeep, uFoam;
           varying vec3 vWp;`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          if (uGlow > 0.0) {
+            // glowing plankton: specks that twinkle in the water near the van (dusk and night)
+            vec2 w = vWp.xz * 1.4, cell = floor(w), f = fract(w) - 0.5;
+            float h = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+            float tw = 0.5 + 0.5 * sin(uTime * (1.5 + h * 2.0) + h * 40.0);
+            float speck = (1.0 - smoothstep(0.04, 0.15, length(f))) * step(0.9, h) * tw;
+            totalEmissiveRadiance += vec3(0.35, 0.95, 0.85) * speck * uGlow * 1.6 * (1.0 - smoothstep(15.0, 80.0, length(vWp - cameraPosition)));
+          }`)
         .replace('#include <color_fragment>', `#include <color_fragment>
           {
             vec2 w = vWp.xz;
