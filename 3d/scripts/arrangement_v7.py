@@ -12,6 +12,7 @@ from arrangement_v3 import export as export_v3
 import landscape
 from landscape import landscape as make_landscape, BOULDERS
 from props import scatter
+from projectors import projectors
 
 CAPTURE = {}
 
@@ -27,6 +28,19 @@ v5.CAMP_SHIFT = (2.1, -2.1)
 if __name__ == "__main__":
     items, movers = v5.build()
     items += scatter()
+    st, mv = projectors()
+    items += st
+    movers += mv
+    import props
+    movers += props.MOVERS
+    import printer                                            # 3D printer in the workshop (Smo)
+    st, mv = printer.printer()
+    items += st
+    movers += mv
+    import camp                                               # case stacks and the loose case (Smo)
+    st, mv = camp.camp_cases()
+    items += st
+    movers += mv
     # ground contact points: low vertices of everything standing on the plateau
     pts = np.vstack([m.vertices[m.vertices[:, 2] < 0.6] for _, m, _ in items if len(m.vertices)])
     pts = pts[np.random.default_rng(0).permutation(len(pts))[:60000]]
@@ -34,4 +48,5 @@ if __name__ == "__main__":
     near = CAPTURE["rocks"]
     far = [b for b in BOULDERS if all(abs(b[0] - r[0]) + abs(b[1] - r[1]) > 3 for r in near)]
     items += make_landscape(near + far)
+    items.append(landscape.distant_hills())
     print("exported arrangement_v7.glb triangles:", export_v3(items, movers, "arrangement_v7.glb"))

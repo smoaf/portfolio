@@ -1,0 +1,10 @@
+# versions used for the verified rebuild (7 Oct 2026)
+numpy==2.5.3
+scipy==1.18.1
+trimesh==5.1.1
+shapely==2.1.2
+manifold3d==3.5.4
+rtree==1.4.1
+networkx==3.6.1
+mapbox-earcut==2.1.0
+pillow==12.3.0

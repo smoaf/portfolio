@@ -198,15 +198,8 @@ def van(x, y, heading=0.0):
 def firepit(x, y):
     ring = trimesh.creation.annulus(r_min=0.45, r_max=0.62, height=0.3, sections=32).apply_translation((x, y, 0.15))
     logs = [rod((x - 0.3, y - 0.1, 0.12), (x + 0.3, y + 0.1, 0.25), 0.06, 8), rod((x - 0.2, y + 0.25, 0.12), (x + 0.15, y - 0.25, 0.25), 0.06, 8)]
-    seats = []
-    for a in (np.pi * 0.85, np.pi * 1.25):
-        sx, sy = x + 1.6 * np.cos(a), y + 1.6 * np.sin(a)
-        s = U([box(0.55, 0.5, 0.06, 0, 0, 0.4), box(0.06, 0.5, 0.45, -0.25, 0, 0.62)] +
-              [box(0.04, 0.04, 0.4, dx, dy, 0.2) for dx in (-0.22, 0.22) for dy in (-0.2, 0.2)])
-        s.apply_transform(ROT(a + np.pi, (0, 0, 1)))
-        s.apply_translation((sx, sy, 0))
-        seats.append(s)
-    return [("firepit/ring", ring, "plaster"), ("firepit/logs", cat(logs), "plaster_warm"), ("firepit/seats", U(seats), "plaster")]
+    from camp import chairs                                  # folding camping chairs (Smo, 6 Oct 2026)
+    return [("firepit/ring", ring, "plaster"), ("firepit/logs", cat(logs), "plaster_warm")] + chairs(x, y)
 
 
 def build():

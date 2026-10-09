@@ -79,17 +79,20 @@ def prism(outline, z0, h):
     return m
 
 
-def interior(screen_outline, fz, top, roof_at=None, towers=False):
-    """towers=True: rigging stands on floor towers behind the screen instead of hanging from the roof."""
+def interior(screen_outline, fz, top, roof_at=None, towers=False, screen_shape=None, sculptures=True):
+    """towers=True: rigging stands on floor towers behind the screen instead of hanging from the roof.
+    screen_shape: outline for the screen itself (e.g. a smooth oval) if it differs from screen_outline,
+    which still places the rigging, towers and speakers. sculptures=False leaves the sculptures out."""
     """Shared showroom kit, centred on the origin. Returns list of (name, mesh, material)."""
     out = []
     # 360 degree screen: thin ring, black edges top and bottom
     sz0, sh = fz + 0.5, 3.0
-    ring = D(prism(screen_outline, sz0, sh), prism(scaled(screen_outline, 0.05), sz0 - 1, sh + 2))
+    so = screen_shape or screen_outline
+    ring = D(prism(so, sz0, sh), prism(scaled(so, 0.05), sz0 - 1, sh + 2))
     out.append(("screen", ring, "plaster_warm"))
     edges = []
     for z in (sz0, sz0 + sh):
-        edges.append(D(prism(scaled(screen_outline, -0.03), z - 0.03, 0.06), prism(scaled(screen_outline, 0.03), z - 1, 2)))
+        edges.append(D(prism(scaled(so, -0.03), z - 0.03, 0.06), prism(scaled(so, 0.03), z - 1, 2)))
     out.append(("screen_edges", U(edges), "linework"))
     # rigging: outer truss ring above the screen, inner overhead ring, spokes, hangers
     rz = min(sz0 + sh + 0.8, top - 0.6)
@@ -166,7 +169,8 @@ def interior(screen_outline, fz, top, roof_at=None, towers=False):
     half = I(half, box(2, 2, 1, 0, 0, 0.5))
     half.apply_translation((-0.4, -1.4, fz))
     sc.append(half)
-    out.append(("sculptures", U(sc), "plaster"))
+    if sculptures:
+        out.append(("sculptures", U(sc), "plaster"))
     # two low curved benches near the screen
     for a in (np.pi * 0.85, np.pi * 1.15):
         b = box(2.0, 0.5, 0.42)

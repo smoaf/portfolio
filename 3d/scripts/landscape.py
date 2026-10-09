@@ -15,6 +15,8 @@ from build_station_v4 import U, cat, ROT
 from trimesh.visual.material import PBRMaterial
 from build_station_v4 import MAT
 
+MAT["hills"] = PBRMaterial(name="hills", baseColorFactor=[0.9, 0.89, 0.87, 1.0], metallicFactor=0.0, roughnessFactor=1.0)
+MAT["beacon"] = PBRMaterial(name="beacon", baseColorFactor=[0.75, 0.08, 0.06, 1.0], metallicFactor=0.0, roughnessFactor=0.5)
 MAT["cliff"] = PBRMaterial(name="cliff", baseColorFactor=[0.9, 0.885, 0.86, 1.0], metallicFactor=0.0, roughnessFactor=1.0)
 
 X0, X1 = -100.0, 90.0          # plateau extent left to right
@@ -161,3 +163,49 @@ def landscape(rocks_at=None):
     return [("terrain/plateau", ground, "ground"),
             ("terrain/cliff", cliff(top_edge), "cliff"),
             ("terrain/rocks", boulders(rocks_at or BOULDERS), "plaster")]
+
+
+# a couple of low hills, only hinted (Smo). Shared so the solar field can sit on them.
+HILLS = [(-110, -125, 70, 35, 22), (-10, -155, 80, 40, 26), (110, -135, 70, 34, 18)]   # 75 m closer (Smo)
+
+
+def hill_base(x, y):
+    h = -6.0
+    for cx, cy, rx, ry, hh in HILLS:
+        h += hh * np.exp(-(((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2))
+    return h + 1.5 * np.sin(x * 0.05 + y * 0.03)
+
+
+# level pad for the steerable radio dish (radio_dish.py). Smo did not want the hill dug away for
+# the sunk dish, so this is only a small local levelling: flat inside PAD r, blending back to the
+# hill over PAD blend; at most about 3.5 m of cut or fill.
+PAD = dict(cx=15.0, cy=-155.0, r=16.0, blend=12.0)
+PAD["z"] = float(np.mean([hill_base(PAD["cx"] + r * np.cos(a), PAD["cy"] + r * np.sin(a))
+                          for r in (0, 5, 10, 14) for a in np.linspace(0, 2 * np.pi, 24)]))
+
+
+def hill_height(x, y):
+    h = hill_base(x, y)
+    d = np.hypot(x - PAD["cx"], y - PAD["cy"])
+    t = np.clip((d - PAD["r"]) / PAD["blend"], 0, 1)
+    w = t * t * (3 - 2 * t)
+    return PAD["z"] + (h - PAD["z"]) * w
+
+
+def distant_hills():
+    """Broad, low hills well behind the plateau. The viewer fades their base and their sides
+    out and hides them in haze, so they only read as soft shapes in the background."""
+    xs = np.arange(-300, 260 + 1e-6, 5.0)
+    ys = np.arange(-240, -85 + 1e-6, 5.0)
+    verts = [(x, y, hill_height(x, y)) for y in ys for x in xs]
+    nx = len(xs)
+    faces = []
+    for j in range(len(ys) - 1):
+        for i in range(nx - 1):
+            a, b = j * nx + i, j * nx + i + 1
+            c, d = (j + 1) * nx + i, (j + 1) * nx + i + 1
+            faces += [(a, b, d), (a, d, c)]
+    m = trimesh.Trimesh(np.array(verts), np.array(faces), process=False)
+    if m.face_normals[:, 2].mean() < 0:
+        m.invert()
+    return ("terrain/distant_hills", m, "hills")

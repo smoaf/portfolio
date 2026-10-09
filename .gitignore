@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 CLAUDE.md
 docs/
+.venv/
+3d/scripts/*.glb

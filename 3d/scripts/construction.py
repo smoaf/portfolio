@@ -103,7 +103,8 @@ def construction_site(fz):
         for dx in (0, 1.0):
             black.append(rod((sx0 + dx, -L / 2, z), (sx0 + dx, L / 2 - 2.0, z), 0.025, 6))
         warm.append(box(0.9, L - 2.0, 0.05, sx0 + 0.5, -1.0, z + 0.03))           # planks
-        black.append(rod((sx0 + 1.0, -L / 2, z + 1.0), (sx0 + 1.0, L / 2 - 2.0, z + 1.0), 0.015, 6))   # guard rail
+        if z < 6.0:   # Smo: the top rail stood above the posts, connected to nothing
+            black.append(rod((sx0 + 1.0, -L / 2, z + 1.0), (sx0 + 1.0, L / 2 - 2.0, z + 1.0), 0.015, 6))   # guard rail
     for k in range(5):                                                                 # diagonal bracing
         y0 = -L / 2 + k * (L - 2.0) / 5
         black.append(rod((sx0 + 1.0, y0, 0.0), (sx0 + 1.0, y0 + (L - 2.0) / 5, 6.0), 0.015, 4))
@@ -125,12 +126,15 @@ def construction_site(fz):
         for dy in (0, -1.0):
             black.append(rod((xs[0], ey0 + dy, z), (xs[-1], ey0 + dy, z), 0.025, 6))
         warm.append(box(xs[-1] - xs[0], 0.9, 0.05, (xs[0] + xs[-1]) / 2, ey0 - 0.5, z + 0.03))
-        black.append(rod((xs[0], ey0 - 1.0, z + 1.0), (xs[-1], ey0 - 1.0, z + 1.0), 0.015, 6))
+        if z < 6.0:
+            black.append(rod((xs[0], ey0 - 1.0, z + 1.0), (xs[-1], ey0 - 1.0, z + 1.0), 0.015, 6))
     for k in range(len(xs) - 1):
         black.append(rod((xs[k], ey0 - 1.0, 0.0), (xs[k + 1], ey0 - 1.0, 6.0), 0.015, 4))
 
     lamps = []
-    for i, (lx, ly, aim) in enumerate([(-W / 2 - 2.6, -L / 2 - 3.2, 0.7), (sx0 + 3.0, 1.0, np.pi), (-W / 2 - 2.4, 2.5, 0.0)]):
+    # Smo: the leftmost lamp in the default view (free-standing in front of the side scaffold) removed
+    # one work light left, standing clear of the scaffolds and the panel stacks, aimed at the site
+    for i, (lx, ly, aim) in [(0, (sx0 + 3.2, -L / 2 - 3.0, 2.49))]:
         lamps += site_lamp(i, lx, ly, aim)
     return lamps + [("future/site_structure", cat(plaster), "plaster"),
             ("future/site_steel", cat(black), "linework"),

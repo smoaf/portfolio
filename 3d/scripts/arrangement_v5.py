@@ -52,6 +52,8 @@ def flames(x, y, seed=7):
     return cat(parts)
 
 
+CAMP_SHIFT = (0.0, 0.0)   # moves van and firepit together; set by later versions
+
 HUB_R = 5.4
 HUB_H = 4.9          # with the flat dome the top is about 7.5 m: above the modules (5.9 m), well below the showroom (9.4 m)
 SHOW_H = 7.2
@@ -198,7 +200,8 @@ def showroom_local(fz, tcz):
     items.append(("showroom/window_frame", cat(edge), "linework"))
 
     screen = ellipse_poly(a - 1.5, b - 1.9, 12, np.pi / 12)
-    for n, m, mat in interior(screen, f, 6.4 - wall - 0.6, towers=True):
+    oval = ellipse_poly(a - 1.5, b - 1.9, 120, 0.0)        # Smo: the LED wall a smooth oval, not twelve facets
+    for n, m, mat in interior(screen, f, 6.4 - wall - 0.6, towers=True, screen_shape=oval, sculptures=False):  # Smo: no sculptures
         items.append((f"showroom/{n}", m, mat))
 
     movers = []
@@ -209,29 +212,36 @@ def showroom_local(fz, tcz):
         seg = p1 - p0
         Ls = np.linalg.norm(seg)
         ang = np.arctan2(seg[1], seg[0])
-        usable = Ls - 0.36
+        usable = Ls - 0.16                                  # from inside one corner post to the next
         n = max(1, int(round(usable / 0.62)))
         w = usable / n
         for j in range(n):
-            c = p0 + seg / Ls * (0.18 + w * (j + 0.5))
-            fin = box(w - 0.04, 0.05, z2 - z1 - 0.06)
+            c = p0 + seg / Ls * (0.08 + w * (j + 0.5))
+            fin = box(w + 0.07, 0.05, z2 - z1 + 0.05)         # neighbours overlap when closed, ends reach into the band edges
             T = ROT(ang, (0, 0, 1)); T[:3, 3] = (c[0], c[1], (z1 + z2) / 2 + lift)
             movers.append((f"showroom/fin_{k:03d}", fin, "plaster", T))
             k += 1
     # roof slats across the short axis, pivoting on their long axis
-    rim = Polygon(scaled(base, wall + 0.05))
+    # Smo: closed, the roof must let no light in. The slats cover the whole opening, overlap each
+    # other, and their ends follow the rim and reach 6 cm into the wall.
+    rim = Polygon(scaled(base, wall - 0.06))
     zc = H - ct - 0.15
-    slat_w, overlap = 0.92, 0.06
-    for k2, y in enumerate(np.arange(-b + 0.9, b - 0.9 + 1e-6, slat_w - overlap)):
-        seg = rim.intersection(LineString([(-a - 1, y), (a + 1, y)]))
-        if seg.is_empty:
+    slat_w, overlap = 0.92, 0.10
+    y_in = b - wall
+    n_sl = int(np.ceil((2 * y_in - slat_w) / (slat_w - overlap))) + 1
+    ys = np.linspace(-y_in + slat_w / 2 - 0.06, y_in - slat_w / 2 + 0.06, n_sl)
+    for k2, y in enumerate(ys):
+        strip = Polygon([(-a - 1, y - slat_w / 2), (a + 1, y - slat_w / 2), (a + 1, y + slat_w / 2), (-a - 1, y + slat_w / 2)])
+        shape = rim.intersection(strip)
+        if shape.is_empty or shape.area < 0.05:
             continue
-        x0, _, x1, _ = seg.bounds
-        length = (x1 - x0) - 0.1
-        if length < 0.8:
-            continue
-        slat = U([box(length, slat_w, 0.07), box(length + 0.08, 0.05, 0.05)])
-        T = np.eye(4); T[:3, 3] = ((x0 + x1) / 2, y, zc + lift)
+        x0, _, x1, _ = shape.bounds
+        cx = (x0 + x1) / 2
+        plate = trimesh.creation.extrude_polygon(shape, 0.07)
+        plate.apply_translation((-cx, -y, -0.035))
+        rib = box(max(0.2, (x1 - x0) - 0.6), 0.05, 0.05)
+        slat = U([plate, rib])
+        T = np.eye(4); T[:3, 3] = (cx, y, zc + lift)
         movers.append((f"showroom/louver_{k2:02d}", slat, "plaster", T))
 
     items = [(n, m.copy().apply_translation((0, 0, lift)), mat) for n, m, mat in items]
@@ -283,10 +293,11 @@ def build():
 
     # camp: moved back towards the centre of the plateau, behind office and workshop
     # camp back at its arrangement 03 place: cliff edge beyond the workshop
-    camp_x = centres[-1] + specs[-1]["length"] / 2 + 9.0
-    items += van(camp_x, 6.3, heading=np.radians(80))
-    items += firepit(camp_x - 3.6, 8.4)
-    items += [("firepit/flames", flames(camp_x - 3.6, 8.4), "flame")]
+    camp_x = centres[-1] + specs[-1]["length"] / 2 + 9.0 + CAMP_SHIFT[0]
+    camp_y = 6.3 + CAMP_SHIFT[1]
+    items += van(camp_x, camp_y, heading=np.radians(80))
+    items += firepit(camp_x - 3.6, camp_y + 2.1)
+    items += [("firepit/flames", flames(camp_x - 3.6, camp_y + 2.1), "flame")]
     items += cacti([("candelabra", 5.0, -15.0, 4.2, 1), ("saguaro", 17.0, -24.0, 5.0, 2)])
     # plants: desert bushes in the far corner behind the workshop, rosettes in front between hub and library
     items += [("flora/bush_00", desert_bush(24.0, -27.0, 1.6, 1), "plaster_warm"),
