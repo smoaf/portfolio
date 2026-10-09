@@ -227,6 +227,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
     const speed = rig.step(dt, reduceMotion() ? null : poi);
     rig.worldHead(env.camPos);
+    sky.position.copy(env.camPos);                     // the sky travels with the lens (a long route would leave it behind)
+    if (stars) stars.position.copy(env.camPos);
     env.u = rig.progress;
     stepMedium(dt);
     if (world.update) world.update(dt, env);

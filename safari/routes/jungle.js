@@ -48,7 +48,7 @@ const ROAD = [
 export const ROUTE = {
   id: 'jungle',
   name: 'Jungle',
-  seconds: 84,
+  seconds: 96,
   eyeHeight: 2.05,
   yawLimit: 2.7,
   palette: {
@@ -57,7 +57,9 @@ export const ROUTE = {
     dusk: { top: 0x2b3762, horizon: 0xe59a68, ground: 0x3a3426, fog: 0x6e6658, near: 8, far: 140, sun: [0xffb070, 1.5, [-0.8, 0.25, -0.3]], hemi: [0xc8bcd0, 0x3a3424, 0.95], amb: 0.38 },
     night: { top: 0x060b19, horizon: 0x1b2d4f, ground: 0x343a40, fog: 0x13203a, near: 8, far: 140, sun: [0x9ab4e8, 1.45, [-0.3, 0.6, -0.6]], hemi: [0x5a72a8, 0x223024, 1.3], amb: 0.55 },   // moonlit, like the canyon
   },
-  // over the river the haze lifts and the sea comes into view
+  // under the canopy the far trees fade into the colour of the sky low down, so they melt into it
+  // instead of standing against it as grey shapes; over the river the haze lifts and the sea shows
+  canopy: { dawn: 0xc29f82, day: 0xaec4b6, dusk: 0xb27a58, night: 0x17263c },
   open: { dawn: [60, 900], day: [90, 1200], dusk: [50, 800], night: [40, 520] },
   ambience: {
     day: { wind: 0.03, windCut: 380, band: 0.024, bandHz: 3600 },          // leaves and insects
@@ -533,6 +535,7 @@ export const ROUTE = {
       forest: { day: { every: 2.6, kind: 'trill', hz: 2300, vol: 0.16 }, dawn: { every: 2, kind: 'trill', hz: 1900, vol: 0.2 },
         dusk: { every: 2.8, kind: 'hoot', hz: 520, vol: 0.18 }, night: { every: 1.8, kind: 'chirp', hz: 4200, vol: 0.12 } },
     };
+    const fogForest = new THREE.Color(ROUTE.canopy[tod] ?? P.fog).convertSRGBToLinear(), fogOpen = new THREE.Color(P.fog).convertSRGBToLinear();
     const openness = (u) => smooth(uIn - 0.05, uIn + 0.04, u) * (1 - smooth(uOut - 0.04, uOut + 0.05, u));
 
     return {
@@ -557,6 +560,7 @@ export const ROUTE = {
       update(dt, env) {
         T.time.value = env.t;
         const k = openness(env.u);
+        scene.fog.color.copy(fogForest).lerp(fogOpen, k);
         scene.fog.near = lerp(P.near, open[0], k);
         scene.fog.far = lerp(P.far, open[1], k);
         air.step(dt, env.camPos, env.t);
