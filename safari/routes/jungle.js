@@ -183,6 +183,26 @@ export const ROUTE = {
     const foam = instanced(geo(new THREE.CircleGeometry(1, 10).rotateX(-Math.PI / 2)), lam({ color: dark(0xe9f2f0, 0.6), transparent: true, opacity: 0.55, depthWrite: false }), foamPts);
     scene.add(foam);
 
+    // the van's wake while it floats: churned foam round the hull and two arms opening out behind
+    // (in the van's own frame: +z is behind it, like the rig)
+    const wakeMat = keep(new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false,
+      uniforms: { t: T.time, o: { value: 0 }, c: { value: dark(0xeef4f0, 0.5) } },
+      vertexShader: 'varying vec2 vP; void main() { vP = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `uniform float t, o; uniform vec3 c; varying vec2 vP;
+        void main() {
+          float z = vP.y, x = abs(vP.x);
+          float hull = 1.0 - smoothstep(0.0, 0.35, abs(length(vP / vec2(1.7, 3.1)) - 1.0));
+          float arm = z > 0.0 ? (1.0 - smoothstep(0.0, 0.5 + z * 0.02, abs(x - (1.5 + z * 0.36)))) * (1.0 - smoothstep(6.0, 38.0, z)) : 0.0;
+          float trail = z > 2.0 ? (1.0 - smoothstep(0.0, 1.0 + z * 0.03, x)) * (1.0 - smoothstep(4.0, 22.0, z)) * 0.5 : 0.0;
+          float n = 0.55 + 0.45 * sin(vP.x * 3.1 + t * 2.3) * sin(vP.y * 2.3 - t * 3.0);
+          gl_FragColor = vec4(c, max(max(hull * 0.55, arm * 0.6), trail * 0.35) * n * o);
+        }`,
+    }));
+    const wake = new THREE.Mesh(geo(new THREE.PlaneGeometry(36, 50, 1, 1).rotateX(-Math.PI / 2).translate(0, 0, 20)), wakeMat);
+    wake.renderOrder = 3; wake.frustumCulled = false; wake.visible = false;
+    scene.add(wake);
+
     // ---- plants, instanced. First the places, away from the road and out of the water
     const items = (n, test) => {
       const out = [];
@@ -565,6 +585,14 @@ export const ROUTE = {
         scene.fog.far = lerp(P.far, open[1], k);
         air.step(dt, env.camPos, env.t);
         shaftMesh.visible = k < 0.9;
+        const afloat = smooth(uIn - 0.004, uIn + 0.01, env.u) * (1 - smooth(uOut - 0.01, uOut + 0.004, env.u));
+        wake.visible = afloat > 0.01;
+        if (wake.visible) {
+          const tg = path.getTangentAt(Math.min(1, env.u));
+          wake.position.set(env.camPos.x, WATER + 0.14, env.camPos.z);
+          wake.rotation.y = Math.atan2(-tg.x, -tg.z);
+          wakeMat.uniforms.o.value = afloat;
+        }
       },
     };
   },
