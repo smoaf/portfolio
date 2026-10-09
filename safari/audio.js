@@ -21,7 +21,7 @@ function noiseBuffer(ctx) {
 }
 
 export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
-  let ctx = null, master = null, noise = null, parts = null, closed = false;
+  let ctx = null, master = null, muffler = null, noise = null, parts = null, closed = false, muffled = 0;
   const state = { muted, speed: 0, started: false };
 
   function build() {
@@ -31,7 +31,9 @@ export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
     noise = noiseBuffer(ctx);
     master = ctx.createGain();
     master.gain.value = state.muted ? 0 : 0.0001;
-    master.connect(ctx.destination);
+    // under water everything goes through a low-pass: the world outside the hull sounds far away
+    muffler = ctx.createBiquadFilter(); muffler.type = 'lowpass'; muffler.frequency.value = 18000; muffler.Q.value = 0.4;
+    master.connect(muffler); muffler.connect(ctx.destination);
     // listener at the origin; creature calls are placed around it in the van's own frame
     const L = ctx.listener;
     if (L.positionX) { L.positionX.value = 0; L.positionY.value = 0; L.positionZ.value = 0; }
@@ -102,6 +104,12 @@ export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
       parts.tyre.gain.setTargetAtTime(speed * 0.05, t, 0.2);
       parts.tyreBp.frequency.setTargetAtTime(500 + speed * 1500, t, 0.3);
       if (bump > 0.01) api.bump(bump);
+    },
+    // 0 = air, 1 = below the surface
+    muffle(k) {
+      if (!ctx || closed || Math.abs(k - muffled) < 0.01) return;
+      muffled = k;
+      muffler.frequency.setTargetAtTime(18000 * Math.pow(420 / 18000, k), ctx.currentTime, 0.15);
     },
     // a short thud under the floor when a wheel drops into something
     bump(strength = 1) {

@@ -73,14 +73,18 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
   const dark = tod === 'night' || tod === 'dusk' || tod === 'dawn';
 
   scene.fog = new THREE.Fog(srgb(P.fog), P.near, P.far);
-  makeSky(scene, P, tod === 'night');
+  const sky = makeSky(scene, P, tod === 'night');
+  const stars = scene.children[scene.children.length - 1].isPoints ? scene.children[scene.children.length - 1] : null;
+  // below the surface (a route with water hands over `under`): its own fog, no sky, muffled sound
+  const U = world.under || null;
+  const fogAir = srgb(P.fog), fogSea = U ? srgb(U.fog) : fogAir;
   scene.add(new THREE.AmbientLight(srgb(P.horizon), P.amb ?? 0.2));
   scene.add(new THREE.HemisphereLight(srgb(P.hemi[0]), srgb(P.hemi[1]), P.hemi[2]));
   const sun = new THREE.DirectionalLight(srgb(P.sun[0]), P.sun[1]);
   sun.position.set(...P.sun[2]).multiplyScalar(120);
   scene.add(sun);                                        // fixed: no moving sun, no moving shadows
 
-  const rig = makeRig({ route: { ...R, path: world.path, speedAt: world.speedAt }, scene, aspect: innerWidth / Math.max(1, innerHeight) });
+  const rig = makeRig({ route: { ...R, path: world.path, speedAt: world.speedAt, swayAt: world.swayAt }, scene, aspect: innerWidth / Math.max(1, innerHeight) });
   // at night the van's own light is all there is: two headlights, and a torch that follows the lens
   if (tod === 'night' || tod === 'dusk') {
     [-0.85, 0.85].forEach((x) => {
@@ -91,6 +95,16 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     const torch = new THREE.SpotLight(0xdfe6f2, tod === 'night' ? 48 : 22, 110, 0.32, 0.7, 1.3);
     torch.position.set(0, 0, 0); torch.target.position.set(0, 0, -30);
     rig.camera.add(torch, torch.target);
+  }
+  // the submersible's lamps: off until the hatches close, then a wide pair that follows the lens
+  const lamps = [];
+  if (world.dive) {
+    [-0.7, 0.7].forEach((x) => {
+      const l = new THREE.SpotLight(0xcfeeff, 0, 60, 0.62, 0.6, 1.2);
+      l.position.set(x, -0.3, 0); l.target.position.set(x * 2, -1.5, -20);
+      rig.camera.add(l, l.target);
+      lamps.push(l);
+    });
   }
 
   // the HUD hangs in the body, not in the stage: the stage's own canvas rules are not meant for it
@@ -104,7 +118,8 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
   const store = localStore();
 
   // ---- state
-  const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false };
+  const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false,
+    under: 0, diving: false, section: -1 };
   const pellets = [];
   const pelletGeo = keep(new THREE.SphereGeometry(0.16, 8, 6));
   const pelletMat = keep(new THREE.MeshStandardMaterial({ color: 0xd9b36a, emissive: dark ? 0x3a2a10 : 0x000000, roughness: 0.8 }));
@@ -133,7 +148,8 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
   let nextAmbient = 3;
   function stepAmbient() {
     if (!audio.live || S.t < nextAmbient) return;
-    const a = AMBIENT[tod] || AMBIENT.day;
+    // a route can swap the calls for a stretch (bubbles under water, gulls over the estuary)
+    const a = (world.ambient && world.ambient(rig.progress, tod, S.under)) || AMBIENT[tod] || AMBIENT.day;
     nextAmbient = S.t + a.every * (0.6 + Math.random());
     const ang = Math.random() * Math.PI * 2, r = 8 + Math.random() * 30;
     audio.call({ x: Math.cos(ang) * r, y: 2 + Math.random() * 10, z: Math.sin(ang) * r, hz: a.hz * (0.85 + Math.random() * 0.3), kind: a.kind, vol: a.vol });
@@ -145,7 +161,8 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     const m = new THREE.Mesh(pelletGeo, pelletMat);
     rig.worldHead(m.position);
     rig.lookDir(vA);
-    const v = vA.clone().multiplyScalar(17).add(new THREE.Vector3(0, 5, 0));
+    // under water the throw is short and the feed sinks; in the air it arcs out
+    const v = S.under > 0.5 ? vA.clone().multiplyScalar(6).add(new THREE.Vector3(0, 0.5, 0)) : vA.clone().multiplyScalar(17).add(new THREE.Vector3(0, 5, 0));
     m.position.addScaledVector(vA, 1.2);
     scene.add(m);
     pellets.push({ mesh: m, pos: m.position, vel: v, landed: false, eaten: false, born: S.t });
@@ -157,10 +174,19 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     for (let i = pellets.length - 1; i >= 0; i--) {
       const p = pellets[i];
       if (!p.landed) {
-        p.vel.y -= 11 * dt;
+        // the medium the pellet is in: water slows it right down (it sinks), unless the route lets
+        // feed float (`world.floats`, the estuary), then it rides on the surface
+        const wy = world.waterY ? world.waterY(p.pos.x, p.pos.z) : -Infinity;
+        const wet = p.pos.y < wy;
+        if (wet && world.floats && !p.sunk) { p.pos.y = wy; p.landed = true; p.landedAt = S.t; p.floating = true; continue; }
+        if (wet) { p.vel.multiplyScalar(Math.max(0, 1 - dt * 3.5)); p.vel.y -= 1.1 * dt; p.vel.y = Math.max(p.vel.y, -1.4); p.sunk = true; }
+        else p.vel.y -= 11 * dt;
         p.pos.addScaledVector(p.vel, dt);
         const g = world.groundY(p.pos.x, p.pos.z);
         if (p.pos.y <= g + 0.16) { p.pos.y = g + 0.16; p.landed = true; p.landedAt = S.t; }
+      } else if (p.floating && !p.eaten) {
+        const wy = world.waterY(p.pos.x, p.pos.z);
+        p.pos.y = wy + Math.sin(S.t * 2.2 + p.born) * 0.05;           // bobs on the swell
       } else if (p.eaten) {
         p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6));
       }
@@ -189,7 +215,7 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
 
   // ---- the loop. The van is placed first, then the creatures react to where it now is, then the
   // picture is drawn: that way nothing ever reads a position from the frame before.
-  const env = { camPos: new THREE.Vector3(), t: 0, tod, pellets, call: callFor, dist: 0 };
+  const env = { camPos: new THREE.Vector3(), t: 0, tod, pellets, call: callFor, dist: 0, under: 0, u: 0 };
   let poi = null;
   function frame(now) {
     const dt = S.last ? Math.min(0.08, (now - S.last) / 1000) : 0.016;
@@ -198,6 +224,9 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
 
     const speed = rig.step(dt, reduceMotion() ? null : poi);
     rig.worldHead(env.camPos);
+    env.u = rig.progress;
+    stepMedium(dt);
+    if (world.update) world.update(dt, env);
     // what the lens drifts towards next: the nearest creature worth a look, else the route's own point
     let poiD = 80;
     poi = null;
@@ -205,8 +234,9 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
       c.photoPoint(vA);
       const d = vA.distanceTo(env.camPos);
       c.near = d;
-      c.visible = d < 170;
+      c.visible = d < (c.seeAt || 170);
       c.root.visible = c.visible;
+      if (c.lod) c.lod(d);
       if (c.visible) { env.dist = d; c.step(dt, env); }
       if (d < poiD && d > 7) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }
     }
@@ -221,6 +251,43 @@ export async function startSafari({ renderer, route = 'test', tod = 'day', host 
     renderer.render(scene, rig.camera);
     if (S.pending) takeShot();
     if (rig.done && !S.over) finish();
+  }
+
+  // ---- the medium and the stretches of the route. The dive is announced a moment before the van
+  // touches the water, so the hatches are shut by the time the surface closes over the lens.
+  function stepMedium(dt) {
+    const u = rig.progress;
+    if (world.dive) {
+      const [u0, u1] = world.dive;
+      const inside = u > u0 - 0.012 && u < u1;
+      if (inside !== S.diving) {
+        S.diving = inside;
+        hud.dive(inside);
+        audio.call({ x: 0, y: -1, z: 0, hz: inside ? 180 : 260, kind: 'noise', vol: 0.5 });
+      }
+      lamps.forEach((l) => { l.intensity += ((S.diving ? 70 : 0) - l.intensity) * Math.min(1, dt * 3); });
+    }
+    const wy = world.waterY ? world.waterY(env.camPos.x, env.camPos.z) : -Infinity;
+    const want = U && env.camPos.y < wy ? 1 : 0;
+    S.under += (want - S.under) * Math.min(1, dt * 5);
+    if (Math.abs(S.under - want) < 0.002) S.under = want;
+    env.under = S.under;
+    if (U) {
+      const k = S.under;
+      scene.fog.color.copy(fogAir).lerp(fogSea, k);
+      scene.fog.near = THREE.MathUtils.lerp(P.near, U.near, k);
+      scene.fog.far = THREE.MathUtils.lerp(P.far, U.far, k);
+      renderer.setClearColor(scene.fog.color, 1);
+      sky.visible = k < 0.5;
+      if (stars) stars.visible = k < 0.5;
+      hud.under(k);
+      audio.muffle(k);
+    }
+    if (world.sections) {
+      let i = -1;
+      world.sections.forEach((s, k) => { if (u >= s.u) i = k; });
+      if (i !== S.section) { S.section = i; if (i >= 0 && world.sections[i].title) hud.title(world.sections[i].title, world.sections[i].line); }
+    }
   }
 
   async function finish() {
