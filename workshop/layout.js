@@ -48,7 +48,8 @@ export function setupLayout(ws) {
     const c = new THREE.Box3().setFromObject(drone).getCenter(new THREE.Vector3());
     worldEdit(THREE, drone, new M().makeTranslation(...WALL_DRONE.at).multiply(new M().makeRotationX(-Math.PI / 2)).multiply(new M().makeTranslation(-c.x, -c.y, -c.z)));
     const ledge = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.025, 0.13), drone.material);
-    ledge.position.set(WALL_DRONE.at[0], WALL_DRONE.at[1] - 0.33, 2.64);
+    const low = new THREE.Box3().setFromObject(drone).min.y;   // the drone stands on it
+    ledge.position.set(WALL_DRONE.at[0], low - 0.0125, 2.64);
     ledge.castShadow = ledge.receiveShadow = true; ledge.name = 'workshop-drone-ledge';
     ws.scene.add(ledge);
   }
