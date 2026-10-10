@@ -340,6 +340,9 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { workshop } from './workshop/stations.js';
+// workshop stations (workshop/stations.js): one line each
+import './workshop/printer.js';
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -1377,50 +1380,6 @@ function stepFps(now) {
   }
 }
 
-// --- 3D printer in the workshop (Smo): prints a small toy robot from the bottom up, then shows it a
-// moment, clears the bed and starts again. The toy is cut off above the current layer with a clip
-// plane; bed, X bar and head move like a bed-slinger printer. Only moves while the workshop could
-// be seen up close (cheap anyway: a few transforms per frame).
-const PRN = { bed: null, toy: null, xbar: null, head: null, b0: null, x0: null, h0: null, plane: new THREE.Plane(new THREE.Vector3(0, -1, 0), 0),
-  printS: 48, holdS: 7, t: 0, last: 0, toyBottom: 0, toyH: 0.2 };
-function setupPrinter(root) {
-  root.traverse((o) => {
-    if (o.name === 'workshopprinter_bed') PRN.bed = o;
-    if (o.name === 'workshopprinter_toy') PRN.toy = o;
-    if (o.name === 'workshopprinter_xbar') PRN.xbar = o;
-    if (o.name === 'workshopprinter_head') PRN.head = o;
-  });
-  if (!PRN.toy) return;
-  renderer.localClippingEnabled = true;
-  PRN.toy.material.clippingPlanes = [PRN.plane];        // the accent setup already gave the toy its own material
-  PRN.toy.material.side = THREE.DoubleSide;           // the cut shows the inside instead of nothing
-  PRN.toy.castShadow = false;
-  [PRN.bed, PRN.xbar, PRN.head].forEach((o) => { if (o) o.castShadow = false; });
-  PRN.b0 = PRN.bed.position.clone(); PRN.x0 = PRN.xbar.position.clone(); PRN.h0 = PRN.head.position.clone();
-  PRN.toyBottom = PRN.toy.position.y; PRN.toyH = 0.2;
-}
-function stepPrinter(now) {
-  if (!PRN.toy) return;
-  const dt = PRN.last ? Math.min(0.1, (now - PRN.last) / 1000) : 0; PRN.last = now;
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) PRN.t = (PRN.t + dt) % (PRN.printS + PRN.holdS);
-  else PRN.t = PRN.printS * 0.6;
-  const printing = PRN.t < PRN.printS;
-  const u = printing ? PRN.t / PRN.printS : 1;
-  const layer = PRN.toyH * u;                         // height printed so far
-  const t = now / 1000;
-  // the toy's width changes with height: legs, body with arms, neck, head (roughly)
-  const half = layer < 0.055 ? 0.035 : layer < 0.12 ? 0.065 : layer < 0.13 ? 0.01 : 0.037;
-  const hx = printing ? Math.sin(t * 5.3) * half : 0.12;           // head darts over the part, parks to the side when done
-  const by = printing ? Math.sin(t * 3.1 + 1.3) * half * 0.7 : -0.06;
-  PRN.bed.position.set(PRN.b0.x, PRN.b0.y, PRN.b0.z + by);
-  PRN.toy.position.copy(PRN.bed.position);
-  const z = layer + (printing ? 0.002 : 0.05);
-  PRN.xbar.position.set(PRN.x0.x, PRN.x0.y + z, PRN.x0.z);
-  PRN.head.position.set(PRN.h0.x + hx, PRN.h0.y + z, PRN.h0.z);
-  PRN.plane.constant = PRN.toyBottom + layer;          // keep what lies below the current layer
-  PRN.toy.visible = u > 0.002;
-}
-
 const onModel = (gltf) => {
   gltf.scene.traverse((o) => {
     if (!o.isMesh) return;
@@ -1461,7 +1420,7 @@ const onModel = (gltf) => {
   setupShowDark(gltf.scene);
   scene.add(gltf.scene);
   setupPerson(gltf.scene);
-  setupAccents(gltf.scene); setupPrinter(gltf.scene);   // accents first: cloning a material copies its clip planes
+  setupAccents(gltf.scene); workshop.setup(wsHost, gltf.scene);   // accents first: cloning a material copies its clip planes
   setupCamp(gltf.scene);
   collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
@@ -1560,7 +1519,7 @@ const PLACES = [
     onEnter: () => campHint() },
   { id: 'workshop', name: 'Workshop', zone: { c: [10.85, 4.4, 0.0], r: 5.6 },
     view: { type: 'cutaway', pos: [10.85, 6.2, -13.0], target: [10.85, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 },
-    onEnter: () => { PRN.t = 0; } },               // a new print starts when you arrive
+    onEnter: () => workshop.arrive() },            // a new print starts when you arrive; the stations' hint
   { id: 'office', name: 'Office', zone: { c: [-0.8, 4.4, 0.0], r: 5.6 },
     view: { type: 'cutaway', pos: [-0.8, 6.2, -13.0], target: [-0.8, 4.3, 0.2], az: 35, polar: [62, 88], dist: [6, 18], fit: 11.5 } },
   { id: 'library', name: 'Library', zone: { c: [-11.6, 4.4, 0.0], r: 5.6 },
@@ -1649,7 +1608,7 @@ function stepTween(now) {
 }
 
 function enter(p) {
-  campReset();
+  campReset(); workshop.reset();
   nav.place = p; nav.mode = p.view.type;
   closePanel();
   document.body.classList.add('in-place');
@@ -1668,7 +1627,7 @@ function enter(p) {
   }
 }
 function leave() {
-  campReset();
+  campReset(); workshop.reset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
   document.body.classList.remove('in-place');
@@ -1749,6 +1708,7 @@ el.addEventListener('pointerup', (ev) => {
   if (!tap) return;
   if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }
   if (nav.place.id === 'camp') { campTap(ev); return; }
+  if (nav.place.id === 'workshop') { workshop.tap(ev); return; }
   if (nav.place.id === 'showroom' && hitRoof(ev)) setRoof(!roof.closed);
 });
 el.addEventListener('wheel', (ev) => {
@@ -1780,6 +1740,7 @@ function hover(ev) {
     if (!nav.place) return setTip(zoneAt(ev));
     if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = hitRoof(ev) ? 'pointer' : ''; return; }
     if (nav.place.id === 'camp') { tip.hidden = true; campHover(ev); return; }
+    if (nav.place.id === 'workshop') { tip.hidden = true; workshop.hover(ev); return; }
     setTip(null);
   });
 }
@@ -2504,8 +2465,11 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 function frame(now) {
-  stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now);
-  stepPlaces(now); stepSky(now); stepShowDark(now); stepPerson(now); stepPrinter(now); stepCamp(now); stepFps(now);
+  const away = !!workshop.focused;                   // a workshop station is open: nothing outside the workshop runs
+  if (!away) { stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); }
+  stepPlaces(now); stepSky(now);
+  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); }
+  workshop.step(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
   if (roof.start || PROJ.start) markShadows();                      // things that cast shadows are moving
@@ -2541,7 +2505,8 @@ const station = {
     if (!station.held) return;
     station.held = false;
     const now = performance.now();
-    skyState.last = person.last = turbine.last = PRN.last = showDark.last = camp.last = now;
+    skyState.last = person.last = turbine.last = showDark.last = camp.last = now;
+    workshop.resume(now);
     if (fire.last) fire.last = now;
     quality.settle = now + 3000;
     if (camp.van && camp.van.outer.visible) camp.van.start();
@@ -2551,6 +2516,19 @@ const station = {
 };
 renderer.setAnimationLoop(frame);
 
+// --- workshop stations (workshop/stations.js): what the framework may use of the page
+const wsHost = {
+  scene, camera, renderer, el, ray, setRay, flyTo, portrait, reduceMotion, markShadows, timeOfDay, closePanel,
+  tweening: () => tween.active,
+  inPlace: () => !!nav.place && nav.place.id === 'workshop',
+  holdView() {                                      // a station opens: the camera stays where its flight ends
+    const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance };
+    nav.mode = 'fixed'; return h;
+  },
+  fixedFov(f) { camp.fov = f; },                       // what a resize keeps while the camera is fixed
+  releaseView(h) { const v = PLACES.find((q) => q.id === 'workshop').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
+};
+
 // hooks used for test renders
 window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
 window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days]); return out; };
@@ -2558,7 +2536,7 @@ window.__sky = (o) => { Object.assign(SKY, o || {}); applyAccents(); skyState.la
 window.__cam = (c) => { if (c.free) { controls.maxPolarAngle = Math.PI; controls.minDistance = 0.01; } camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
 window.__go = (id) => setRoute(id || '');
 window.__gui = { openDrop, closeDrop, openPanel, closePanel, state: () => ({ drop: dropCat, panel: panel.classList.contains('open'), paused }) };
-window.__print = (u) => { PRN.t = u * PRN.printS; };
+window.__print = (u) => workshop.get('printer').print(u);
 window.__lights = () => { const c = {}; scene.traverse((o) => { if (o.isLight) { const k = o.type + (o.castShadow ? '+shadow' : ''); c[k] = (c[k] || 0) + 1; } }); return JSON.stringify(c); };
 window.__quality = (l) => { if (l !== undefined) setQuality(l); return quality.level; };
 window.__personRun = (sec) => { let t = person.last || performance.now(); for (let k = 0; k < sec * 20; k++) { t += 50; stepPerson(t); } return { i: person.i, pos: person.root.position.toArray().map((n) => +n.toFixed(2)), boxAt: person.boxAt, carrying: person.carrying }; };
@@ -2574,6 +2552,7 @@ const campScreen = (id) => {                           // tests: where on screen
 };
 window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => camp.armed, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
 window.__safari = () => camp.safari;
+window.__workshop = workshop;
 window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
 window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
