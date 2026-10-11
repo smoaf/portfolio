@@ -328,7 +328,7 @@ audio.onStart((ctx) => {
   F.src = null;
   if (F.live) route();
 });
-audio.onDispose(() => { F.fx = null; F.src = null; F.inGain = null; F.inMeter = null; });
+audio.onDispose(() => { F.fx = null; F.src = null; F.inGain = null; F.inMeter = null; F.live = false; if (F.ped) setLamp(); });   // left the workshop
 // what goes into the pedal: the guitar loop (and the synth held back), or the synth
 function route() {
   const ctx = audio.context(); if (!ctx || !F.inGain) return;
