@@ -14,7 +14,7 @@
 //                        or { eye, at, fov }
 //   setup(ws)            once, when the model has loaded (cheap: build heavy things on first enter)
 //   enter(ws), exit(ws)  the station opens / closes
-//   update(dt, now, s)   every frame; s = { open: this station is open, inside: the visitor is in
+//   update(dt, now, s, ws)  every frame; s = { open: this station is open, inside: the visitor is in
 //                        the workshop, focus: id of the open station or null }
 //   pointer(type, ev, ws)  while open: 'down' | 'move' | 'up' with the pointer event; return true to
 //                        take it (no camera move, no tap)
@@ -73,7 +73,7 @@ const CSS = `
             color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
   .ws-bar[hidden] { display: none; }
   .ws-bar .btn { font-size: 11px; padding: 10px 12px; min-height: 40px; border-color: var(--glass-line); }
-  .ws-bar .btn[aria-pressed="true"] { background: var(--glass-ink); color: var(--glass-strong); }
+  .ws-bar .btn[aria-pressed="true"] { box-shadow: inset 0 -2px 0 currentColor; border-color: currentColor; }   /* the site's pressed look, a little stronger */
   .ws-bar .lbl { font: 500 10.5px/1 var(--font-data); letter-spacing: 0.1em; text-transform: uppercase; color: var(--glass-soft); padding: 0 4px; }
   .ws-bar .msg { flex-basis: 100%; text-align: center; font: 400 12px/1.35 var(--font-display); color: var(--glass-soft); padding: 2px 4px 0; }
   .ws-bar .msg:empty { display: none; }
@@ -260,7 +260,7 @@ export const workshop = {
     if (!S.ready) return;
     const dt = S.last ? Math.min(0.1, (now - S.last) / 1000) : 0; S.last = now;
     const inside = S.host.inPlace();
-    defs.forEach((def) => { if (def.update) def.update(dt, now, { open: S.focus === def.id && !S.opening, inside, focus: S.focus }); });
+    defs.forEach((def) => { if (def.update) def.update(dt, now, { open: S.focus === def.id && !S.opening, inside, focus: S.focus }, ws); });
     if (S.hover && !S.els.tip.hidden) {
       anchor(S.hover, vU).project(S.host.camera);
       const el = S.host.el;
