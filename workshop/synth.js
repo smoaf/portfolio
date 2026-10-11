@@ -416,9 +416,9 @@ function update(dt, now, s, ws) {
 }
 
 const VIEW = {                                          // filled in at setup: straight at the panel
-  get at() { const at = S.centre.clone(); if (S.ws && S.ws.portrait()) at.addScaledVector(S.right, S.pan * PW * 0.27).y -= 0.07; return at.toArray(); },   // phones: the case sits higher, above the bar
+  get at() { const at = S.centre.clone(); if (S.ws && S.ws.portrait()) at.addScaledVector(S.right, S.pan * PW * 0.27).y -= 0.035; return at.toArray(); },   // phones: the case sits higher, above the bar
   get from() { return S.normal.toArray(); },
-  get size() { return S.ws && S.ws.portrait() ? PW * 0.5 : PW + 0.08; },
+  get size() { return S.ws && S.ws.portrait() ? PW * 0.56 : PW + 0.08; },
 };
 register({
   id: 'synth', label: 'Modular synth', sound: true,

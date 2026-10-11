@@ -119,7 +119,7 @@ function update(dt, now, s) {
 register({
   id: 'amp', label: 'Power amp', sound: true,
   pick: () => A.parts,
-  view: { at: [10.1, 3.94 + 0.075, -0.76], from: [0, 0.32, -1], size: 0.6 },
+  get view() { return { at: [10.1, 3.94 + 0.075, -0.76], from: [0, 0.32, -1], size: innerWidth < innerHeight ? 0.44 : 0.6 }; },   // phones: closer
   hint: 'Turn VOLUME, switch the power. The synth plays through here',
   setup: build,
   update,

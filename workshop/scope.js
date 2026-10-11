@@ -127,7 +127,7 @@ function draw(ws) {
 register({
   id: 'scope', label: 'Oscilloscope', sound: true,
   pick: () => O.parts,
-  view: { at: [11.55, 3.94 + 0.11, -0.66], from: [0, 0.3, -1], size: 0.52 },
+  get view() { return { at: [11.55, 3.94 + 0.11, -0.66], from: [0, 0.3, -1], size: innerWidth < innerHeight ? 0.4 : 0.52 }; },   // phones: closer
   hint: 'This is the sound as a wave. Try the knobs and the INPUT buttons',
   setup: build,
   update(dt, now, s, ws) {

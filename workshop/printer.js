@@ -172,7 +172,7 @@ function makeBar(ws) {
   const b = bar('ws-printer');
   b.el.setAttribute('aria-label', '3D printer');
   b.el.innerHTML = `<span class="lbl">Print</span>${Object.keys(MODELS).map((n) => `<button type="button" class="btn" data-m="${n}">${n}</button>`).join('')}
-    <label class="btn" style="cursor:pointer; display:inline-flex; align-items:center">Your own…<input type="file" accept=".glb,.gltf,.stl,model/gltf-binary" hidden></label>
+    <button type="button" class="btn" data-up>Your own…</button><input type="file" accept=".glb,.gltf,.stl,model/gltf-binary" hidden>
     <label class="lbl">Speed <input type="range" min="1" max="8" step="1" value="1" aria-label="Print speed"></label>
     <button type="button" class="btn" data-cancel>Cancel</button>
     <div class="msg" aria-live="polite"></div>`;
@@ -180,6 +180,7 @@ function makeBar(ws) {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.m) start(t.dataset.m, MODELS[t.dataset.m]());
     else if (t.dataset.cancel !== undefined) cancel();
+    else if (t.dataset.up !== undefined) file.click();
   });
   const file = b.el.querySelector('input[type=file]');
   file.addEventListener('change', () => { upload(file.files[0]); file.value = ''; });
@@ -239,7 +240,9 @@ function merge(list) { return mergeGeometries(list.map((g) => { g = g.index ? g.
 register({
   id: 'printer', label: '3D printer',
   pick: () => parts,
-  view: { at: [12.08, 4.19, 2.3], from: [0.12, 0.38, -1], size: 1.1 },   // a little lower and wider: the bar of choices sits along the bottom
+  get view() {                                         // a little lower and wider than before: the bar of choices sits along the bottom
+    return innerWidth < innerHeight ? { at: [12.08, 4.15, 2.3], from: [0.12, 0.38, -1], size: 0.75 } : { at: [12.08, 4.19, 2.3], from: [0.12, 0.38, -1], size: 1.1 };
+  },
   hint: 'Pick something to print, or upload your own model',
   setup: setupPrinter,
   arrive: () => { if (PRN.mode === 'loop') PRN.t = 0; },   // a new print starts when you arrive
