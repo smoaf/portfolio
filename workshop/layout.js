@@ -15,8 +15,8 @@ import { register } from './stations.js';
 export const DESK = { top: 3.94, x0: 8.55, x1: 11.95, back: -0.35, front: -1.6 };   // after widening
 // spot centres sit on the desk top; w along x, d along z
 export const SPOTS = {
-  synth: { label: 'Modular synth', at: [9.45, DESK.top, -0.62], w: 1.6, d: 0.46 },
-  amp: { label: 'Power amp', at: [10.65, DESK.top, -0.6], w: 0.5, d: 0.4 },
+  synth: { label: 'Modular synth', at: [9.2, DESK.top, -0.62], w: 0.8, d: 0.46 },
+  amp: { label: 'Power amp', at: [10.1, DESK.top, -0.58], w: 0.46, d: 0.36 },     // W1: next to the synth (the laptop hid it at 10.65)
   scope: { label: 'Oscilloscope', at: [11.55, DESK.top, -0.6], w: 0.6, d: 0.4 },
   solder: { label: 'Solder station', at: [11.1, DESK.top, -1.32], w: 1.5, d: 0.46 },
   tape: { label: 'Tape delay', at: [9.35, DESK.top, -1.32], w: 1.2, d: 0.46 },

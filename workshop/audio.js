@@ -44,12 +44,17 @@ export function start() {
   master = ctx.createGain(); master.gain.value = muted ? 0 : MASTER;
   limiter = ctx.createDynamicsCompressor();             // nothing a patch or a feedback loop does gets painfully loud
   limiter.threshold.value = -10; limiter.knee.value = 6; limiter.ratio.value = 12; limiter.attack.value = 0.003; limiter.release.value = 0.2;
-  analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0;
+  analyser = ctx.createAnalyser(); analyser.fftSize = 8192;   // ~170 ms: room for the scope's slowest time base plus a trigger analyser.smoothingTimeConstant = 0;
   slots[SLOTS[SLOTS.length - 1]].out.connect(master);
   master.connect(limiter); limiter.connect(ctx.destination);
   probe(SLOTS[SLOTS.length - 1]);
+  startFns.forEach((f) => { try { f(ctx); } catch (e) { console.error(e); } });
   return ctx;
 }
+// stations that sit in the chain (the amp, later the pedal and the delay) put their processor in
+// every time a context is made: `onStart(fn)` calls fn(ctx) then (and at once if one is running)
+const startFns = new Set();
+export function onStart(fn) { startFns.add(fn); if (ctx) fn(ctx); return () => startFns.delete(fn); }
 export const context = () => ctx;
 export const running = () => !!ctx;
 
@@ -80,7 +85,7 @@ export function scope(buf) {                           // fills a Float32Array w
   if (!analyser) { buf.fill(0); return buf; }
   analyser.getFloatTimeDomainData(buf); return buf;
 }
-export const scopeSize = () => (analyser ? analyser.fftSize : 2048);
+export const scopeSize = () => (analyser ? analyser.fftSize : 8192);
 
 // master volume 0..1 (the power amp's knob) and the shared mute
 let volume = 1;
