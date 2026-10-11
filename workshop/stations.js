@@ -69,7 +69,7 @@ const CSS = `
              border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); font-size: 11px; }
   /* a station's own row of controls along the bottom (presets, print choices ...) */
   .ws-bar { position: fixed; z-index: 22; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; max-width: calc(100vw - 32px); padding: 6px;
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 6px;
             color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
   .ws-bar[hidden] { display: none; }
   .ws-bar .btn { font-size: 11px; padding: 10px 12px; min-height: 40px; border-color: var(--glass-line); }
