@@ -34,8 +34,14 @@ const MODES = [['OFF', ''], ['V⎓', 'dc'], ['V~', 'ac'], ['Ω', 'ohm']];
 const W = (x, y, z) => [F.C[0] - x, F.C[1] + y, F.C[2] - z];
 const D = (x, y, z) => [-x, y, -z];
 const tall = () => innerWidth < innerHeight;
+// phones: the bar along the bottom is tall, so the subject sits higher (the target moves down the screen)
+function frame(v) {
+  if (!tall()) return v;
+  const dir = new THREE.Vector3(...v.from).normalize(), up = new THREE.Vector3(0, 1, 0).addScaledVector(dir, -dir.y).normalize();
+  return { ...v, at: new THREE.Vector3(...v.at).addScaledVector(up, -v.size * 0.17).toArray() };
+}
 const VIEWS = {
-  pedal: { label: 'Pedal', get v() { return { at: W(0.47, 0.025, 0.02), from: D(0, 1.25, 1), size: tall() ? 0.33 : 0.5 }; },
+  pedal: { label: 'Pedal', get v() { return { at: W(0.47, 0.025, 0.02), from: D(0, 1.25, 1), size: tall() ? 0.4 : 0.5 }; },
     text: 'The finished fuzz: two transistors, two knobs, one footswitch. Stomp it on and off, turn FUZZ and VOLUME.' },
   meter: { label: 'Multimeter', get v() { return { at: F.meterAt, from: F.meterN, size: tall() ? 0.2 : 0.26 }; },
     text: 'Setting the bias: the probes sit on the second transistor. About 4.5 V, half the battery, is where this fuzz sounds best. Turn the dial.' },
@@ -202,7 +208,7 @@ function drawLcd() {
   const [unit, kind] = MODES[F.mode];
   let txt = '';
   if (kind === 'dc') txt = (4.5 + 0.02 * Math.sin(performance.now() / 900) + (Math.random() - 0.5) * 0.012).toFixed(2);
-  else if (kind === 'ac') txt = (F.fx && F.live && soundIn() ? Math.min(9.99, F.fx.rms() * 2.2) : 0).toFixed(3);
+  else if (kind === 'ac') txt = (F.fx && F.live && soundIn() ? Math.min(9.99, F.fx.rms() * 2.2) : 0).toFixed(2);
   else if (kind === 'ohm') txt = '0L';
   g.fillStyle = '#1b201a'; g.textBaseline = 'middle';
   g.font = '700 70px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace'; g.textAlign = 'right';
@@ -286,7 +292,7 @@ function show(id, fly = true) {
   F.view = id;
   F.bar.el.querySelectorAll('[data-v]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === id)));
   caption(VIEWS[id].text);
-  if (fly) F.ws.fly(VIEWS[id].v);
+  if (fly) F.ws.fly(frame(VIEWS[id].v));
 }
 
 // ---- sound
@@ -342,24 +348,30 @@ function setSource(id) {
 }
 
 // ---- pointer: the three panels' controls, the footswitch, and a click on a prop flies to it
-const PANELS = () => [F.ped.P, F.ifc.P, F.mtr.P];
+// only the devices of the current view take the pointer (in the other views a click flies to a thing)
+const PANELS = () => (F.view === 'pedal' ? [F.ped.P, F.ifc.P] : F.view === 'meter' ? [F.mtr.P] : []);
 function pointer(type, ev, ws) {
   if (type === 'down') {
     ws.sound();
-    if (F.ped.P.hit(ev, [F.fsCtl])) { stomp(); F.active = null; return true; }
-    for (const P of PANELS()) if (P.pointer('down', ev)) { F.active = P; return true; }
+    if (F.view === 'pedal' && F.ped.P.hit(ev, [F.fsCtl])) { stomp(); F.active = null; return true; }
     F.tap = { x: ev.clientX, y: ev.clientY };
+    for (const P of PANELS()) if (P.pointer('down', ev)) { F.active = P; return true; }
     return false;
   }
   if (type === 'move') {
     if (F.active) return F.active.pointer('move', ev);
-    const over = F.ped.P.hit(ev, [F.fsCtl]) || PANELS().some((P) => P.hit(ev, [...P.knobs, ...P.buttons]));
+    const over = (F.view === 'pedal' && F.ped.P.hit(ev, [F.fsCtl])) || PANELS().some((P) => P.hit(ev, [...P.knobs, ...P.buttons]));
     ws.el.style.cursor = over ? 'pointer' : propAt(ev, ws) ? 'zoom-in' : '';
     return false;
   }
   if (type === 'up') {
-    if (F.active) { const P = F.active; F.active = null; return P.pointer('up', ev); }
-    if (F.tap && Math.hypot(ev.clientX - F.tap.x, ev.clientY - F.tap.y) < 8) { const id = propAt(ev, ws); if (id && id !== F.view) show(id); }
+    const still = F.tap && Math.hypot(ev.clientX - F.tap.x, ev.clientY - F.tap.y) < 8;
+    if (F.active) {
+      const P = F.active; F.active = null;
+      if (still && P.drag && P.drag.c === F.dial) F.dial.set(((F.mode + 1) % 4) / 3);   // a tap on the dial turns it one step
+      F.tap = null; return P.pointer('up', ev);
+    }
+    if (still) { const id = propAt(ev, ws); if (id && id !== F.view) show(id); }
     F.tap = null;
     return false;
   }
@@ -398,7 +410,7 @@ function update(dt, now, s) {
 register({
   id: 'solder', label: 'Solder bench & fuzz pedal', sound: true,
   pick: () => F.parts,
-  get view() { return F.C ? VIEWS.pedal.v : { at: [10.6, 4.0, -1.35], from: [0, 1.2, -1], size: 0.5 }; },
+  get view() { return F.C ? frame(VIEWS.pedal.v) : { at: [10.6, 4.0, -1.35], from: [0, 1.2, -1], size: 0.5 }; },
   hint: 'Stomp the footswitch, turn FUZZ. Below: the story of how it was built',
   setup: build,
   enter(ws) { F.view = 'pedal'; F.bar.show(true); show('pedal', false); },
