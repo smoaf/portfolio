@@ -195,8 +195,8 @@ function makeBar(ws) {
   const b = bar('ws-tape');
   b.el.setAttribute('aria-label', 'Tape delay');
   b.el.innerHTML = ORDER.map((id) => `<button type="button" class="btn" data-v="${id}">${VIEWS[id].label}</button>`).join('')
-    + '<span class="lbl">Input</span><button type="button" class="btn" data-a="demo">Demo loop</button><button type="button" class="btn" data-a="synth">Synth</button>'
-    + '<span class="lbl">Tape</span><button type="button" class="btn" data-a="fresh">Fresh tape</button><button type="button" class="btn" data-a="age">Run 48 h</button>'
+    + '<span class="grp"><span class="lbl">Input</span><button type="button" class="btn" data-a="demo">Demo loop</button><button type="button" class="btn" data-a="synth">Synth</button></span>'
+    + '<span class="grp"><span class="lbl">Tape</span><button type="button" class="btn" data-a="fresh">Fresh tape</button><button type="button" class="btn" data-a="age">Run 48 h</button></span>'
     + '<div class="msg" aria-live="polite"></div>';
   b.el.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t) return;
@@ -209,7 +209,7 @@ function makeBar(ws) {
     if (a === 'age') setWear(1, 'Two days later: the tape wobbles (wow and flutter), hisses and drops out, like the loop at EPOCH.');
   });
   const st = document.createElement('style');
-  st.textContent = '.ws-tape .msg { max-width: 600px; margin: 0 auto; } .ws-tape .msg .ph { opacity: 0.6; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; margin-left: 6px; white-space: nowrap; }';
+  st.textContent = '.ws-tape .grp { display: inline-flex; align-items: center; gap: 6px; } .ws-tape .msg { max-width: 600px; margin: 0 auto; } .ws-tape .msg .ph { opacity: 0.6; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; margin-left: 6px; white-space: nowrap; }';
   document.head.appendChild(st);
   return b;
 }
