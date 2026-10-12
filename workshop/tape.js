@@ -48,7 +48,7 @@ const VIEWS = {
     text: 'A loop of tape runs past a record head and five playback heads. Every head you switch on adds an echo, from left to right across the stereo field.' },
   heads: { label: 'Heads', get v() { return { at: W(DEV.x - 0.03, TAPE.y, DEV.z + TAPE.z - 0.01), from: D(0, 0.75, 1), size: tall() ? 0.2 : 0.26 }; },
     text: 'Left to right: erase head, record head, five playback heads. The glow on the tape is the recorded sound: you hear an echo each time it passes a head that is on.' },
-  card: { label: 'Story', get v() { return { at: F.cardAt, from: F.cardN, size: tall() ? 0.17 : 0.22 }; },
+  card: { label: 'Story', get v() { return { at: F.cardAt, from: F.cardN, size: tall() ? 0.18 : 0.3 }; },
     text: 'Simon built it for the video installation EPOCH, where the tape ran nonstop for two days.' },
 };
 const ORDER = ['delay', 'heads', 'card'];
@@ -59,7 +59,7 @@ const PX = 1024, PH = Math.round(PX * CASE.d / CASE.w);
 const cx = (x) => (x / CASE.w + 0.5) * PX, cy = (z) => (z / CASE.d + 0.5) * PH;
 const LAYOUT = {
   power: [-0.168, -0.112], heads: [-0.075, -0.03, 0.015, 0.06, 0.105], headsZ: -0.112, ledZ: -0.134,
-  erase: [0.168, -0.112], speed: [0.163, -0.03], feedback: [0.163, 0.062], mix: [0.098, 0.118], counter: [-0.03, 0.12],
+  erase: [0.168, -0.112], speed: [0.163, -0.03], feedback: [0.163, 0.062], mix: [0.098, 0.118], counter: [0.072, -0.048],
 };
 function plateFace(g, P) {
   g.clearRect(0, 0, P.W, P.H);
@@ -80,7 +80,7 @@ function plateFace(g, P) {
   tapeLabel('SPEED', cx(LAYOUT.speed[0]), cy(LAYOUT.speed[1]) + 78);
   tapeLabel('FEEDBACK', cx(LAYOUT.feedback[0]), cy(LAYOUT.feedback[1]) + 78);
   tapeLabel('MIX', cx(LAYOUT.mix[0]) - 66, cy(LAYOUT.mix[1]));
-  tapeLabel('TAPE HOURS', cx(LAYOUT.counter[0]), cy(LAYOUT.counter[1]) - 34, 13);
+  tapeLabel('TAPE HOURS', cx(LAYOUT.counter[0]), cy(LAYOUT.counter[1]) + 34, 13);
   tapeLabel('IN', cx(-0.168), cy(0.12), 13); tapeLabel('OUT', cx(-0.132), cy(0.12), 13);
   // speed scale: slow ─ fast
   P.drawScale(cx(LAYOUT.speed[0]), cy(LAYOUT.speed[1]), 58, { color: 'rgba(46,160,96,1)', ticks: 9 });
@@ -156,11 +156,11 @@ function build(ws) {
   // and the power lead off the back
   F.cables = buildCables(bench, mech);
   F.props = {
-    device: [...box.meshes, P.face, ...P.meshes, ...F.toggles.flatMap((t) => t.meshes), cboard, cscr, ...mech.meshes, ...mech.spin.map((s) => s.mesh), loop.mesh, mech.heads.erase, mech.heads.rec, ...F.cables],
+    device: [...box.meshes, P.face, ...P.meshes, ...F.toggles.flatMap((t) => t.meshes), cboard, cscr, ...mech.meshes, ...mech.spin.map((s) => s.mesh), loop.mesh, mech.heads.erase, mech.heads.rec],
     heads: mech.heads.play,
     card: cd.meshes,
   };
-  F.parts = [...F.props.device, ...F.props.heads, ...F.props.card];
+  F.parts = [...F.props.device, ...F.props.heads, ...F.props.card];   // (not the cables: they reach the floor and the amp)
   F.bar = makeBar(ws);
   paintState();
   ws.markShadows();
@@ -363,8 +363,8 @@ function update(dt, now, s) {
   const N = F.loop.N, d = F.loop.data;
   const at = (sv) => Math.floor((((sv - F.p) / L) % 1 + 1) % 1 * N) % N;
   let lvl = 0;
-  if (F.fx && on) lvl = Math.min(1, F.fx.level(F.buf) * 5);
-  F.levelHold = Math.max(lvl, F.levelHold - dt * 4);
+  if (F.fx && on) { const r = F.fx.level(F.buf); lvl = Math.min(1, Math.pow(r * 3.2, 1.6)); }
+  F.levelHold = Math.max(lvl, F.levelHold - dt * 6);
   const idx = at(F.sRec), ie = at(F.sErase);
   const span = (from, to, fn) => {                    // texels the head passed this frame (the tape moves towards lower indices)
     if (from === null) { fn(to); return; }

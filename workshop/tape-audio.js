@@ -41,7 +41,7 @@ export function createTape(ctx, geo) {
   // the five playback heads
   const fbSum = g(1), fb = g(0), fbHp = ctx.createBiquadFilter(); fbHp.type = 'highpass'; fbHp.frequency.value = 160;
   const wetSum = g(1), comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 5; comp.attack.value = 0.005; comp.release.value = 0.25;
+  comp.threshold.value = -24; comp.knee.value = 10; comp.ratio.value = 6; comp.attack.value = 0.005; comp.release.value = 0.25;
   const heads = geo.heads.map((d, i) => {
     const dl = ctx.createDelay(MAXD), on = g(0);
     const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
@@ -67,7 +67,7 @@ export function createTape(ctx, geo) {
   wow.start(t); flut.start(t);
 
   const S = { speed: 1, run: true, power: true, feedback: 0.35, mix: 0.5, erase: true, wear: 0, on: [true, false, true, false, true] };
-  const ramp = (p, v, tc = 0.03) => p.setTargetAtTime(v, ctx.currentTime, tc);
+  const ramp = (p, v, tc = 0.03) => { if (tc) p.setTargetAtTime(v, ctx.currentTime, tc); else { p.cancelScheduledValues(ctx.currentTime); p.value = v; } };
   // the tape's real speed (m/s): the motor ramps, a stopped tape slows to MIN_SPEED and fades out
   function times(tc) {
     const sp = S.run ? S.speed : MIN_SPEED, v = geo.v0 * sp;
@@ -80,12 +80,13 @@ export function createTape(ctx, geo) {
     S.on.forEach((on, i) => ramp(heads[i].on.gain, on ? 1 : 0, 0.015));
     // the heads' sum feeds back: at most just over 1 / n per head, so even five heads at full
     // feedback only build up into the saturation (a long smear), never a runaway
-    ramp(fb.gain, n ? (S.feedback * 1.02) / n : 0);
-    ramp(sos.gain, S.erase ? 0 : 0.8 - S.feedback * 0.18 - S.wear * 0.08, 0.05);
+    ramp(fb.gain, n ? (S.feedback * 0.95) / n : 0);
+    ramp(sos.gain, S.erase ? 0 : 0.82 - S.feedback * 0.4 - S.wear * 0.08, 0.05);
+    ramp(wetSum.gain, 0.85 / Math.sqrt(Math.max(1, n)));     // more heads, not much louder
     ramp(pre.gain, S.erase ? 0.9 : 0.72);
     const live = S.power, m = S.mix;
     ramp(dry.gain, live ? Math.cos(m * Math.PI / 2) * 0.95 + 0.05 : 1, 0.05);
-    ramp(wet.gain, live ? Math.sin(m * Math.PI / 2) * 1.25 : 0, 0.08);
+    ramp(wet.gain, live ? Math.sin(m * Math.PI / 2) * 0.72 : 0, 0.08);
     ramp(tape.gain, S.run && live ? 1 : 0, S.run ? 0.05 : 0.35);
     ramp(hiss.gain, S.run && live ? 0.006 + S.wear * 0.03 : 0, 0.2);
     ramp(tone.frequency, 9000 - S.wear * 6200, 0.3);
@@ -116,7 +117,7 @@ export function createTape(ctx, geo) {
     },
     stop() { try { noise.stop(); wow.stop(); flut.stop(); } catch (e) { /* closed */ } },
   };
-  levels(); times(0.01);
+  levels(); times(0);
   return api;
 }
 

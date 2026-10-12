@@ -43,7 +43,7 @@ export function acrylicCase(group) {
     group.add(m); out.push(m); plates.push(m);
   });
   const K = kit('tape-case');
-  const alu = mat(0xc9ccd0, { metalness: 0.85, roughness: 0.3 }), rubber = mat(0x151515, { roughness: 0.9 });
+  const alu = mat(0xd5d8dc, { metalness: 0.35, roughness: 0.35 }), rubber = mat(0x151515, { roughness: 0.9 });
   const [px, pz] = CASE.post;
   [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => {
     const x = sx * px, z = sz * pz;
