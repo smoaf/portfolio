@@ -147,7 +147,7 @@ function leftFace(g, P) {
   P.text('hit rate', W - 30, 36, { font: MONO, size: 16, color: INK.soft, align: 'right', weight: 500 });
   sc.forEach((s, i) => {
     const y = 78 + i * 50, on = s.id === lead && s.acc > 0.4, c = on ? INK.rack : INK.soft;
-    P.text(s.label, 30, y + 2, { font: MONO, size: 16, color: on ? INK.text : INK.soft, align: 'left', weight: on ? 700 : 500, track: 0 });
+    P.text(s.label, 30, y + 2, { font: MONO, size: 19, color: on ? INK.text : INK.soft, align: 'left', weight: on ? 700 : 500, track: 0 });
     g.fillStyle = '#121c21'; g.fillRect(30, y + 16, W - 150, 14);
     g.fillStyle = flick() && on ? INK.text : c; g.fillRect(30, y + 16, (W - 150) * (R.mind.history.length ? s.acc : 0), 14);
     P.text(R.mind.history.length ? pct(s.acc) : '—', W - 30, y + 22, { font: MONO, size: 17, color: c, align: 'right', weight: 600 });
