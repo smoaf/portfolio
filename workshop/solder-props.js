@@ -1,6 +1,6 @@
 // The solder bench's props (WORKSHOP_PLAN phase W2), decoration only: the soldering station with the
 // iron in its coiled holder and the sponge, the breadboard prototype with its parts and jumper wires,
-// the printed schematic, a 9 V battery, a few spare parts, and the cable helper. The playable devices
+// the printed schematic, a 9 V battery and a few spare parts. The playable devices
 // (pedal, audio interface, multimeter) are in workshop/solder.js.
 //
 // Everything here is built in the bench's local frame: x to the visitor's right, y up from the desk
@@ -8,42 +8,10 @@
 // No lettering from real products: the station's panel carries only a switch, a fuse and a socket.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { kit, cable, mat } from './stations.js';
 
+export { kit, cable, mat };                            // shared helpers (they live in stations.js)
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
-const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), S1 = new THREE.Vector3(1, 1, 1);
-export const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, ...o });
-
-// collect small geometries per material, merge them into one mesh each
-export function kit(name) {
-  const parts = new Map();
-  return {
-    add(geo, m, pos = [0, 0, 0], rot = [0, 0, 0]) {
-      const g = geo.index ? geo.toNonIndexed() : geo.clone();
-      ['uv1', 'uv2'].forEach((a) => g.deleteAttribute(a));
-      if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
-      g.applyMatrix4(M4.compose(V(...pos), Q.setFromEuler(E.set(...rot)), S1));
-      if (!parts.has(m)) parts.set(m, []);
-      parts.get(m).push(g);
-    },
-    build(group, shadow = true) {
-      const out = [];
-      parts.forEach((list, m) => {
-        const mesh = new THREE.Mesh(mergeGeometries(list), m);
-        list.forEach((g) => g.dispose());
-        mesh.name = name; mesh.castShadow = shadow; mesh.receiveShadow = true;
-        group.add(mesh); out.push(mesh);
-      });
-      return out;
-    },
-  };
-}
-
-// a cable along points (bench-local), as a tube
-export function cable(points, r, m, seg = 40) {
-  const c = new THREE.CatmullRomCurve3(points.map((p) => V(...p)), false, 'centripetal');
-  return new THREE.TubeGeometry(c, seg, r, 6, false);
-}
 
 // ---- the soldering station: pale turquoise base unit, black face with a red rocker switch, a blue
 // solder reel on top; the iron rests in a coiled holder beside it, with a damp sponge in a tray

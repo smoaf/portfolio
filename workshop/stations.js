@@ -26,6 +26,7 @@
 // and the spots).
 import * as THREE from 'three';
 import * as audio from './audio.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { setupLayout, SPOTS } from './layout.js';
 
 const defs = new Map();                                // id -> station, in registration order
@@ -469,4 +470,40 @@ export function feet(g, size) {                        // four small rubber feet
   const fg = new THREE.CylinderGeometry(0.012, 0.012, 0.006, 10);
   [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => { const f = new THREE.Mesh(fg, fm); f.position.set(sx * (size.w / 2 - 0.03), -size.h / 2 - 0.001, -size.d / 2 + sz * (size.d / 2 - 0.03)); g.add(f); }));
   g.position.y += 0.004;
+}
+
+// ---- shared: props built from many small parts (the solder bench, the tape delay)
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), S1 = new THREE.Vector3(1, 1, 1);
+export const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, ...o });
+
+// collect small geometries per material, merge them into one mesh each
+export function kit(name) {
+  const parts = new Map();
+  return {
+    add(geo, m, pos = [0, 0, 0], rot = [0, 0, 0]) {
+      const g = geo.index ? geo.toNonIndexed() : geo.clone();
+      ['uv1', 'uv2'].forEach((a) => g.deleteAttribute(a));
+      if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+      g.applyMatrix4(M4.compose(V(...pos), Q.setFromEuler(E.set(...rot)), S1));
+      if (!parts.has(m)) parts.set(m, []);
+      parts.get(m).push(g);
+    },
+    build(group, shadow = true) {
+      const out = [];
+      parts.forEach((list, m) => {
+        const mesh = new THREE.Mesh(mergeGeometries(list), m);
+        list.forEach((g) => g.dispose());
+        mesh.name = name; mesh.castShadow = shadow; mesh.receiveShadow = true;
+        group.add(mesh); out.push(mesh);
+      });
+      return out;
+    },
+  };
+}
+
+// a cable along points (bench-local), as a tube
+export function cable(points, r, m, seg = 40) {
+  const c = new THREE.CatmullRomCurve3(points.map((p) => V(...p)), false, 'centripetal');
+  return new THREE.TubeGeometry(c, seg, r, 6, false);
 }
