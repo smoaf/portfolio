@@ -12,10 +12,12 @@
 // The rack's move is decided before the visitor picks and shown at the same moment as theirs; its
 // guess is only shown after the round, so it can't be read in advance. Nothing is stored or sent:
 // it all runs in the browser and is forgotten when the visitor leaves the workshop.
+// Sound (workshop/rack-audio.js): fan hum, chatter while thinking, result blips; into the effects bus.
 // Keys: 1/2/3 or R/P/S play, F forgets. Test hook: `__workshop.get('rack')` → `{ mind, play(move), forget() }`.
 import * as THREE from 'three';
 import { register, makePanel, bar } from './stations.js';
 import { createMind, MOVES, ROUNDS, PREDICTORS } from './rack-mind.js';
+import { createRackSound } from './rack-audio.js';
 
 const FRONT = 14.07;                                   // in front of the racks' faces (x 14.1) and grille bars
 const MID = 1.17, PITCH = 1.0;                         // middle rack's centre (z) and the rack spacing
@@ -27,7 +29,7 @@ const INK = { bg: '#0a0f12', line: '#1d2a30', soft: '#6f8790', text: '#d8e6ea', 
 const MONO = 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
 const R = {
   ws: null, mind: createMind(), last: null, screen: null, ctl: null, left: null, right: null, parts: [], bar: null,
-  leds: null, ledInfo: [], fans: [], fanSpin: 0, think: 0, flash: 0, press: -1, pressT: 0, ledT: 0, paintT: 0, hide: null,
+  leds: null, ledInfo: [], fans: [], fanSpin: 0, snd: null, think: 0, flash: 0, press: -1, pressT: 0, ledT: 0, paintT: 0, hide: null,
 };
 
 // ---- drawing helpers
@@ -254,11 +256,13 @@ function play(move) {
   R.lastPlay = now;
   R.last = R.mind.play(move);
   R.press = move; R.pressT = 0.18; R.think = 0.7; R.flash = 1;
+  if (R.snd) { R.snd.think(0.55); R.snd.result(R.last.verdict ? 'verdict' : R.last.res); }
   caption(R.last.verdict ? `${R.last.verdict.title}. ${R.last.verdict.text} Pick a move to play again.` : `${MOVES[R.last.you]} vs ${MOVES[R.last.rack]}: ${R.last.res === 0 ? 'you win' : R.last.res === 1 ? 'I win' : 'draw'}. ${R.last.comment}`.replace(/^./, (c) => c.toUpperCase()));
   paintAll();
 }
 function forget() {
   R.mind.reset(); R.last = null; R.press = -1; R.think = 0.4;
+  if (R.snd) R.snd.forget();
   if (R.screen) { caption('Forgotten. ' + intro()); paintAll(); }
 }
 function paintAll() { [R.screen, R.ctl, R.left, R.right].forEach((P) => P && P.paint()); }
@@ -266,6 +270,7 @@ function paintAll() { [R.screen, R.ctl, R.left, R.right].forEach((P) => P && P.p
 function update(dt, now, s) {
   if (!R.screen) return;
   if (!s.inside) { if (R.mind.history.length) { R.mind.reset(); R.last = null; paintAll(); } return; }   // forgotten on leaving
+  if (R.snd) R.snd.fan(s.open ? R.fanSpin : 0);       // the hum only while the rack is open
   if (s.focus && !s.open) return;                      // another station is open
   const conf = R.mind.history.length ? R.mind.knowledge().conf : 0;
   // fans: idle hum, faster with confidence and while thinking
@@ -299,14 +304,18 @@ function update(dt, now, s) {
 function partition(show) { const p = R.ws && R.ws.mesh('workshopglass_partition'); if (p) p.visible = show; }
 
 register({
-  id: 'rack', label: 'Server rack',
+  id: 'rack', label: 'Server rack', sound: true,
   pick: () => R.parts,
   get view() {
     return innerWidth < innerHeight ? { at: [FRONT, 4.21, MID], from: [-1, 0.1, 0], size: 1.12 }   // phones: the middle rack
       : { at: [FRONT, 4.12, MID], from: [-1, 0.12, 0], size: 3.0 };
   },
   hint: `Rock, paper, scissors: can you beat me over ${ROUNDS} rounds?`,
-  setup: build,
+  setup(ws) {
+    build(ws);
+    ws.audio.onStart((ctx) => { R.snd = createRackSound(ctx, ws.audio.bus()); });
+    ws.audio.onDispose(() => { R.snd = null; });
+  },
   enter() { partition(false); R.bar.show(true); caption(R.last ? R.last.comment : intro()); },
   exit() { partition(true); R.bar.show(false); },
   update,

@@ -94,7 +94,7 @@ function buildDom() {
   els.keys.setAttribute('role', 'group'); els.keys.setAttribute('aria-label', 'Workshop');
   els.back.addEventListener('click', back);
   els.mute.addEventListener('click', () => audio.mute(!audio.isMuted()));
-  const paintMute = (on) => { els.mute.textContent = on ? 'Muted' : 'Sound'; els.mute.setAttribute('aria-pressed', String(on)); };
+  const paintMute = (on) => { els.mute.textContent = on ? 'Muted' : 'Sound'; els.mute.setAttribute('aria-pressed', String(on)); els.mute.title = (on ? 'Sound on' : 'Mute') + ' (M)'; };
   audio.onMute(paintMute); paintMute(audio.isMuted());
   return els;
 }
@@ -210,6 +210,7 @@ function onKey(e) {
   if (e.target.closest && e.target.closest('input, textarea')) return;
   if (!S.focus) return;
   const def = defs.get(S.focus);
+  if (def && def.sound && (e.key === 'm' || e.key === 'M') && !e.metaKey && !e.ctrlKey) { audio.mute(!audio.isMuted()); e.preventDefault(); return; }   // M: mute
   if (def && def.key && !S.opening && def.key(e, ws)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
   if (e.key === 'Escape') { e.stopImmediatePropagation(); back(); return; }
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopImmediatePropagation();   // no place switching from inside a station

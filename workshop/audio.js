@@ -17,7 +17,7 @@ import { mutedByDefault, saveMute } from '../safari/audio.js';
 export const SLOTS = ['synth', 'fuzz', 'delay', 'amp'];
 const MASTER = 0.8;
 
-let ctx = null, master = null, limiter = null, analyser = null, probed = null;
+let ctx = null, master = null, limiter = null, analyser = null, probed = null, fx = null;
 let slots = null;
 let muted = mutedByDefault();
 const disposeFns = new Set(), muteFns = new Set();
@@ -56,6 +56,13 @@ export function start() {
 const startFns = new Set();
 export function onStart(fn) { startFns.add(fn); if (ctx) fn(ctx); return () => startFns.delete(fn); }
 export const context = () => ctx;
+// sounds outside the chain (the rack's blips and fans): straight into the master volume and mute
+export function bus() {
+  if (!ctx) start();
+  if (!ctx) return null;
+  if (!fx) { fx = ctx.createGain(); fx.connect(master); }
+  return fx;
+}
 export const running = () => !!ctx;
 
 // one stage of the chain: put a processor in ({ input, output } nodes), take it out, or bypass it
@@ -100,6 +107,13 @@ export function dispose() {
   if (!ctx) return;
   disposeFns.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
   const c = ctx;
-  ctx = master = limiter = analyser = probed = slots = null;
+  ctx = master = limiter = analyser = probed = slots = fx = null;
   c.close().catch(() => {});
 }
+
+// a hidden tab: the workshop falls silent (the context sleeps) and wakes when the tab is back
+let slept = false;
+document.addEventListener('visibilitychange', () => {
+  if (!ctx) return;
+  if (document.hidden) { if (ctx.state === 'running') { slept = true; ctx.suspend(); } } else if (slept) { slept = false; ctx.resume(); }
+});
