@@ -132,6 +132,17 @@ function pickAt(ev) {
   if (best && S.blockers.length) { const b = r.intersectObjects(S.blockers, false)[0]; if (b && b.distance < d - 0.05) return null; }
   return best;
 }
+function nearest(ev, reach) {                          // the station whose label point is closest to a tap, within reach px
+  const r = S.host.el.getBoundingClientRect();
+  let best = null, bd = reach;
+  defs.forEach((def) => {
+    if (def.placeholder || !(def.pick ? def.pick() : []).some((m) => m && m.visible)) return;
+    anchor(def, vU); vU.y -= 0.1; vU.project(S.host.camera);
+    const d = Math.hypot(r.left + (vU.x + 1) / 2 * r.width - ev.clientX, r.top + (1 - vU.y) / 2 * r.height - ev.clientY);
+    if (d < bd) { bd = d; best = def; }
+  });
+  return best;
+}
 function setHover(def) {
   if (def === S.hover) return;
   setGlow(S.hover, false);
@@ -316,7 +327,7 @@ export const workshop = {
   // a tap on the canvas while the visitor is in the workshop
   tap(ev) {
     if (S.focus || S.host.tweening()) return;
-    const def = pickAt(ev);
+    const def = pickAt(ev) || (ev.pointerType !== 'mouse' ? nearest(ev, 24) : null);   // fingers: a near miss counts
     if (!def) { S.armed = null; setHover(null); return; }
     if (ev.pointerType !== 'mouse' && S.armed !== def.id) { S.armed = def.id; setHover(def); return; }
     go(def.id);

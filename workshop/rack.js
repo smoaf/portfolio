@@ -307,7 +307,7 @@ register({
   id: 'rack', label: 'Server rack', sound: true,
   pick: () => R.parts,
   get view() {
-    return innerWidth < innerHeight ? { at: [FRONT, 4.21, MID], from: [-1, 0.1, 0], size: 1.12 }   // phones: the middle rack
+    return innerWidth < innerHeight ? { at: [FRONT, 4.29, MID], from: [-1, 0.1, 0], size: 1.3 }    // phones: the middle rack, clear of Back and the bar
       : { at: [FRONT, 4.12, MID], from: [-1, 0.12, 0], size: 3.0 };
   },
   hint: `Rock, paper, scissors: can you beat me over ${ROUNDS} rounds?`,
