@@ -349,6 +349,7 @@ import './workshop/synth.js';
 import './workshop/solder.js';
 import './workshop/tape.js';
 import './workshop/rack.js';
+import { telescope } from './relay/telescope.js';
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -1427,6 +1428,7 @@ const onModel = (gltf) => {
   scene.add(gltf.scene);
   setupPerson(gltf.scene);
   setupAccents(gltf.scene); workshop.setup(wsHost, gltf.scene);   // accents first: cloning a material copies its clip planes
+  telescope.setup(tsHost, gltf.scene);
   setupCamp(gltf.scene);
   collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
@@ -1516,8 +1518,9 @@ const PLACES = [
     onEnter: () => { if (roof.closed) setRoof(false); } },
   { id: 'new-module', name: 'New module', zone: { c: [-7.6, 3.5, 28.7], r: 8.5 },
     view: { type: 'object', pos: [8.0, 11.0, 14.0], target: [-7.6, 3.5, 28.7], az: 60, polar: [40, 85], dist: [10, 35], fit: 18 } },
-  { id: 'dish', name: 'Radio dish', zone: { c: [15.0, 33.0, 154.0], r: 26 },
-    view: { type: 'object', pos: [1.0, 57.0, 72.0], target: [15.0, 42.0, 150.0], az: 80, polar: [45, 88], dist: [30, 120], fit: 50 } },
+  { id: 'dish', name: 'Radio telescope', zone: { c: [15.0, 33.0, 154.0], r: 26 },
+    view: { type: 'object', pos: [1.0, 57.0, 72.0], target: [15.0, 42.0, 150.0], az: 80, polar: [45, 88], dist: [30, 120], fit: 50 },
+    onEnter: () => telescope.arrive() },           // click the telescope: it tracks the sun or a moon (relay/telescope.js)
   { id: 'relay', name: 'Relay station', zone: { c: [46.0, 9.0, 31.0], r: 11 },
     view: { type: 'object', pos: [30.0, 13.0, 4.0], target: [46.0, 8.0, 31.0], az: 80, polar: [40, 86], dist: [15, 50], fit: 22 } },
   { id: 'camp', name: 'Camp', zone: { c: [25.4, 1.5, -5.4], r: 5.5 },
@@ -1614,7 +1617,7 @@ function stepTween(now) {
 }
 
 function enter(p) {
-  campReset(); workshop.reset();
+  campReset(); workshop.reset(); telescope.reset();
   nav.place = p; nav.mode = p.view.type;
   closePanel();
   document.body.classList.add('in-place');
@@ -1633,7 +1636,7 @@ function enter(p) {
   }
 }
 function leave() {
-  campReset(); workshop.reset();
+  campReset(); workshop.reset(); telescope.reset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
   document.body.classList.remove('in-place');
@@ -1671,6 +1674,7 @@ document.getElementById('nav-where').addEventListener('click', () => { if (nav.p
 window.addEventListener('keydown', (ev) => {
   if (ev.target.closest && ev.target.closest('input, textarea')) return;
   if (ev.key === 'Escape' && nav.place) setRoute('');
+  if (nav.place && nav.place.id === 'dish' && !tween.active && telescope.key(ev)) return;
   if (nav.place && ev.key === 'ArrowRight') step(1);
   if (nav.place && ev.key === 'ArrowLeft') step(-1);
 });
@@ -1715,6 +1719,7 @@ el.addEventListener('pointerup', (ev) => {
   if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }
   if (nav.place.id === 'camp') { campTap(ev); return; }
   if (nav.place.id === 'workshop') { workshop.tap(ev); return; }
+  if (nav.place.id === 'dish') { telescope.tap(ev); return; }
   if (nav.place.id === 'showroom' && hitRoof(ev)) setRoof(!roof.closed);
 });
 el.addEventListener('wheel', (ev) => {
@@ -1747,6 +1752,7 @@ function hover(ev) {
     if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = hitRoof(ev) ? 'pointer' : ''; return; }
     if (nav.place.id === 'camp') { tip.hidden = true; campHover(ev); return; }
     if (nav.place.id === 'workshop') { tip.hidden = true; workshop.hover(ev); return; }
+    if (nav.place.id === 'dish') { tip.hidden = true; telescope.hover(ev); return; }
     setTip(null);
   });
 }
@@ -2348,7 +2354,7 @@ const PAGES = {
   hub: { kicker: 'About', title: 'Simon Winkler', line: 'Research, products, technology and media.', lead: 'Placeholder: a short bio, what connects the fields, and what is next.' },
   relay: { kicker: 'Contact', title: 'Get in touch', line: 'Email and links.', lead: 'Placeholder: email address, profiles and where to find more.', cards: 0 },
   cv: { kicker: 'About', title: 'CV', line: '', lead: 'Placeholder: the CV as a page and as a PDF download.', cards: 0 },
-  station: { kicker: 'About', title: 'The station', line: '', lead: 'Placeholder: a station that moves and gains modules over time, like a career across several fields. Each building holds one kind of work; the camp, the dish and the relay hold the person.', cards: 0 },
+  station: { kicker: 'About', title: 'The station', line: '', lead: 'Placeholder: a station that moves and gains modules over time, like a career across several fields. Each building holds one kind of work; the camp, the telescope and the relay hold the person.', cards: 0 },
 };
 const site = document.getElementById('site'), drop = document.getElementById('drop'), dropList = document.getElementById('drop-list');
 function fitName() {
@@ -2474,7 +2480,7 @@ function frame(now) {
   const away = !!workshop.focused;                   // a workshop station is open: nothing outside the workshop runs
   if (!away) { stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); }
   stepPlaces(now); stepSky(now);
-  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); }
+  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); telescope.step(now); }
   workshop.step(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
@@ -2512,7 +2518,7 @@ const station = {
     station.held = false;
     const now = performance.now();
     skyState.last = person.last = turbine.last = showDark.last = camp.last = now;
-    workshop.resume(now);
+    workshop.resume(now); telescope.resume(now);
     if (fire.last) fire.last = now;
     quality.settle = now + 3000;
     if (camp.van && camp.van.outer.visible) camp.van.start();
@@ -2533,6 +2539,18 @@ const wsHost = {
   },
   fixedFov(f) { camp.fov = f; },                       // what a resize keeps while the camera is fixed
   releaseView(h) { const v = PLACES.find((q) => q.id === 'workshop').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
+};
+
+// --- radio telescope (relay/telescope.js): the sun and the moons it can track
+const tsHost = {
+  scene, camera, el, ray, setRay, reduceMotion,
+  tweening: () => tween.active,
+  inPlace: () => !!nav.place && nav.place.id === 'dish',
+  sky() {
+    const out = [{ name: 'Sun', dir: sunDir }];
+    for (let i = 0; i < Math.round(SKY.moons); i++) out.push({ name: 'Moon ' + (i + 1), dir: moonDirs[i] });
+    return out;
+  },
 };
 
 // hooks used for test renders
@@ -2559,6 +2577,7 @@ const campScreen = (id) => {                           // tests: where on screen
 window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => camp.armed, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
 window.__safari = () => camp.safari;
 window.__workshop = workshop;
+window.__telescope = telescope;
 window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
 window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
