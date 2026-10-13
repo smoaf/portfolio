@@ -291,7 +291,7 @@ function update(dt, now, s) {
   const t = now / 1000, hid = R.mind.hidden(), C = new THREE.Color();
   R.ledInfo.forEach((L, n) => {
     let on;
-    if (thinking) on = Math.random() < 0.55;
+    if (thinking) on = R.ws.reduceMotion() ? L.ph < 6 : Math.random() < 0.55;   // reduced motion: lit, no flicker
     else if (L.mid) { const v = hid[L.i % 10] || 0; on = (L.i < 10 ? Math.abs(v) : 0.15 + conf * 0.5) > (0.35 + 0.25 * Math.sin(t * L.rate + L.ph)); }
     else on = Math.sin(t * L.rate * (1 + conf * 2) + L.ph) > 0.55 - conf * 0.5 || L.ph < 0.9;   // a few always on
     R.leds.setColorAt(n, C.copy(L.c).multiplyScalar(on ? 1.4 + R.flash : 0.06));
