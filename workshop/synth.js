@@ -125,7 +125,7 @@ const DEFAULTS = {
   'seq.tempo': 0.45, 'seq.len': 0.45, 'osc1.wave': 2 / 3, 'osc1.pitch': 0.5, 'osc1.fine': 0.5, 'osc2.wave': 1, 'osc2.pitch': 0.5, 'osc2.fine': 0.5,
   'noise.color': 0.7, 'lfo.rate': 0.4, 'lfo.shape': 0, 'lfo.depth': 0.5, 'env.a': 0.15, 'env.d': 0.45, 'env.s': 0.4, 'env.r': 0.4,
   'mix.l1': 0.75, 'mix.l2': 0.75, 'mix.l3': 0.75, 'filter.cut': 0.6, 'filter.res': 0.3, 'filter.amt': 0.4, 'vca.level': 0.8,
-  'chorus.rate': 0.35, 'chorus.depth': 0.5, 'chorus.mix': 0.5, 'reverb.size': 0.5, 'reverb.mix': 0.35, 'out.level': 0.7,
+  'chorus.rate': 0.35, 'chorus.depth': 0.5, 'chorus.mix': 0.5, 'reverb.size': 0.5, 'reverb.mix': 0.35, 'out.level': 0.75,
   ...Object.fromEntries([0, 1, 2, 3, 4, 5, 6, 7].map((i) => ['seq.n' + i, note([0, 2, 4, 3, 5, 4, 7, 6][i])])),
 };
 const PRESETS = {
@@ -135,16 +135,16 @@ const PRESETS = {
     steps: [1, 1, 0, 1, 1, 0, 1, 1],
     cables: [['seq.pitch', 'osc1.cv'], ['seq.gate', 'env.gate'], ['osc1.out', 'filter.in'], ['filter.out', 'vca.in'], ['env.out', 'vca.cv'], ['env.out', 'filter.cv'], ['vca.out', 'reverb.in'], ['reverb.out', 'out.in']] },
   Bass: { knobs: { 'osc1.wave': 2 / 3, 'osc1.pitch': semis(-12), 'osc2.wave': 1, 'osc2.pitch': semis(-12), 'osc2.fine': 0.58, 'seq.tempo': 0.38, 'seq.len': 0.55,
-    'env.a': 0.08, 'env.d': 0.5, 'env.s': 0.3, 'env.r': 0.3, 'filter.cut': 0.3, 'filter.res': 0.55, 'filter.amt': 0.55, 'mix.l1': 0.7, 'mix.l2': 0.55,
+    'env.a': 0.08, 'env.d': 0.5, 'env.s': 0.3, 'env.r': 0.3, 'filter.cut': 0.3, 'filter.res': 0.55, 'filter.amt': 0.55, 'mix.l1': 0.7, 'mix.l2': 0.55, 'out.level': 0.85,
     ...Object.fromEntries([0, 1, 2, 3, 4, 5, 6, 7].map((i) => ['seq.n' + i, note([0, 0, 5, 0, 3, 0, 4, 2][i])])) },
     steps: [1, 0, 1, 1, 1, 0, 1, 1],
     cables: [['seq.pitch', 'osc1.cv'], ['seq.pitch', 'osc2.cv'], ['seq.gate', 'env.gate'], ['osc1.out', 'mix.in1'], ['osc2.out', 'mix.in2'], ['mix.out', 'filter.in'],
       ['filter.out', 'vca.in'], ['env.out', 'vca.cv'], ['env.out', 'filter.cv'], ['vca.out', 'out.in']] },
-  Siren: { knobs: { 'osc1.wave': 2 / 3, 'osc1.pitch': semis(7), 'lfo.shape': 1 / 3, 'lfo.rate': 0.32, 'lfo.depth': 0.85, 'chorus.mix': 0.6, 'chorus.depth': 0.6, 'out.level': 0.55 },
+  Siren: { knobs: { 'osc1.wave': 2 / 3, 'osc1.pitch': semis(7), 'lfo.shape': 1 / 3, 'lfo.rate': 0.32, 'lfo.depth': 0.85, 'chorus.mix': 0.6, 'chorus.depth': 0.6, 'out.level': 0.4 },
     steps: [1, 1, 1, 1, 1, 1, 1, 1],
     cables: [['lfo.out', 'osc1.cv'], ['osc1.out', 'chorus.in'], ['chorus.out', 'out.in']] },
   Wind: { knobs: { 'noise.color': 0.85, 'filter.cut': 0.45, 'filter.res': 0.85, 'filter.amt': 0.5, 'lfo.shape': 0, 'lfo.rate': 0.12, 'lfo.depth': 0.9,
-    'reverb.size': 1, 'reverb.mix': 0.55, 'out.level': 0.75 },
+    'reverb.size': 1, 'reverb.mix': 0.55, 'out.level': 0.62 },
     steps: [1, 1, 1, 1, 1, 1, 1, 1],
     cables: [['noise.out', 'filter.in'], ['lfo.out', 'filter.cv'], ['filter.out', 'reverb.in'], ['reverb.out', 'out.in']] },
 };

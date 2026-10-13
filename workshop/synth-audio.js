@@ -181,7 +181,7 @@ export function createEngine(ctx, dest) {
     const sum = gain(1), lvl = gain(0.6);
     inp('out.in', sum); inp('out.in2', sum);
     sum.connect(lvl); lvl.connect(master); master.connect(dest);
-    P["out.level"] = (v) => smooth(lvl.gain, v * v * 2.2);
+    P["out.level"] = (v) => smooth(lvl.gain, v * v * 4.4);
     meter('out', master);
   }
 

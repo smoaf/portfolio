@@ -47,7 +47,7 @@ export function createFuzz(ctx) {
       mid.gain.setTargetAtTime(1 + fuzz * 2.5, t(), 0.02);
       lp.frequency.setTargetAtTime(6200 - fuzz * 2600, t(), 0.02);
       // loudness: the clipped signal is near full scale, so the volume taper does the rest
-      vol.gain.setTargetAtTime(Math.pow(volume, 1.6) * (0.55 - fuzz * 0.15), t(), 0.02);
+      vol.gain.setTargetAtTime(Math.pow(volume, 1.6) * (0.26 - fuzz * 0.07), t(), 0.02);
     },
     rms() {                                            // output level, for the multimeter's AC volts
       meter.getFloatTimeDomainData(buf);
