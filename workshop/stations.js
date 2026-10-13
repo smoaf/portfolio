@@ -20,6 +20,8 @@
 //                        take it (no camera move, no tap)
 //   key(ev, ws)          while open: return true to take a key
 //   hint                 one line shown when the station opens ("Drag the knobs" ...)
+//   keys                 its keyboard controls in a few words, added to the hint when it was opened
+//                        from the keyboard ("1-4 presets, Space run/stop")
 //   sound                true: the station makes sound, so the mute toggle shows while it is open
 //   placeholder          an empty spot (layout.js); a real station with the same id replaces it
 // Shared code for stations: workshop/audio.js (the signal chain) and workshop/layout.js (the desk
@@ -97,6 +99,7 @@ function buildDom() {
     keys: mk('div', 'camp-keys'),
   };
   els.keys.setAttribute('role', 'group'); els.keys.setAttribute('aria-label', 'Workshop');
+  els.hint.setAttribute('role', 'status'); els.hint.setAttribute('aria-live', 'polite');
   els.back.addEventListener('click', back);
   els.mute.addEventListener('click', () => audio.mute(!audio.isMuted()));
   const paintMute = (on) => { els.mute.textContent = on ? 'Muted' : 'Sound'; els.mute.setAttribute('aria-pressed', String(on)); els.mute.title = (on ? 'Sound on' : 'Mute') + ' (M)'; };
@@ -179,7 +182,8 @@ function go(id) {
     if (tok !== S.seq) return;
     S.opening = false;
     if (def.enter) def.enter(ws);
-    if (def.hint) say(def.hint);
+    const keys = S.kbd && def.keys ? ` · Keys: ${def.keys}${def.sound ? ', M mute' : ''}, Esc back` : '';
+    if (def.hint) say(def.hint + keys, keys ? 14000 : 6000);
   });
 }
 function close(fly) {                                  // close the open station (and fly back if asked)
@@ -193,7 +197,7 @@ function close(fly) {                                  // close the open station
   S.els.back.hidden = true; S.els.mute.hidden = true;
   S.host.flyTo(h.pos.clone(), h.target.clone(), h.fov, () => { if (tok === S.seq) { S.host.releaseView(h); S.home = null; } });
 }
-function back() { if (S.focus) close(true); }
+function back() { if (S.focus) { if (S.kbd) S.refocus = S.focus; close(true); } }   // keyboard: focus returns to the station's key
 // a station's bar of HTML controls along the bottom, shown while it is open (the hint moves above it)
 export function bar(cls = '') {
   const e = document.createElement('div');
@@ -202,10 +206,10 @@ export function bar(cls = '') {
   const fit = () => document.body.style.setProperty('--ws-bar', e.hidden ? '16px' : (e.offsetHeight + 16) + 'px');
   return { el: e, show(on) { e.hidden = !on; fit(); }, fit };
 }
-function say(text) {
+function say(text, ms = 6000) {
   const h = S.els.hint;
   h.textContent = text; h.hidden = !text; h.classList.remove('gone');
-  clearTimeout(say.t); if (text) say.t = setTimeout(() => h.classList.add('gone'), 6000);
+  clearTimeout(say.t); if (text) say.t = setTimeout(() => h.classList.add('gone'), ms);
 }
 
 // ---- keyboard: Esc goes back; the open station may take keys; a hidden row of buttons (shown on
@@ -214,6 +218,8 @@ function onKey(e) {
   if (!S.host || !S.host.inPlace()) return;
   if (e.target.closest && e.target.closest('input, textarea')) return;
   if (!S.focus) return;
+  // Enter and Space on a focused button (Back, Sound, a station's bar) press that button
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('button, select, a, [role=button]')) return;
   const def = defs.get(S.focus);
   if (def && def.sound && (e.key === 'm' || e.key === 'M') && !e.metaKey && !e.ctrlKey) { audio.mute(!audio.isMuted()); e.preventDefault(); return; }   // M: mute
   if (def && def.key && !S.opening && def.key(e, ws)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
@@ -232,7 +238,10 @@ function stepKeys() {
     b.addEventListener('click', () => go(id));
     S.els.keys.appendChild(b);
   });
-  if (had && S.els.keys.firstChild) S.els.keys.firstChild.focus({ preventScroll: true });
+  const ret = S.refocus && ids.length ? ids.indexOf(S.refocus) : -1; if (ids.length) S.refocus = null;
+  const lost = !document.activeElement || document.activeElement === document.body || !document.activeElement.offsetParent;
+  if (ret >= 0 && lost) S.els.keys.children[ret].focus({ preventScroll: true });
+  else if (had && S.els.keys.firstChild) S.els.keys.firstChild.focus({ preventScroll: true });
 }
 
 function stepDetail(inside) {
@@ -285,6 +294,8 @@ export const workshop = {
     el.addEventListener('pointermove', (ev) => { if (onPointer('move', ev)) ev.stopImmediatePropagation(); }, true);
     el.addEventListener('pointerup', (ev) => { if (onPointer('up', ev)) ev.stopImmediatePropagation(); }, true);
     window.addEventListener('keydown', onKey, true);
+    window.addEventListener('keydown', () => { S.kbd = true; }, true);          // how the visitor moves: keys or a pointer
+    window.addEventListener('pointerdown', () => { S.kbd = false; }, true);
     S.ready = true;
     if (S.early && host.inPlace()) this.arrive();
   },

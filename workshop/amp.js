@@ -121,6 +121,7 @@ register({
   pick: () => A.parts,
   get view() { return { at: [10.1, 3.94 + 0.075, -0.76], from: [0, 0.32, -1], size: innerWidth < innerHeight ? 0.44 : 0.6 }; },   // phones: closer
   hint: 'Turn VOLUME, switch the power. The synth plays through here',
+  keys: 'Space power, ↑ ↓ volume',
   setup: build,
   update,
   pointer: (type, ev, ws) => { if (type === 'down') ws.sound(); return A.P.pointer(type, ev); },

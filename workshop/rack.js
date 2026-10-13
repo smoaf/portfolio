@@ -311,6 +311,7 @@ register({
       : { at: [FRONT, 4.12, MID], from: [-1, 0.12, 0], size: 3.0 };
   },
   hint: `Rock, paper, scissors: can you beat me over ${ROUNDS} rounds?`,
+  keys: '1/2/3 or R/P/S play, F forget me',
   setup(ws) {
     build(ws);
     ws.audio.onStart((ctx) => { R.snd = createRackSound(ctx, ws.audio.bus()); });

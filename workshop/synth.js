@@ -426,6 +426,7 @@ register({
   pick: () => S.parts,
   view: { at: [9.2, 4.1, -0.7], from: [0, 0.5, -1], size: 0.75 },
   hint: 'Drag the knobs up and down. Drag a cable from an OUT to an IN',
+  keys: '1-4 patches, 0 clear, Space run/stop',
   setup(ws) {
     S.ws = ws; S.rayOf = (ev) => ws.ray(ev);
     build(ws);

@@ -412,6 +412,7 @@ register({
   pick: () => F.parts,
   get view() { return F.C ? frame(VIEWS.pedal.v) : { at: [10.6, 4.0, -1.35], from: [0, 1.2, -1], size: 0.5 }; },
   hint: 'Stomp the footswitch, turn FUZZ. Below: the story of how it was built',
+  keys: 'Space footswitch, ← → fuzz, ↑ ↓ volume, P play, G/S input, 1-6 views',
   setup: build,
   enter(ws) { F.view = 'pedal'; F.bar.show(true); show('pedal', false); },
   exit() { F.bar.show(false); F.active = null; F.tap = null; PANELS().forEach((P) => { P.drag = null; }); },

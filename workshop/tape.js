@@ -400,6 +400,7 @@ register({
   pick: () => F.parts,
   get view() { return F.C ? frame(VIEWS.delay.v) : { at: [9.25, 4.0, -1.3], from: [0, 1.2, -1], size: 0.56 }; },
   hint: 'Switch the heads 1-5 on and off, turn SPEED. Flip ERASE off for endless layers',
+  keys: '1-5 heads, E erase, O power, ← → speed, ↑ ↓ feedback, P demo, S synth, N fresh tape',
   setup: build,
   enter() { F.bar.show(true); show('delay', false); paintBar(); },
   exit() { F.bar.show(false); F.active = null; F.tap = null; if (F.P) F.P.drag = null; },
