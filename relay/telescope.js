@@ -159,7 +159,7 @@ function track() {
     return;
   }
   t.target = s;
-  say('Turning to the ' + (s.name === 'Sun' ? 'sun' : s.name.replace('Moon', 'moon')) + '…');
+  say('Turning to ' + (s.name === 'Sun' ? 'the sun' : s.name) + '…');
   plan([{ key: 'az', to: () => azOf(s.dir) }, { wait: PAUSE }, { key: 'el', to: () => clampEl(elOf(s.dir)) }], 'slew', () => { t.mode = 'track'; });
 }
 function park(why) {
@@ -188,7 +188,7 @@ function step(now) {
     if (u >= 1) { t.move = null; if (!t.queue.length) nextMove(now); }
   } else if (t.mode === 'track' && t.target) {
     const d = t.target.dir;
-    if (d.y < HORIZON * 0.5) park((t.target.name === 'Sun' ? 'The sun' : t.target.name) + ' has set. Parking');
+    if (d.y < HORIZON * 0.5) park((t.target.name === 'Sun' ? 'The sun' : t.target.name) + ' went below the horizon. Parking');
     else {                                             // follow the sky, slowly
       const k = FOLLOW * dt;
       t.az += THREE.MathUtils.clamp(wrap(azOf(d) - t.az), -k, k);
@@ -276,5 +276,11 @@ export const telescope = {
   resume(now) { if (t.move && t.last) t.move.t0 += now - t.last; t.last = now; },   // after station.pause(): carry on where it was
   // R2 (moon bounce) asks what it is pointing at: the target's name while it tracks, else null
   tracking: () => (t.mode === 'track' && t.target ? t.target.name : null),
+  // tests: where the dish really points (feed horn seen from the reflector), against the target
+  aim() {
+    const f = t.elG.localToWorld(v1.copy(t.feed)), c = t.elG.localToWorld(v2.copy(t.centre));
+    const d = f.sub(c).normalize();
+    return { dir: d.toArray().map((n) => +n.toFixed(3)), off: t.target ? +THREE.MathUtils.radToDeg(d.angleTo(t.target.dir)).toFixed(1) : null };
+  },
   state: () => ({ mode: t.mode, target: t.target && t.target.name, az: deg(t.az), el: deg(t.el), az0: deg(t.az0), el0: deg(t.el0), label: t.label && !t.label.hidden && !t.label.classList.contains('gone') ? t.label.textContent : '' }),
 };

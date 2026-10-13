@@ -69,6 +69,10 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 ### Van
 - Expedition camper in the style of a Mercedes 208: 208 body with short bonnet, raked windscreen, dark grille band with square headlights; big all-terrain tyres with arch flares; bull bar, snorkel, railed roof deck, roof box, jerrycans, light bar, ladder, spare wheel, awning. No badges, no plates.
 
+### Radio telescope (was "Radio dish")
+- The big steerable dish on the hill (after the Stanford Dish photos). Renamed "Radio telescope" (Oct 2026); the place id stays `dish`.
+- Interactive (relay plan, phase R1): a click turns it to the sun or a moon above the horizon (the one nearest its pointing) and it keeps following that object; a second click parks it. With nothing in the sky it sweeps once and says "Nothing in view". The relay station's radio room (phase R2) will use it for a moon-bounce signal.
+
 ### Still open
 - Next module (under construction): museum and curation?
 
