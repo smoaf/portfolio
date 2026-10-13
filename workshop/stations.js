@@ -38,6 +38,11 @@ export function register(def) {
 }
 
 const GLOW = new THREE.Color(0xffa95e);
+// level of detail: seen from further than DETAIL_FAR (and not from inside the workshop), the stations'
+// small parts (knobs, screws, cables, chips: under ~6 cm) are below a pixel or two, so they move to
+// their own layer that the camera then skips: about 140 draw calls fewer from the rest of the site.
+// Shadow cameras and the page's raycaster always see the layer.
+const DETAIL = 3, DETAIL_FAR = 16, DETAIL_R = 0.06, DESK = new THREE.Vector3(10.4, 4.0, -0.5);
 const S = { host: null, root: null, ready: false, focus: null, hover: null, armed: null, home: null, seq: 0, last: 0, els: null, keySig: '' };
 const vT = new THREE.Vector3(), vU = new THREE.Vector3(), sph = new THREE.Sphere(), bx = new THREE.Box3();
 
@@ -230,6 +235,31 @@ function stepKeys() {
   if (had && S.els.keys.firstChild) S.els.keys.firstChild.focus({ preventScroll: true });
 }
 
+function stepDetail(inside) {
+  const want = inside || !!S.focus || S.host.camera.position.distanceTo(DESK) < DETAIL_FAR;
+  if (want === S.detail) return;
+  S.detail = want;
+  if (!want) tagDetail();                              // parts built since the last time (lazy builds, prints)
+  S.host.camera.layers[want ? 'enable' : 'disable'](DETAIL);
+}
+function tagDetail() {
+  const scene = S.host.scene;
+  scene.traverse((o) => { if (o.isLight && o.shadow) o.shadow.camera.layers.enable(DETAIL); });
+  scene.children.forEach((top) => {
+    if (top === S.root || !top.isObject3D) return;
+    top.getWorldPosition(vT);
+    if (Math.hypot(vT.x - 10.85, vT.z) > 6 || vT.y < -0.5 || vT.y > 8) return;   // only the workshop's own groups
+    top.traverse((o) => {
+      if (!o.isMesh || o.userData.wsDetail != null) return;
+      if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+      o.getWorldScale(vU);
+      const r = o.isInstancedMesh ? Infinity : o.geometry.boundingSphere.radius * Math.max(vU.x, vU.y, vU.z);
+      o.userData.wsDetail = r < DETAIL_R;
+      if (o.userData.wsDetail) o.layers.set(DETAIL);
+    });
+  });
+}
+
 // ---- pointer while a station is open: the station's own controls come first
 function onPointer(type, ev) {
   if (!S.focus || S.opening || S.host.tweening()) return false;
@@ -248,6 +278,7 @@ export const workshop = {
     root.traverse((o) => { if (o.isMesh && /^workshop(shell|bench|table|glass_partition|pegboard)$/.test(o.name)) S.blockers.push(o); });
     setupLayout(ws);                                   // wider desk, drone on the wall, the empty spots
     defs.forEach((def) => { if (def.setup) def.setup(ws); });
+    host.ray.layers.enable(DETAIL); host.camera.layers.enable(DETAIL); S.detail = true;
     const el = host.el;
     // capture phase: a station's drag wins over the camera, taps never reach the place picker
     el.addEventListener('pointerdown', (ev) => { if (onPointer('down', ev)) { ev.stopImmediatePropagation(); el.setPointerCapture(ev.pointerId); } }, true);
@@ -269,6 +300,7 @@ export const workshop = {
       S.els.tip.style.left = ((vU.x + 1) / 2 * el.clientWidth) + 'px'; S.els.tip.style.top = ((1 - vU.y) / 2 * el.clientHeight) + 'px';
     }
     stepKeys();
+    stepDetail(inside);
   },
   // a tap on the canvas while the visitor is in the workshop
   tap(ev) {
