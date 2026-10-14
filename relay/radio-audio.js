@@ -47,7 +47,7 @@ export function createRadioAudio() {
   const sideg = ctx.createGain(); sideg.gain.value = 0; side.connect(sideg); sideg.connect(master); side.start();
 
   const A = {
-    ctx, rx, noise,
+    ctx, rx, noise, master,
     get now() { return ctx.currentTime; },
     station() { const g = ctx.createGain(); g.gain.value = 0; g.connect(rx); return g; },   // a station's own level
     setStatic(level) { st.gain.setTargetAtTime(level, ctx.currentTime, 0.05); },

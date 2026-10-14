@@ -17,7 +17,7 @@ export const WIN = { x0: -0.3, x1: 0.7, y0: 1.0, y1: 1.85 };          // the win
 const DESK = 0.8;                                                      // desk top
 export const BAND = { lo: 3.0, hi: 12.0, span: 1.5 };                 // MHz; `span` is what the scale window shows
 // where the visitor sits, and what they look at (the receiver's dial); phones sit closer
-export const VIEW = { at: [-1.2, 1.02, 0.02], from: [1, 0.36, 0], size: 1.9, sizePhone: 1.0 };
+export const VIEW = { at: [-1.2, 1.1, 0.02], from: [1, 0.2, 0], size: 1.9, sizePhone: 1.0 };
 
 function canvasTex(w, h, draw) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -253,7 +253,7 @@ export function buildRoom() {
         const xx = x(eme.f);
         if (xx > -40 && xx < w + 40) { g.fillStyle = '#5b5f6e'; g.beginPath(); g.arc(xx, h * 0.72, 10, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f9e3b3'; g.beginPath(); g.arc(xx + 5, h * 0.7, 9, 0, Math.PI * 2); g.fill(); }
       }
-      g.fillStyle = '#c4271c'; g.fillRect(w / 2 - 2, 0, 4, h);              // the pointer
+      g.fillStyle = '#b81d12'; g.fillRect(w / 2 - 3, 0, 6, h);              // the pointer
       const sh = g.createLinearGradient(0, 0, w, 0);                        // curved glass: darker ends
       sh.addColorStop(0, 'rgba(40,25,10,0.45)'); sh.addColorStop(0.18, 'rgba(40,25,10,0)'); sh.addColorStop(0.82, 'rgba(40,25,10,0)'); sh.addColorStop(1, 'rgba(40,25,10,0.45)');
       g.fillStyle = sh; g.fillRect(0, 0, w, h);
@@ -420,7 +420,7 @@ export function buildRoom() {
 
   // ---- light: a warm lamp from the ceiling and the dial's glow; brighter at night
   const lamp = new THREE.PointLight(0xffd2a0, 0, 5.5, 1.5); lamp.position.set(-0.55, CE - 0.4, 0); root.add(lamp);
-  const glow = new THREE.PointLight(0xffb347, 0, 1.4, 2); glow.position.set(RX.x + RX.d / 2 + 0.25, RX.y + 0.05, RX.z); root.add(glow);
+  const glow = new THREE.PointLight(0xffb347, 0, 1.6, 2); glow.position.set(RX.x + RX.d / 2 + 0.45, RX.y - 0.05, RX.z); root.add(glow);
 
   // ---- picking: every clickable mesh carries userData.pick ('dial' | 'key' | 'box' | 'hint')
   const picks = []; root.traverse((o) => { if (o.isMesh && o.userData.pick) picks.push(o); });
@@ -451,7 +451,7 @@ export function buildRoom() {
       hH.rotation.x = -h / 12 * Math.PI * 2; hM.rotation.x = -m / 60 * Math.PI * 2; hS.rotation.x = -Math.floor(s) / 60 * Math.PI * 2;
     },
     setLight(night, signal = 0) {                                    // night 0..1
-      lamp.intensity = 0.8 + 3.2 * night; glow.intensity = (0.25 + 0.7 * night) * (1 + 0.6 * signal);
+      lamp.intensity = 0.8 + 3.2 * night; glow.intensity = (0.04 + 0.4 * night) * (1 + 0.6 * signal);
       dialMat.emissiveIntensity = 0.45 + 0.35 * night + 0.2 * signal;
     },
     pickAt: (o) => o && o.userData.pick,

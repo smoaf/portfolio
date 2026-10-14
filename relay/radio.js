@@ -158,6 +158,9 @@ export const STATIONS = [
 export const SECRET = { id: 'eme', f: EME.f, call: 'EME', name: 'Moon bounce', blurb: 'Your own Morse, sent to a moon and back: Earth – Moon – Earth.', colour: '#5b5f6e', ink: '#f9e3b3', secret: true };
 export const ALL = [...STATIONS.slice(0, 5), SECRET, ...STATIONS.slice(5)];
 
+// a little bell when a card is logged (outside the receiver's filter)
+export function chime(A, t, f) { tone(A, A.master, t, { f, dur: 0.5, type: 'sine', vol: 0.18, release: 0.4 }); }
+
 export function loadLog() {
   try { const o = JSON.parse(localStorage.getItem(SAVE) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; }
 }
@@ -167,7 +170,7 @@ function saveLog(log) { try { localStorage.setItem(SAVE, JSON.stringify(log)); }
 // host: { moon() -> name of the moon the telescope tracks, or null; clock() -> 'hh:mm'; sky() -> a weather line }
 export function createRadio(host) {
   const R = {
-    f: 7.6, A: null, live: new Map(), log: loadLog(), held: { id: null, ms: 0 },
+    f: 7.6, A: null, live: new Map(), log: loadLog(), held: { id: null, since: 0 },
     text: { id: null, line: '', typed: '' }, queue: [], sent: { code: '', text: '', at: 0, down: 0, up: 0 },
     echoes: [], heardEcho: 0, popT: 0, signal: 0, onLog: null,
   };
@@ -184,12 +187,11 @@ export function createRadio(host) {
     R.A = createRadioAudio();
     if (!R.A) return null;
     // the moon bounce's echo: its own tone and level, always ready
-    const out = R.A.station(), m = morse(R.A, out, { pitch: 655, vol: 0.5 });
-    const dl = R.A.ctx.createDelay(0.5); dl.delayTime.value = 0.09; const fb = R.A.ctx.createGain(); fb.gain.value = 0.35;
-    out.disconnect(); const pre = R.A.ctx.createGain(); m.stop();
-    const m2 = morse(R.A, pre, { pitch: 655, vol: 0.5 }); pre.connect(out); pre.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(out);
-    out.connect(R.A.rx);
-    R.eme = { out, m: m2 };
+    // (a little smeared, as if it had travelled 2 × 380 000 km)
+    const ctx = R.A.ctx, out = R.A.station(), pre = ctx.createGain();
+    const dl = ctx.createDelay(0.5); dl.delayTime.value = 0.09; const fb = ctx.createGain(); fb.gain.value = 0.35;
+    pre.connect(out); pre.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(out);
+    R.eme = { out, m: morse(R.A, pre, { pitch: 655, vol: 0.5 }) };
     return R.A;
   }
   function stop() {
@@ -238,13 +240,12 @@ export function createRadio(host) {
     // logging: held clear for a moment
     const target = best && (best.secret ? (performance.now() - R.heardEcho < 1500 && emeOn()) : true) ? best : null;
     if (target && cmax > LOG_AT) {
-      if (R.held.id !== target.id) R.held = { id: target.id, ms: 0 };
-      R.held.ms += dt * 1000;
-      if (R.held.ms > (target.secret ? 0 : LOG_MS) && !R.log[target.id]) {
+      if (R.held.id !== target.id) R.held = { id: target.id, since: performance.now() };
+      if (performance.now() - R.held.since > (target.secret ? 0 : LOG_MS) && !R.log[target.id]) {
         R.log[target.id] = Date.now(); saveLog(R.log);
         if (R.onLog) R.onLog(target);
       }
-    } else R.held = { id: null, ms: 0 };
+    } else R.held = { id: null, since: 0 };
     // the visitor's own Morse: a letter ends after a pause
     const S = R.sent, now = performance.now();
     if (S.code && !S.down && now - S.up > 420) { S.text = (S.text + (DECODE[S.code] || '?')).slice(-24); S.code = ''; S.at = now; }
