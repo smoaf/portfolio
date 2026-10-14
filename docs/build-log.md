@@ -164,3 +164,14 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 - `index.html`: import, setup, place hook (`onEnter`), tap/hover hooks, `relay.reset()` with the others, frame step, resume, `rlHost`, `window.__relay` (test hooks: `state()`, `enter()`, `back()`, `tune(f)`, `key(down)`, `screen(id)`).
 - Tested headless (software GL) at 1280×760 (mouse and keys) and 390×700 touch: hut by click and two taps, knob drag, Morse key by pointer and Space, cards open/close by C and Esc, Back. The game logic was also played through on its own page at full speed: all eleven stations log with their subtitles, nothing comes back at 7.05 MHz without a moon, the echo comes back and logs with one, the CQ station answers. No console errors.
 - Open: real-phone check (sound, touch on the knob, frame rate inside); the station texts are placeholders; R3 (polish, difficulty, keyboard and accessibility pass).
+
+## 14 Oct 2026: Relay plan, phase R3 (polish), branch `feat/relay`
+- Radio telescope checked at every time of day (00:00 to 21:36 in steps, default sky and with the moons off): it finds the sun or a moon, turns azimuth, pauses, then elevation, and follows on target (0° off; moon 1, which stays about 12° up all day, is followed at the 14° limit, about 2° off). With no moons at night it sweeps and says "Nothing in view".
+- Target choice: a moon just over the horizon (4°) was picked when it was nearest, and then followed 10° off at the dish's lower limit. Now a target 10° up or more wins over a nearer, lower one; the low one only if there is nothing else.
+- The telescope's status line only shows in its own place (it showed "Parking" in the radio room when a target set) and stays on one line on phones. New keyboard button (out of sight until focused, like the hut's): "Track the sky (T)" / "Park the telescope (T)".
+- "Tune in" difficulty: stations were only audible within about 0.04 MHz of 9 MHz of band, easy to turn past. Now each one is heard faintly through the static, the S-meter stirs and the bar says "Something there…" from about 0.1 MHz away; letting go within 0.08 MHz settles on it (was 0.022), a short pause after the last turn or key press first, so arrow-key tuning is not pulled back between presses. Logging still needs it clear for 1.5 s. In the headless test a station from 0.05 MHz off settled and logged in about 3 s.
+- Phones in the radio room: the seat looks a little to the right and wider (66° fov), so the Morse key, the QSL box and the moon-bounce postcard are in view; the bar's five controls fit one row at 390 px.
+- Keyboard and mute (checked): ← → tune (Shift: faster), Space Morse key, C cards, M mute, Esc back; outside, Tab reaches the hidden "Go into the radio room" and telescope buttons.
+- Tested headless (software GL) at 1280×760 and 390×700 touch. No console errors.
+- Open: real-phone check of frame rate in the room and of sound; texts on the air are placeholders.
+

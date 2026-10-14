@@ -71,11 +71,11 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 
 ### Radio telescope (was "Radio dish")
 - The big steerable dish on the hill (after the Stanford Dish photos). Renamed "Radio telescope" (Oct 2026); the place id stays `dish`.
-- Interactive (relay plan, phase R1): a click turns it to the sun or a moon above the horizon (the one nearest its pointing) and it keeps following that object; a second click parks it. With nothing in the sky it sweeps once and says "Nothing in view". The relay station's radio room (phase R2) uses it for a moon-bounce signal.
+- Interactive (relay plan, phase R1): a click turns it to the sun or a moon above the horizon (the one nearest its pointing) and it keeps following that object; a second click parks it. With nothing in the sky it sweeps once and says "Nothing in view". The relay station's radio room (phase R2) uses it for a moon-bounce signal. It prefers a target it can really point at (10° up or more; the dish stops at 14°) over a nearer one just over the horizon (phase R3).
 
 ### Relay station
 - Lattice tower with dishes and a small equipment hut (props.py). The hut has a window on the side the relay view looks at, lit warm at night (relay plan, phase R2).
-- Click the hut to sit inside: a small radio room after Smo's references (vintage receivers on a pine desk, Morse key, desk microphone, clock, map). Its receiver plays "Tune in": find eleven stations on the band by ear and by the S-meter, each gives a QSL card; a twelfth, the moon bounce, only answers while the radio telescope tracks a moon. Texts on the air are placeholders.
+- Click the hut to sit inside: a small radio room after Smo's references (vintage receivers on a pine desk, Morse key, desk microphone, clock, map). Its receiver plays "Tune in": find eleven stations on the band by ear and by the S-meter, each gives a QSL card; a twelfth, the moon bounce, only answers while the radio telescope tracks a moon. Texts on the air are placeholders. Difficulty (phase R3): a station is heard faintly and the needle stirs about 0.1 MHz before it comes in, and letting go within 0.08 MHz settles on it, so each one takes seconds.
 
 ### Still open
 - Next module (under construction): museum and curation?

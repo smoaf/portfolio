@@ -16,8 +16,9 @@ export const X0 = -1.64, X1 = 1.64, Z0 = -1.14, Z1 = 1.14, FL = 0.04, CE = 2.5;
 export const WIN = { x0: -0.3, x1: 0.7, y0: 1.0, y1: 1.85 };          // the window opening in the -z wall
 const DESK = 0.8;                                                      // desk top
 export const BAND = { lo: 3.0, hi: 12.0, span: 1.5 };                 // MHz; `span` is what the scale window shows
-// where the visitor sits, and what they look at (the receiver's dial); phones sit closer
-export const VIEW = { at: [-1.2, 1.1, 0.02], from: [1, 0.2, 0], size: 1.9, sizePhone: 1.0 };
+// where the visitor sits, and what they look at (the receiver's dial); phones sit closer and a little
+// to the right, so the Morse key, the card box and the moon-bounce postcard are in view too
+export const VIEW = { at: [-1.2, 1.1, 0.02], atPhone: [-1.2, 1.02, -0.26], from: [1, 0.2, 0], size: 1.9, sizePhone: 1.25 };
 
 function canvasTex(w, h, draw) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;

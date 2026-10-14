@@ -30,6 +30,10 @@ const CSS = `
   .rl-bar .msg { min-height: 2.75em; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .rl-bar .rl-head { font: 600 12.5px/1.25 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--glass-ink); }
   .rl-bar .rl-line { font: 400 13px/1.35 var(--font-display); color: var(--glass-soft); min-height: 1.35em; overflow-wrap: anywhere; }
+  @media (max-width: 420px) {                          /* phones: the five controls on one row */
+    .rl-bar .btn { padding: 10px 9px; min-width: 40px; }
+    .rl-bar .rl-f { min-width: 74px; font-size: 14px; }
+  }
 `;
 
 let host = null;
@@ -154,8 +158,8 @@ function loadMods() {
 
 // ---- in and out
 function eyeFor(view) {                                 // the seat: `size` metres of the desk in frame, phones closer
-  const portrait = host.portrait(), fov = portrait ? 62 : 50;
-  const at = new THREE.Vector3(...view.at); if (portrait) at.y -= 0.08;
+  const portrait = host.portrait(), fov = portrait ? 66 : 50;
+  const at = new THREE.Vector3(...(portrait ? view.atPhone : view.at));
   const el = host.el, aspect = el.clientWidth / Math.max(1, el.clientHeight);
   const vf = THREE.MathUtils.degToRad(fov), hf = 2 * Math.atan(Math.tan(vf / 2) * aspect), size = portrait ? view.sizePhone : view.size;
   const d = Math.min(1.75, Math.max((size * 0.55) / Math.tan(hf / 2), (size * 0.4) / Math.tan(vf / 2)));
@@ -381,7 +385,7 @@ function stepRoom(dt, now) {
   }
   if (!S.drag && !S.inertia && !S.tune && now - S.movedAt > 450) {   // let go near a station: it settles on it (fine tuning on a phone is hard)
     const list = moonTracked() ? S.mods.radio.ALL : S.mods.radio.STATIONS;
-    const near = list.find((s) => Math.abs(R.f - s.f) < 0.06);
+    const near = list.find((s) => Math.abs(R.f - s.f) < 0.08);
     if (near) R.set(R.f + (near.f - R.f) * Math.min(1, dt * 2.5));
   }
   R.step(dt);
