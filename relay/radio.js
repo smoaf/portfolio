@@ -261,7 +261,7 @@ export function createRadio(host) {
     let best = null, cmax = 0;
     list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } });
     const nearEme = Math.abs(R.f - EME.f) < 0.03;
-    const keyed = performance.now() - R.sent.at < 4000 && R.sent.text.trim();
+    const keyed = performance.now() - R.sent.at < 2500 && R.sent.text.trim();
     let line = '', head = '';
     if (nearEme && !emeOn()) { head = 'Only the hiss of space'; line = 'Nothing comes back from here unless the radio telescope points at a moon.'; }
     else if (best && best.secret && cmax > 0.4) { head = 'Moon bounce · ' + host.moon(); line = performance.now() - R.heardEcho < 2500 ? 'Your echo came back from the moon!' : 'The telescope is on the moon. Key the Morse key and wait for the echo.'; }
@@ -275,7 +275,7 @@ export function createRadio(host) {
     const S = R.sent, now = performance.now();
     if (!!down === !!S.down) return;
     if (R.A) R.A.key(down);
-    if (down) { S.down = now; return; }
+    if (down) { if (now - S.up > 8000) S.text = ''; S.down = now; return; }   // a new message after a long pause
     const len = now - S.down; S.down = 0; S.up = now;
     S.code += len < 200 ? '.' : '-'; S.at = now;
     if (!R.A) return;
