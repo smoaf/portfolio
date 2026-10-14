@@ -178,7 +178,7 @@ export function createRadio(host) {
     echoes: [], heardEcho: 0, popT: 0, signal: 0, onLog: null,
   };
   const clarity = (f0) => Math.exp(-(((R.f - f0) / CLEAR) ** 2));
-  const near = (f0) => Math.exp(-(((R.f - f0) / NEAR) ** 2));   // the wide approach: faint through the static, the needle stirs
+  const approach = (f0) => Math.exp(-(((R.f - f0) / NEAR) ** 2));   // the wide approach: faint through the static, the needle stirs
   function io(id) {
     return {
       show: (line, at) => R.queue.push({ id, at, line }),
@@ -209,7 +209,7 @@ export function createRadio(host) {
   function step(dt) {
     let best = null, cmax = 0, nmax = 0;
     const list = emeOn() ? [...STATIONS, SECRET] : STATIONS;
-    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } nmax = Math.max(nmax, near(s.f)); });
+    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } nmax = Math.max(nmax, approach(s.f)); });
     R.signal = best && best.secret ? cmax * 0.55 : Math.max(cmax, 0.4 * nmax);   // the moon's echo is faint even when tuned
     const A = R.A;
     if (A) {
@@ -223,7 +223,7 @@ export function createRadio(host) {
         L.away = near ? 0 : L.away + dt;
         if (L.away > 2) { L.gen.stop(); L.out.disconnect(); R.live.delete(s.id); R.texts.delete(s.id); R.queue = R.queue.filter((q) => q.id !== s.id); return; }
         const fade = s.id === 'whales' || s.id === 'pulsar' ? 0.8 + 0.2 * Math.sin(t * 0.7 + s.f) : 1;   // the far ones fade in and out
-        const c = clarity(s.f), level = c + (1 - c) * 0.3 * near(s.f);
+        const c = clarity(s.f), level = c + (1 - c) * 0.3 * approach(s.f);
         L.out.gain.setTargetAtTime(level * fade * (s.id === 'pulsar' ? 0.8 : 1), t, 0.05);
         L.gen.tick(t);
       });
@@ -262,7 +262,7 @@ export function createRadio(host) {
   function readout() {
     const list = emeOn() ? [...STATIONS, SECRET] : STATIONS;
     let best = null, cmax = 0, nmax = 0;
-    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } nmax = Math.max(nmax, near(s.f)); });
+    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } nmax = Math.max(nmax, approach(s.f)); });
     const nearEme = Math.abs(R.f - EME.f) < 0.03;
     const keyed = performance.now() - R.sent.at < 2500 && R.sent.text.trim();
     let line = '', head = '';
