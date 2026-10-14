@@ -104,11 +104,13 @@ export const STATIONS = [
       return { tick(t) {
         if (!next) next = t + 0.3;
         if (next < t + 0.8) {
-          const s = reply ? 'R R DE PL2Q TNX FER CALL UR 599 73 SK' : 'CQ CQ CQ DE PL2Q PL2Q K';
-          if (reply) io.show('They heard you! ', next); else io.show('', next);
-          next = m.send(s, next, 15, (c, ct) => io.type(c, ct)) + (reply ? 4 : 2.5); reply = false;
+          const s = reply ? 'R R TNX FER CALL UR 599 73' : 'CQ CQ DE PL2Q K';
+          io.show(reply ? 'They heard you! ' : '', next);
+          next = m.send(s, next, 18, (c, ct) => io.type(c, ct)) + (reply ? 4 : 2.2); reply = false;
         }
-      }, keyed(t) { reply = true; next = Math.max(next, t + 1.6); }, stop: m.stop };
+      }, keyed(t) {                                    // the visitor answered: stop calling, reply once they pause
+        m.cancel(t); io.drop(t); reply = true; next = t + 1.4;
+      }, stop: m.stop };
     } },
   { id: 'time', f: 9.95, call: 'TIME', name: 'Time signal', blurb: 'A pip every second, a long one on the minute.', colour: '#e6b8d0',
     make(A, out, io) {
@@ -171,13 +173,14 @@ function saveLog(log) { try { localStorage.setItem(SAVE, JSON.stringify(log)); }
 export function createRadio(host) {
   const R = {
     f: 7.6, A: null, live: new Map(), log: loadLog(), held: { id: null, since: 0 },
-    text: { id: null, line: '', typed: '' }, queue: [], sent: { code: '', text: '', at: 0, down: 0, up: 0 },
+    texts: new Map(), queue: [], sent: { code: '', text: '', at: 0, down: 0, up: 0 },
     echoes: [], heardEcho: 0, popT: 0, signal: 0, onLog: null,
   };
   const clarity = (f0) => Math.exp(-(((R.f - f0) / CLEAR) ** 2));
   function io(id) {
     return {
       show: (line, at) => R.queue.push({ id, at, line }),
+      drop: (after) => { R.queue = R.queue.filter((q) => q.id !== id || q.at <= after); },
       type: (ch, at) => R.queue.push({ id, at, ch }),
       clock: host.clock, sky: host.sky,
     };
@@ -197,7 +200,7 @@ export function createRadio(host) {
   function stop() {
     R.live.forEach((s) => s.gen.stop()); R.live.clear();
     if (R.A) R.A.close();
-    R.A = null; R.eme = null; R.queue = []; R.echoes = [];
+    R.A = null; R.eme = null; R.queue = []; R.echoes = []; R.texts.clear();
   }
   const emeOn = () => !!host.moon();
   // every frame while the room is open
@@ -216,7 +219,7 @@ export function createRadio(host) {
         if (near && !L) { const out = A.station(); L = { out, gen: s.make(A, out, io(s.id)), away: 0 }; R.live.set(s.id, L); }
         if (!L) return;
         L.away = near ? 0 : L.away + dt;
-        if (L.away > 2) { L.gen.stop(); L.out.disconnect(); R.live.delete(s.id); return; }
+        if (L.away > 2) { L.gen.stop(); L.out.disconnect(); R.live.delete(s.id); R.texts.delete(s.id); R.queue = R.queue.filter((q) => q.id !== s.id); return; }
         const fade = s.id === 'whales' || s.id === 'pulsar' ? 0.8 + 0.2 * Math.sin(t * 0.7 + s.f) : 1;   // the far ones fade in and out
         L.out.gain.setTargetAtTime(clarity(s.f) * fade * (s.id === 'pulsar' ? 0.8 : 1), t, 0.05);
         L.gen.tick(t);
@@ -228,11 +231,11 @@ export function createRadio(host) {
       R.popT -= dt;
       if (R.popT < 0) { R.popT = 0.05 + Math.random() * 0.5; A.pop((0.15 + Math.random() * 0.4) * (1 - cmax)); }
       // subtitles and decoded letters arrive on time
-      R.queue = R.queue.filter((q) => {
-        if (q.at > t) return true;
-        if (q.id !== R.text.id) { R.text = { id: q.id, line: '', typed: '' }; }
-        if (q.line !== undefined) { R.text.line = q.line; R.text.typed = ''; } else R.text.typed = (R.text.typed + q.ch).slice(-40);
-        return false;
+      const due = R.queue.filter((q) => q.at <= t).sort((a, b) => a.at - b.at);
+      if (due.length) R.queue = R.queue.filter((q) => q.at > t);
+      due.forEach((q) => {
+        const T = R.texts.get(q.id) || { line: '', typed: '' }; R.texts.set(q.id, T);
+        if (q.line !== undefined) { T.line = q.line; T.typed = ''; } else T.typed = (T.typed + q.ch).slice(-40);
       });
       // echoes from the moon come back
       R.echoes = R.echoes.filter((e) => { if (e.at > t) return true; if (clarity(EME.f) > 0.55) R.heardEcho = performance.now(); return false; });
@@ -262,7 +265,7 @@ export function createRadio(host) {
     let line = '', head = '';
     if (nearEme && !emeOn()) { head = 'Only the hiss of space'; line = 'Nothing comes back from here unless the radio telescope points at a moon.'; }
     else if (best && best.secret && cmax > 0.4) { head = 'Moon bounce · ' + host.moon(); line = performance.now() - R.heardEcho < 2500 ? 'Your echo came back from the moon!' : 'The telescope is on the moon. Key the Morse key and wait for the echo.'; }
-    else if (best && cmax > LOG_AT) { head = best.call + ' · ' + best.name; const tx = R.text.id === best.id ? (R.text.line + R.text.typed).trim() : ''; line = tx; }
+    else if (best && cmax > LOG_AT) { head = best.call + ' · ' + best.name; const T = R.texts.get(best.id); line = T ? (T.line + T.typed).trim() : ''; }
     else if (best && cmax > 0.12) { head = 'Something there…'; line = 'Turn slowly'; }
     else { head = 'Static'; line = ''; }
     if (keyed) line = 'You sent: ' + R.sent.text.trim();

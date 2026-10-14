@@ -162,6 +162,7 @@ export function morse(A, out, { pitch = 700, vol = 0.45 } = {}) {
     },
     beep(t, len, v = vol) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.005); g.gain.setValueAtTime(v, t + len - 0.005); g.gain.linearRampToValueAtTime(0, t + len); },
     pitch: (f, t) => o.frequency.setValueAtTime(f, t),
+    cancel(t) { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0, t); },   // stop sending from t
     stop() { try { o.stop(); } catch (e) { /* stopped */ } o.disconnect(); g.disconnect(); },
   };
 }

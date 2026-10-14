@@ -470,7 +470,7 @@ export const relay = {
   resume(now) { S.last = now; },
   get inside() { return S.inside; },
   // tests
-  enter, back, state: () => ({ inside: S.inside, f: S.radio ? +S.radio.f.toFixed(3) : null, found: foundCount(), bar: S.ui, cards: !!S.cards, look: { ...S.look } }),
+  enter, back, state: () => ({ inside: S.inside, keyDown: S.keyDown, keySrc: S.keySrc, moon: moonTracked(), sent: S.radio ? S.radio.readout().line : '', f: S.radio ? +S.radio.f.toFixed(3) : null, found: foundCount(), bar: S.ui, cards: !!S.cards, look: { ...S.look } }),
   tune: (f) => { if (S.radio) { S.radio.set(f); S.inertia = 0; } },
   key: (down) => keyOn(down, 'test'),
   screen(what) {                                         // where on screen a thing is (CSS px)
