@@ -39,7 +39,7 @@ const t = {
   meshes: [], mats: [], plinth: null,
   mode: 'park',                                        // park | slew | track | search | parking
   target: null, queue: [], move: null, last: 0,
-  hover: false, armed: false, label: null, tip: null, labelUntil: 0, rings: [], ringT: 0,
+  hover: false, armed: false, label: null, tip: null, keys: null, keyBtn: null, labelUntil: 0, rings: [], ringT: 0,
 };
 const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), q1 = new THREE.Quaternion();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -116,7 +116,17 @@ function makeLabels() {
   t.label.style.width = 'max-content';                 // centred at left 50%, it would otherwise wrap at half the width (phones)
   t.tip = document.createElement('div');               // hover label over the dish
   t.tip.className = 'tip'; t.tip.hidden = true;
-  document.body.append(t.label, t.tip);
+  t.keys = document.createElement('div');              // for the keyboard and screen readers: out of sight until focused
+  t.keys.className = 'camp-keys'; t.keys.hidden = true; t.keys.setAttribute('role', 'group'); t.keys.setAttribute('aria-label', 'Radio telescope');
+  t.keyBtn = document.createElement('button'); t.keyBtn.type = 'button'; t.keyBtn.className = 'btn';
+  t.keyBtn.addEventListener('click', () => toggle()); t.keys.appendChild(t.keyBtn);
+  document.body.append(t.label, t.tip, t.keys);
+}
+function paintKeys() {
+  const want = host.inPlace() && !host.tweening();
+  if (t.keys.hidden === want) t.keys.hidden = !want;
+  const text = (t.mode === 'slew' || t.mode === 'track' ? 'Park the telescope' : 'Track the sky') + ' (T)';
+  if (want && t.keyBtn.textContent !== text) t.keyBtn.textContent = text;
 }
 function say(text, ms) {                              // only in its place: elsewhere (the radio room too) it moves in silence
   const l = t.label; if (!l || !host.inPlace()) return;
@@ -204,6 +214,7 @@ function step(now) {
     if (text !== t.label.textContent || t.label.hidden || t.label.classList.contains('gone')) say(text);
   }
   if (t.labelUntil && now > t.labelUntil) quiet();
+  if (t.keys) paintKeys();
   pose();
   stepRings(dt);
   if (t.tip && !t.tip.hidden) placeTip();
@@ -273,6 +284,7 @@ function reset() {
   t.armed = false;
   if (t.hover) setHover(false);
   if (t.label) { t.label.hidden = true; t.labelUntil = 0; }
+  if (t.keys) t.keys.hidden = true;
 }
 
 export const telescope = {
