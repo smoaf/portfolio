@@ -21,6 +21,7 @@ const H_AX = 22.0;                                     // elevation axle above t
 const BACK = 5.0, F = 16.0, R = 20.0;                  // vertex in front of the axle, focal length, radius
 const MIN_EL = THREE.MathUtils.degToRad(14);           // lower and the rim would hit the A-frames
 const MAX_EL = THREE.MathUtils.degToRad(88);
+const REACH = THREE.MathUtils.degToRad(10);           // a target this high is close enough to the limit to point at
 const HORIZON = 0.035;                                 // sine of the lowest height that counts as "in view"
 const TURN = THREE.MathUtils.degToRad(16);             // slew speed per second, at full speed
 const FOLLOW = THREE.MathUtils.degToRad(5);            // while tracking: catch up at most this fast
@@ -112,12 +113,13 @@ function makeRings() {
 function makeLabels() {
   t.label = document.createElement('div');             // status line at the bottom, like the camp's hint
   t.label.className = 'camp-hint gone'; t.label.hidden = true; t.label.setAttribute('aria-live', 'polite');
+  t.label.style.width = 'max-content';                 // centred at left 50%, it would otherwise wrap at half the width (phones)
   t.tip = document.createElement('div');               // hover label over the dish
   t.tip.className = 'tip'; t.tip.hidden = true;
   document.body.append(t.label, t.tip);
 }
-function say(text, ms) {
-  const l = t.label; if (!l) return;
+function say(text, ms) {                              // only in its place: elsewhere (the radio room too) it moves in silence
+  const l = t.label; if (!l || !host.inPlace()) return;
   l.textContent = text; l.hidden = false; l.classList.remove('gone');
   t.labelUntil = ms ? performance.now() + ms : Infinity;
 }
@@ -126,10 +128,12 @@ function quiet() { if (t.label) { t.label.classList.add('gone'); t.labelUntil = 
 // ---- what is in the sky
 function pickTarget() {
   const cur = boreDir(t.az, t.el, v2);
+  // nearest first, but one it can really point at (no lower than a few degrees under its limit)
+  // beats one just over the horizon; the low one only if there is nothing else
   let best = null, d = Infinity;
   host.sky().forEach((s) => {
     if (s.dir.y < HORIZON) return;
-    const a = s.dir.angleTo(cur);
+    const a = s.dir.angleTo(cur) + (elOf(s.dir) < REACH ? Math.PI * 2 : 0);
     if (a < d) { d = a; best = s; }
   });
   return best;

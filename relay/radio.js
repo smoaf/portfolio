@@ -13,7 +13,8 @@ import { BAND } from './room.js';
 const SAVE = 'smo.relay.qsl';
 const CLEAR = 0.03;                    // MHz: how sharp a station is (clarity e^-(d/CLEAR)^2)
 const LOG_AT = 0.72, LOG_MS = 1500;    // clear enough, for long enough: logged
-const RANGE = 0.12;                    // MHz: a station only plays while the dial is this close
+const NEAR = 0.09;                     // MHz: how far off a station is already heard faintly (e^-(d/NEAR)^2)
+const RANGE = 0.2;                     // MHz: a station only plays while the dial is this close
 export const EME = { f: 7.05, delay: 2.5 };
 
 const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
@@ -177,6 +178,7 @@ export function createRadio(host) {
     echoes: [], heardEcho: 0, popT: 0, signal: 0, onLog: null,
   };
   const clarity = (f0) => Math.exp(-(((R.f - f0) / CLEAR) ** 2));
+  const near = (f0) => Math.exp(-(((R.f - f0) / NEAR) ** 2));   // the wide approach: faint through the static, the needle stirs
   function io(id) {
     return {
       show: (line, at) => R.queue.push({ id, at, line }),
@@ -205,10 +207,10 @@ export function createRadio(host) {
   const emeOn = () => !!host.moon();
   // every frame while the room is open
   function step(dt) {
-    let best = null, cmax = 0;
+    let best = null, cmax = 0, nmax = 0;
     const list = emeOn() ? [...STATIONS, SECRET] : STATIONS;
-    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } });
-    R.signal = best && best.secret ? cmax * 0.55 : cmax;            // the moon's echo is faint even when tuned
+    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } nmax = Math.max(nmax, near(s.f)); });
+    R.signal = best && best.secret ? cmax * 0.55 : Math.max(cmax, 0.4 * nmax);   // the moon's echo is faint even when tuned
     const A = R.A;
     if (A) {
       const t = A.now;
@@ -221,13 +223,14 @@ export function createRadio(host) {
         L.away = near ? 0 : L.away + dt;
         if (L.away > 2) { L.gen.stop(); L.out.disconnect(); R.live.delete(s.id); R.texts.delete(s.id); R.queue = R.queue.filter((q) => q.id !== s.id); return; }
         const fade = s.id === 'whales' || s.id === 'pulsar' ? 0.8 + 0.2 * Math.sin(t * 0.7 + s.f) : 1;   // the far ones fade in and out
-        L.out.gain.setTargetAtTime(clarity(s.f) * fade * (s.id === 'pulsar' ? 0.8 : 1), t, 0.05);
+        const c = clarity(s.f), level = c + (1 - c) * 0.3 * near(s.f);
+        L.out.gain.setTargetAtTime(level * fade * (s.id === 'pulsar' ? 0.8 : 1), t, 0.05);
         L.gen.tick(t);
       });
       if (R.eme) R.eme.out.gain.setTargetAtTime(emeOn() ? clarity(EME.f) * 0.6 : 0, t, 0.05);
       const carrier = STATIONS.find((s) => s.carrier && Math.abs(R.f - s.f) < 0.09);
       if (carrier) { const d = Math.abs(R.f - carrier.f); A.setWhistle(0.1 * (1 - clarity(carrier.f)) * Math.exp(-((d / 0.07) ** 2)), 60 + d * 11000); } else A.setWhistle(0, 400);
-      A.setStatic(0.32 * (1 - 0.88 * cmax) * (emeOn() && Math.abs(R.f - EME.f) < 0.04 ? 0.45 : 1));
+      A.setStatic(0.32 * (1 - 0.88 * cmax) * (1 - 0.3 * nmax) * (emeOn() && Math.abs(R.f - EME.f) < 0.04 ? 0.45 : 1));
       R.popT -= dt;
       if (R.popT < 0) { R.popT = 0.05 + Math.random() * 0.5; A.pop((0.15 + Math.random() * 0.4) * (1 - cmax)); }
       // subtitles and decoded letters arrive on time
@@ -258,15 +261,15 @@ export function createRadio(host) {
   // what the readout says now
   function readout() {
     const list = emeOn() ? [...STATIONS, SECRET] : STATIONS;
-    let best = null, cmax = 0;
-    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } });
+    let best = null, cmax = 0, nmax = 0;
+    list.forEach((s) => { const c = clarity(s.f); if (c > cmax) { cmax = c; best = s; } nmax = Math.max(nmax, near(s.f)); });
     const nearEme = Math.abs(R.f - EME.f) < 0.03;
     const keyed = performance.now() - R.sent.at < 2500 && R.sent.text.trim();
     let line = '', head = '';
     if (nearEme && !emeOn()) { head = 'Only the hiss of space'; line = 'Nothing comes back from here unless the radio telescope points at a moon.'; }
     else if (best && best.secret && cmax > 0.4) { head = 'Moon bounce · ' + host.moon(); line = performance.now() - R.heardEcho < 2500 ? 'Your echo came back from the moon!' : 'The telescope is on the moon. Key the Morse key and wait for the echo.'; }
     else if (best && cmax > LOG_AT) { head = best.call + ' · ' + best.name; const T = R.texts.get(best.id); line = T ? (T.line + T.typed).trim() : ''; }
-    else if (best && cmax > 0.12) { head = 'Something there…'; line = 'Turn slowly'; }
+    else if (nmax > 0.2) { head = 'Something there…'; line = 'Turn slowly'; }
     else { head = 'Static'; line = ''; }
     if (keyed) line = 'You sent: ' + R.sent.text.trim();
     return { head, line, found: best && cmax > LOG_AT && !best.secret && R.log[best.id] ? true : false };
