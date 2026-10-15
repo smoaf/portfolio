@@ -175,3 +175,12 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 - Tested headless (software GL) at 1280×760 and 390×700 touch. No console errors.
 - Open: real-phone check of frame rate in the room and of sound; texts on the air are placeholders.
 
+
+## 15 Oct 2026: Library plan, phase L1 (room details), branch `feat/library`
+- New `library/library.js` (setup, per-frame step, cat picking and zoom, keyboard) and `library/props.js` (the props, built in code); `index.html` gets the import, `lbHost`, and the usual hooks (tap, hover, reset on enter/leave, frame, resume, `window.__library`).
+- Bookshelf: Simon's lucky cat (middle bay, eye level), the terrarium in its glass carafe (leftmost bay as seen from the front, towards the window, clear of the computer) and the painted vase (rightmost bay, above the reading corner). 27 books are taken out of `librarybooks` where they stand (index only, so the page's per-book accent colours still match). Each item is 2–3 draw calls: solid parts merged with vertex colours, painted parts (cat face and coin, vase) on small canvas textures. The coin's characters are an abstract block pattern.
+- Monstera: terracotta pot in a woven basket (vertex-coloured weave), 9 leaves with cuts and holes (one alpha-cut canvas texture) on stems, left of the room in front of the window. Leaves and stems are one mesh; they sway in the vertex shader from one time uniform. Shadows are static (alpha-cut depth materials).
+- Lucky cat: the raised right paw is its own small mesh on a shoulder pivot and beckons (1.5 s, about 18°). It waves while the library is the open place, or while the camera is within 26 m and the room is in the view frustum; otherwise `library.step` returns early and nothing moves. The paw casts no shadow, so no shadow redraws. Reduced motion: the paw stays still.
+- Click the cat (hover: glow + "Lucky cat" label; touch: first tap shows it, second zooms; keyboard: hidden "Lucky cat" button on Tab): the camera flies close to it; Back or Esc returns. While zoomed the rest of the station pauses as with a workshop station.
+- Computer: the all-in-one (body and screen) is turned 0.45 rad about its stand at load time, found by making the screen as shallow as possible front to back, so it sits square on the desk facing the chair.
+- Tested headless (software GL) at 1280×760 (mouse hover, click, Esc) and 390×700 touch (two taps, Back button): zoom and return work, the paw moves only in the library, no console errors.

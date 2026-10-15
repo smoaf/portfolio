@@ -42,7 +42,8 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 - Linear ceiling light strips.
 
 ### Library
-- 8.5 m long. iMac-style all-in-one computer (unbranded) angled on a desk, reading chair corner, standing lamp, bookshelves.
+- 8.5 m long. All-in-one computer (unbranded) square on the desk, facing the chair (was angled; straightened 15 Oct 2026), reading chair corner, standing lamp, bookshelves.
+- Simon's own things (15 Oct 2026, LIBRARY_PLAN L1): on the shelf his waving lucky cat, a small terrarium in a glass carafe and a painted porcelain vase (some books taken out to make room); a big monstera in a terracotta pot and woven basket on the left by the window. The cat waves while the room is open or in view; clicking it zooms the camera close to it, nothing else.
 - Content: science, publications, thesis.
 
 ### Office (collaborative)

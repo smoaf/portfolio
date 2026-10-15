@@ -18,7 +18,7 @@ function solid() {
       geo.dispose();
       ['uv1', 'uv2'].forEach((a) => g.deleteAttribute(a));
       if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
-      g.applyMatrix4(M4.compose(V.set(...pos), Q.setFromEuler(E.set(...rot)), S.set(...scale)));
+      g.applyMatrix4(M4.compose(V.set(...pos), Q.setFromEuler(E.set(rot[0], rot[1], rot[2], rot[3] || 'XYZ')), S.set(...scale)));
       const p = g.attributes.position, n = p.count, col = new Float32Array(n * 3);
       C.set(color);
       for (let i = 0; i < n; i++) {
@@ -220,13 +220,13 @@ export function makeTerrarium() {
   s.add(new THREE.CylinderGeometry(0.062, 0.057, 0.068, 24), 0x2a221b, { pos: [0, 0.036, 0] });                // soil
   s.add(new THREE.CylinderGeometry(0.063, 0.063, 0.012, 24), 0x8d9b3c, { pos: [0, 0.076, 0], tint: (c, x, y, z) => { c.offsetHSL(0, 0, (Math.sin(x * 260) * Math.cos(z * 230)) * 0.06); } });   // moss
   for (let i = 0; i < 8; i++) {                                                // narrow pointed leaves splaying upwards
-    const a = (i / 8) * Math.PI * 2 + R() * 0.5, tilt = 0.25 + R() * 0.45, L = 0.1 + R() * 0.07;
+    const a = (i / 8) * Math.PI * 2 + R() * 0.5, tilt = 0.08 + R() * 0.17, L = 0.08 + R() * 0.05;   // inside the glass's waist
     const leaf = new THREE.PlaneGeometry(1, 1, 1, 6), lp = leaf.attributes.position;
     for (let k = 0; k < lp.count; k++) {
-      const v = lp.getY(k) + 0.5, w = 0.013 * Math.sin(Math.PI * Math.min(1, v * 0.95 + 0.05)) * (1 - v * 0.6);
-      lp.setXYZ(k, lp.getX(k) * w * 2, v * L, -0.4 * L * v * v * tilt);
+      const v = lp.getY(k) + 0.5, w = 0.016 * Math.sin(Math.PI * Math.min(1, v * 0.95 + 0.05)) * (1 - v * 0.6);
+      lp.setXYZ(k, lp.getX(k) * w * 2, v * L, 0.1 * L * v * v);   // arching outwards
     }
-    s.add(leaf, 0x4d7a3a, { pos: [Math.cos(a) * 0.008, 0.08, Math.sin(a) * 0.008], rot: [tilt, a + Math.PI / 2, 0], tint: (c, x, y) => c.offsetHSL(0, 0, (y - 0.12) * 0.6) });
+    s.add(leaf, 0x4d7a3a, { pos: [Math.cos(a) * 0.008, 0.08, Math.sin(a) * 0.008], rot: [tilt, a, 0, 'YXZ'], tint: (c, x, y) => c.offsetHSL(0, 0, (y - 0.12) * 0.6) });
   }
   const inner = new THREE.Mesh(s.build(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, side: THREE.DoubleSide }));
   inner.castShadow = true; inner.receiveShadow = true; inner.name = 'library_terrarium_inside';
@@ -283,7 +283,7 @@ export function makeMonstera() {
   s.add(new THREE.LatheGeometry(basket.map(([r, y]) => new THREE.Vector2(r, y)), 56), 0xc8a26c, { tint: weave });
   [-1, 1].forEach((sx) => s.add(new THREE.TorusGeometry(0.03, 0.006, 6, 14, Math.PI), 0xb8925d, { pos: [sx * 0.226, 0.29, 0], rot: [0, Math.PI / 2, 0] }));   // rope handles
   s.add(lathe([[0.001, 0.2], [0.16, 0.2], [0.185, 0.3], [0.2, 0.38], [0.215, 0.385], [0.218, 0.44], [0.205, 0.445], [0.195, 0.43]], 36), 0xb5603a,
-    { tint: (c, x, y, z) => { const n = Math.sin(x * 40 + y * 23) * Math.cos(z * 37 - y * 11); if (n > 0.55) c.lerp(C2.set(0xd9c2a8), (n - 0.55) * 1.6); } });   // terracotta, a little weathered
+    { tint: (c, x, y, z) => { const n = Math.sin(x * 40 + y * 23) * Math.cos(z * 37 - y * 11); if (n > 0.55) c.lerp(C2.set(0xd9c2a8), (n - 0.55) * 0.6); } });   // terracotta, a little weathered
   s.add(new THREE.CircleGeometry(0.195, 24), 0x2e241c, { pos: [0, 0.425, 0], rot: [-Math.PI / 2, 0, 0] });   // soil
   const pot = new THREE.Mesh(s.build(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 }));
   pot.castShadow = true; pot.receiveShadow = true; pot.name = 'library_monstera_pot';
@@ -291,8 +291,9 @@ export function makeMonstera() {
 
   // leaves on stems: yaw round the plant (0 = towards the viewer, -z), the height of the leaf base,
   // how far out it stands, pitch of the blade, its length
-  const LEAVES = [[0.15, 1.62, 0.22, 0.35, 0.56], [-0.75, 1.5, 0.3, 0.25, 0.6], [0.95, 1.42, 0.32, 0.2, 0.55], [-1.6, 1.22, 0.3, 0.15, 0.5],
-    [1.75, 1.15, 0.28, 0.2, 0.5], [0.4, 1.02, 0.34, -0.05, 0.48], [-0.35, 0.9, 0.3, -0.12, 0.42], [2.6, 1.32, 0.18, 0.3, 0.46], [-2.5, 1.05, 0.2, 0.2, 0.44]];
+  // (the blades hang outwards and down from the stem top, so their faces look out of the plant)
+  const LEAVES = [[0.15, 1.78, 0.2, 0.75, 0.68], [-0.8, 1.66, 0.28, 0.6, 0.72], [0.95, 1.6, 0.3, 0.55, 0.66], [-1.6, 1.36, 0.3, 0.5, 0.6],
+    [1.7, 1.3, 0.28, 0.5, 0.6], [0.45, 1.16, 0.32, 0.4, 0.56], [-0.4, 1.04, 0.3, 0.35, 0.5], [2.6, 1.5, 0.16, 0.6, 0.46], [-2.5, 1.22, 0.18, 0.55, 0.44]];
   const geos = [];
   const up = new THREE.Vector3(0, 1, 0);
   LEAVES.forEach(([a, h, out, pitch, L], li) => {
@@ -307,13 +308,13 @@ export function makeMonstera() {
     const su = stem.attributes.uv; for (let i = 0; i < su.count; i++) su.setXY(i, 0.97, 0.5);
     geos.push([stem, phase]);
     // the blade: a plane with its base at the stem top, droop along its length and a slight fold
-    const leaf = new THREE.PlaneGeometry(1, 1, 4, 8), lp = leaf.attributes.position, lu = leaf.attributes.uv, W = L * 0.86;
-    const d = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+    const leaf = new THREE.PlaneGeometry(1, 1, 4, 8), lp = leaf.attributes.position, lu = leaf.attributes.uv, W = L * 0.92;
+    const d = new THREE.Vector3(Math.sin(yaw) * Math.cos(-pitch), Math.sin(-pitch), Math.cos(yaw) * Math.cos(-pitch));
     const side = new THREE.Vector3().crossVectors(up, d).normalize(), n = new THREE.Vector3().crossVectors(d, side).normalize();
     const twist = (R() - 0.5) * 0.5; side.applyAxisAngle(d, twist); n.applyAxisAngle(d, twist);
     for (let k = 0; k < lp.count; k++) {
       const u = lp.getX(k), v = lp.getY(k) + 0.5;
-      const x = u * W, y = (v - 0.09) * L, z = -0.28 * L * v * v + 0.08 * W * Math.abs(u);   // droop and fold
+      const x = u * W, y = (v - 0.09) * L, z = -0.14 * L * v * v + 0.08 * W * Math.abs(u);   // droop and fold
       V.copy(base).addScaledVector(side, x).addScaledVector(d, y).addScaledVector(n, z);
       lp.setXYZ(k, V.x, V.y, V.z);
       lu.setX(k, lu.getX(k) * 448 / 512);
