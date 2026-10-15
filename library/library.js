@@ -7,6 +7,9 @@
 //   - click the cat (touch: a first tap shows it, a second zooms): the camera flies close to it;
 //     Back or Esc returns
 //   - the all-in-one computer is turned square on the desk, facing the chair
+// Phase L2: click the computer and the camera comes so close that the screen fills the view; the
+// screen then shows Simon's papers (an HTML list laid over the screen, read from library/papers.json).
+// Each paper has one button, Open, a link to its PDF in a new tab (never preloaded).
 // Built from the workshop's patterns (workshop/stations.js): hover glow and label, two-tap, Back/Esc,
 // a hidden keyboard button, holdView/releaseView on the page.
 import * as THREE from 'three';
@@ -26,7 +29,8 @@ const WAVE = { period: 1.5, swing: 0.32 };                     // seconds per be
 const SEE_FAR = 26;                                            // further than this the cat is a few pixels: it rests
 const ROOM = new THREE.Vector3(-11.6, 4.4, 1.2);               // the room's middle, for the view test
 
-const S = { host: null, ready: false, cat: null, monstera: null, zoomed: false, opening: false, hover: false, armed: false,
+const S = { host: null, ready: false, cat: null, monstera: null, zoomed: false, opening: false, hover: null, armed: null, what: null,
+  pc: null, papers: null,
   home: null, seq: 0, t: 0, last: 0, waving: false, els: null, kbd: false, keySig: '' };
 const vT = new THREE.Vector3(), sph = new THREE.Sphere(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4();
 
@@ -36,8 +40,25 @@ function buildDom() {
   style.textContent = 'body.lib-sub .nav, body.lib-sub .gear, body.lib-sub .controls, body.lib-sub .skypanel, body.lib-sub .markers { display: none !important; }';
   document.head.appendChild(style);
   const mk = (tag, cls, attrs = {}) => { const e = document.createElement(tag); e.className = cls; Object.assign(e, attrs); e.hidden = true; document.body.appendChild(e); return e; };
-  const els = { tip: mk('div', 'tip'), back: mk('button', 'btn campback', { type: 'button', textContent: '‹ Back' }), keys: mk('div', 'camp-keys') };
-  els.tip.textContent = 'Lucky cat';
+  style.textContent += `
+  .lib-screen { position: fixed; z-index: 21; box-sizing: border-box; overflow: auto; overscroll-behavior: contain; opacity: 0; transition: opacity .35s;
+    background: var(--stage); color: var(--ink); font-family: var(--font-display); container-type: inline-size; }
+  .lib-screen.on { opacity: 1; }
+  .lib-screen .lib-in { padding: clamp(18px, 5cqw, 56px); max-width: 900px; margin: 0 auto; }
+  .lib-screen h2 { margin: 0 0 clamp(12px, 3cqw, 28px); font: 500 11px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
+  .lib-screen ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .lib-screen li { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+  .lib-screen .lib-t { flex: 1; min-width: 0; }
+  .lib-screen .lib-title { font: 500 clamp(16px, 2.6cqw, 22px)/1.25 var(--font-display); margin: 0 0 6px; }
+  .lib-screen .lib-meta { font: 400 13px/1.45 var(--font-display); color: var(--ink-soft); }
+  .lib-screen .btn { flex: none; text-decoration: none; color: var(--ink); }
+  .lib-screen .btn:hover, .lib-screen .btn:focus-visible { color: var(--accent); }
+  .lib-screen .lib-msg { color: var(--ink-soft); font-size: 13px; padding: 16px 0; }
+  @container (max-width: 520px) { .lib-screen li { flex-direction: column; align-items: stretch; } .lib-screen .btn { text-align: center; } }`;
+  const els = { tip: mk('div', 'tip'), back: mk('button', 'btn campback', { type: 'button', textContent: '‹ Back' }), keys: mk('div', 'camp-keys'),
+    screen: mk('div', 'lib-screen') };
+  els.screen.setAttribute('role', 'region'); els.screen.setAttribute('aria-label', 'Papers');
+  els.screen.innerHTML = '<div class="lib-in"><h2>Papers</h2><ul></ul></div>';
   els.keys.setAttribute('role', 'group'); els.keys.setAttribute('aria-label', 'Library');
   els.back.addEventListener('click', back);
   return els;
@@ -106,33 +127,89 @@ function straightenComputer(root) {
 }
 function place(group, x, y, z, yaw = 0) { group.position.set(x, y, z); group.rotation.y = yaw; group.updateMatrixWorld(true); }
 
+// ---- the computer's screen: its four corners in the world (it faces -z, towards the chair)
+function measureScreen(root) {
+  const face = root.getObjectByName('librarycomputer_screen'), body = root.getObjectByName('librarycomputer');
+  if (!face) return null;
+  const b = new THREE.Box3().setFromObject(face), c = b.getCenter(new THREE.Vector3());
+  const z = b.min.z - 0.004;                            // just in front of the glass
+  return { face, pick: [face, body].filter(Boolean), centre: c.setZ(z), w: b.max.x - b.min.x, h: b.max.y - b.min.y,
+    corners: [[b.min.x, b.min.y], [b.max.x, b.min.y], [b.max.x, b.max.y], [b.min.x, b.max.y]].map(([x, y]) => new THREE.Vector3(x, y, z)) };
+}
+// ---- the papers list: read once, on the first visit to the screen
+function loadPapers() {
+  if (S.papers) return;
+  S.papers = fetch(new URL('./papers.json', import.meta.url)).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(renderPapers, () => { S.papers = null; renderPapers(null); });
+}
+function renderPapers(list) {
+  const ul = S.els.screen.querySelector('ul');
+  ul.innerHTML = '';
+  if (!list) { const li = document.createElement('li'); li.className = 'lib-msg'; li.textContent = 'The list could not be loaded.'; ul.appendChild(li); return; }
+  list.forEach((p) => {
+    const li = document.createElement('li'), t = document.createElement('div'), h = document.createElement('div'), m = document.createElement('div'), a = document.createElement('a');
+    t.className = 'lib-t'; h.className = 'lib-title'; m.className = 'lib-meta'; a.className = 'btn';
+    h.textContent = p.title;
+    m.textContent = [[].concat(p.authors || []).join(', '), p.type, p.institution, p.year, p.language].filter(Boolean).join(' · ');
+    a.textContent = 'Open'; a.href = p.pdf; a.target = '_blank'; a.rel = 'noopener';
+    a.setAttribute('aria-label', 'Open ' + p.title + ' (PDF, new tab)');
+    t.append(h, m); li.append(t, a); ul.appendChild(li);
+  });
+}
+// lay the list over the screen as it is seen now; a phone held upright gets the whole view instead
+function fitScreen() {
+  const el = S.els.screen, r = S.host.el.getBoundingClientRect();
+  if (S.host.portrait()) { const top = S.els.back.getBoundingClientRect().bottom + 12; Object.assign(el.style, { left: '0px', top: top + 'px', width: r.width + 'px', height: Math.max(0, r.bottom - top) + 'px' }); return; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  S.pc.corners.forEach((c) => { const [x, y] = screenOf(vT.copy(c)); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  Object.assign(el.style, { left: x0 + 'px', top: y0 + 'px', width: (x1 - x0) + 'px', height: (y1 - y0) + 'px' });
+}
+
 // ---- glow and picking (the cat only)
-function catMats() { return S.cat.pick.map((m) => m.material).filter((m, i, a) => a.indexOf(m) === i); }
-function setHover(on) {
-  if (on === S.hover) return;
-  S.hover = on;
-  catMats().forEach((m) => {
+// the two things to click: the cat and the computer
+const THINGS = {
+  cat: { label: 'Lucky cat', pick: () => S.cat.pick, anchor: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.3, S.cat.group.position.z),
+    near: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.12, S.cat.group.position.z) },
+  pc: { label: 'Papers', pick: () => S.pc.pick, anchor: (out) => out.copy(S.pc.centre).setY(S.pc.centre.y + S.pc.h * 0.5 + 0.08), near: (out) => out.copy(S.pc.centre) },
+};
+const ids = () => (S.pc ? ['cat', 'pc'] : ['cat']);
+function mats(id) { return THINGS[id].pick().map((m) => m.material).filter((m, i, a) => m.emissive && a.indexOf(m) === i); }
+function setHover(id) {
+  if (id === S.hover) return;
+  const glow = (k, on) => k && mats(k).forEach((m) => {
     if (!m.userData.e0) m.userData.e0 = { c: m.emissive.clone(), i: m.emissiveIntensity };
     if (on) { m.emissive.copy(GLOW); m.emissiveIntensity = 0.3; } else { m.emissive.copy(m.userData.e0.c); m.emissiveIntensity = m.userData.e0.i; }
   });
-  S.els.tip.hidden = !on;
-  S.host.el.style.cursor = on ? 'pointer' : '';
+  glow(S.hover, false); glow(id, true);
+  S.hover = id;
+  if (id) S.els.tip.textContent = THINGS[id].label;
+  S.els.tip.hidden = !id;
+  S.host.el.style.cursor = id ? 'pointer' : '';
 }
-function catAnchor(out) { return out.set(S.cat.group.position.x, S.cat.group.position.y + 0.3, S.cat.group.position.z); }
 function screenOf(v) { const r = S.host.el.getBoundingClientRect(); v.project(S.host.camera); return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; }
-function hitCat(ev) {
+function hitThing(ev) {
   const r = S.host.ray; S.host.setRay(ev);
-  const h = r.intersectObjects(S.cat.pick, false)[0];
-  if (!h) return false;
-  const b = r.intersectObjects(S.blockers, false)[0];        // the shelves and the room in front of it
-  return !(b && b.distance < h.distance - 0.03);
+  let best = null, bd = Infinity;
+  ids().forEach((id) => { const h = r.intersectObjects(THINGS[id].pick(), false)[0]; if (h && h.distance < bd) { bd = h.distance; best = id; } });
+  if (!best) return null;
+  const own = THINGS[best].pick();
+  const b = r.intersectObjects(S.blockers.filter((o) => !own.includes(o)), false)[0];   // the shelves and the room in front of it
+  return b && b.distance < bd - 0.03 ? null : best;
 }
-function nearCat(ev, reach) {                                  // fingers: a near miss counts
-  const [x, y] = screenOf(catAnchor(vT).setY(vT.y - 0.18));
-  return Math.hypot(x - ev.clientX, y - ev.clientY) < reach;
+function nearThing(ev, reach) {                                 // fingers: a near miss counts
+  let best = null, bd = reach;
+  ids().forEach((id) => { const [x, y] = screenOf(THINGS[id].near(vT)); const d = Math.hypot(x - ev.clientX, y - ev.clientY); if (d < bd) { bd = d; best = id; } });
+  return best;
 }
 
 // ---- camera: close to the cat and back
+function pcPose() {                                    // the screen almost fills the view
+  const portrait = S.host.portrait(), fov = portrait ? 55 : 40, at = S.pc.centre.clone();
+  const el = S.host.el, aspect = el.clientWidth / Math.max(1, el.clientHeight);
+  const vf = THREE.MathUtils.degToRad(fov), hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
+  const d = Math.max((S.pc.w * 0.53) / Math.tan(hf / 2), (S.pc.h * 0.53) / Math.tan(vf / 2));
+  return { eye: at.clone().add(vT.set(0, 0, -d)), at, fov };
+}
 function catPose() {
   const portrait = S.host.portrait(), fov = portrait ? 55 : 40, size = 0.42;
   const at = new THREE.Vector3(S.cat.group.position.x, S.cat.group.position.y + 0.13, S.cat.group.position.z);
@@ -141,23 +218,31 @@ function catPose() {
   const d = Math.max((size * 0.55) / Math.tan(hf / 2), (size * 0.45) / Math.tan(vf / 2));
   return { eye: at.clone().addScaledVector(vT.set(0, 0.22, -1).normalize(), d), at, fov };
 }
-function zoom() {
-  if (!S.ready || !S.host.inPlace() || S.zoomed || S.host.tweening()) return;
+function zoom(what = 'cat') {
+  if (!S.ready || !S.host.inPlace() || S.zoomed || S.host.tweening() || !THINGS[what] || (what === 'pc' && !S.pc)) return;
   const tok = ++S.seq;
   S.host.closePanel();
   S.home = S.host.holdView();
-  S.zoomed = true; S.opening = true; S.armed = false; setHover(false);
+  S.zoomed = true; S.opening = true; S.armed = null; S.what = what; setHover(null);
   document.body.classList.add('lib-sub');
   S.els.back.hidden = false;
-  const p = catPose();
+  if (what === 'pc') loadPapers();
+  const p = what === 'pc' ? pcPose() : catPose();
   S.host.fixedFov(p.fov);
-  S.host.flyTo(p.eye, p.at, p.fov, () => { if (tok === S.seq) S.opening = false; });
+  S.host.flyTo(p.eye, p.at, p.fov, () => {
+    if (tok !== S.seq) return;
+    S.opening = false;
+    if (what !== 'pc') return;
+    fitScreen(); S.els.screen.hidden = false;
+    requestAnimationFrame(() => { S.els.screen.classList.add('on'); if (S.kbd) { const a = S.els.screen.querySelector('a'); if (a) a.focus({ preventScroll: true }); } });
+  });
 }
+function hideScreen() { S.els.screen.classList.remove('on'); S.els.screen.hidden = true; }
 function back() {
   if (!S.zoomed) return;
   const tok = ++S.seq, h = S.home;
   if (S.kbd) S.refocus = true;
-  S.zoomed = false; S.opening = false;
+  S.zoomed = false; S.opening = false; S.what = null; hideScreen();
   document.body.classList.remove('lib-sub');
   S.els.back.hidden = true;
   S.host.flyTo(h.pos.clone(), h.target.clone(), h.fov, () => { if (tok === S.seq) { S.host.releaseView(h); S.home = null; } });
@@ -172,16 +257,18 @@ function onKey(e) {
 }
 function stepKeys() {
   const on = S.host.inPlace() && !S.zoomed && !S.host.tweening();
-  const sig = on ? 'cat' : '';
+  const sig = on ? ids().join() : '';
   if (sig === S.keySig) return;
   S.keySig = sig; S.els.keys.innerHTML = ''; S.els.keys.hidden = !on;
   if (!on) return;
-  const b = document.createElement('button');
-  b.type = 'button'; b.className = 'btn'; b.textContent = 'Lucky cat';
-  b.addEventListener('click', zoom);
-  S.els.keys.appendChild(b);
+  ids().forEach((id) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn'; b.textContent = THINGS[id].label;
+    b.addEventListener('click', () => zoom(id));
+    S.els.keys.appendChild(b);
+  });
   const lost = !document.activeElement || document.activeElement === document.body || !document.activeElement.offsetParent;
-  if (S.refocus && lost) b.focus({ preventScroll: true });
+  if (S.refocus && lost) S.els.keys.firstChild.focus({ preventScroll: true });
   S.refocus = false;
 }
 
@@ -200,6 +287,7 @@ export const library = {
     S.host = host; S.els = buildDom();
     clearBooks(root);
     straightenComputer(root);
+    S.pc = measureScreen(root);
     const items = new THREE.Group(); items.name = 'library_items';
     S.cat = makeCat(); place(S.cat.group, SPOTS.cat.x, SHELF_Y(SPOTS.cat.k), SHELF_Z, 0);
     const vase = makeVase(); place(vase.group, SPOTS.vase.x, SHELF_Y(SPOTS.vase.k), SHELF_Z, 0.3);
@@ -219,8 +307,9 @@ export const library = {
     if (!S.ready) return;
     const dt = S.last ? Math.min(0.1, (now - S.last) / 1000) : 0; S.last = now;
     stepKeys();
+    if (S.what === 'pc' && !S.opening) fitScreen();     // follows resizes and turns of the phone
     if (S.hover && !S.els.tip.hidden) {
-      const [x, y] = screenOf(catAnchor(vT)), r = S.host.el.getBoundingClientRect();
+      const [x, y] = screenOf(THINGS[S.hover].anchor(vT)), r = S.host.el.getBoundingClientRect();
       S.els.tip.style.left = (x - r.left) + 'px'; S.els.tip.style.top = (y - r.top) + 'px';
     }
     const on = inView();
@@ -233,20 +322,20 @@ export const library = {
   },
   tap(ev) {
     if (S.zoomed || S.host.tweening()) return;
-    const on = hitCat(ev) || (ev.pointerType !== 'mouse' && nearCat(ev, 28));
-    if (!on) { S.armed = false; setHover(false); return; }
-    if (ev.pointerType !== 'mouse' && !S.armed) { S.armed = true; setHover(true); return; }
-    zoom();
+    const id = hitThing(ev) || (ev.pointerType !== 'mouse' ? nearThing(ev, 28) : null);
+    if (!id) { S.armed = null; setHover(null); return; }
+    if (ev.pointerType !== 'mouse' && S.armed !== id) { S.armed = id; setHover(id); return; }
+    zoom(id);
   },
   hover(ev) {
-    if (S.zoomed || S.host.tweening()) return setHover(false);
-    setHover(hitCat(ev));
+    if (S.zoomed || S.host.tweening()) return setHover(null);
+    setHover(hitThing(ev));
   },
   // leaving the library some other way (menu, browser back, another place): put everything back at once
   reset() {
     if (!S.ready) return;
     S.seq++;
-    S.zoomed = false; S.opening = false; S.home = null; S.armed = false; setHover(false);
+    S.zoomed = false; S.opening = false; S.home = null; S.armed = null; S.what = null; setHover(null); hideScreen();
     document.body.classList.remove('lib-sub');
     S.els.back.hidden = true;
   },
@@ -254,6 +343,6 @@ export const library = {
   get zoomed() { return S.zoomed; },
   zoom, back,
   // tests
-  state: () => ({ zoomed: S.zoomed, opening: S.opening, waving: S.waving, paw: S.cat ? +S.cat.arm.rotation.x.toFixed(3) : null, booksRemoved: S.booksRemoved, computerTurn: S.computerTurn, hover: S.hover, armed: S.armed }),
-  screen: () => screenOf(catAnchor(vT).setY(vT.y - 0.18)),
+  state: () => ({ zoomed: S.zoomed, what: S.what, opening: S.opening, screenOn: !!S.els && !S.els.screen.hidden, waving: S.waving, paw: S.cat ? +S.cat.arm.rotation.x.toFixed(3) : null, booksRemoved: S.booksRemoved, computerTurn: S.computerTurn, hover: S.hover, armed: S.armed }),
+  screen: (id = 'cat') => screenOf(THINGS[id].near(vT)),
 };
