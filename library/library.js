@@ -51,10 +51,10 @@ function buildDom() {
   .lib-screen .lib-t { flex: 1; min-width: 0; }
   .lib-screen .lib-title { font: 500 clamp(16px, 2.6cqw, 22px)/1.25 var(--font-display); margin: 0 0 6px; }
   .lib-screen .lib-meta { font: 400 13px/1.45 var(--font-display); color: var(--ink-soft); }
-  .lib-screen .btn { flex: none; text-decoration: none; color: var(--ink); }
+  .lib-screen .btn { flex: none; display: inline-flex; align-items: center; justify-content: center; align-self: center; box-sizing: border-box; min-width: 96px; text-decoration: none; color: var(--ink); }
   .lib-screen .btn:hover, .lib-screen .btn:focus-visible { color: var(--accent); }
   .lib-screen .lib-msg { color: var(--ink-soft); font-size: 13px; padding: 16px 0; }
-  @container (max-width: 520px) { .lib-screen li { flex-direction: column; align-items: stretch; } .lib-screen .btn { text-align: center; } }`;
+  @container (max-width: 520px) { .lib-screen li { flex-direction: column; align-items: stretch; } .lib-screen .btn { align-self: stretch; } }`;
   const els = { tip: mk('div', 'tip'), back: mk('button', 'btn campback', { type: 'button', textContent: '‹ Back' }), keys: mk('div', 'camp-keys'),
     screen: mk('div', 'lib-screen') };
   els.screen.setAttribute('role', 'region'); els.screen.setAttribute('aria-label', 'Papers');
@@ -203,11 +203,11 @@ function nearThing(ev, reach) {                                 // fingers: a ne
 }
 
 // ---- camera: close to the cat and back
-function pcPose() {                                    // the screen almost fills the view
+function pcPose() {                                    // the screen almost fills the view; its frame and the Back button stay in sight
   const portrait = S.host.portrait(), fov = portrait ? 55 : 40, at = S.pc.centre.clone();
   const el = S.host.el, aspect = el.clientWidth / Math.max(1, el.clientHeight);
   const vf = THREE.MathUtils.degToRad(fov), hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
-  const d = Math.max((S.pc.w * 0.53) / Math.tan(hf / 2), (S.pc.h * 0.53) / Math.tan(vf / 2));
+  const d = Math.max((S.pc.w * 0.64) / Math.tan(hf / 2), (S.pc.h * 0.64) / Math.tan(vf / 2));
   return { eye: at.clone().add(vT.set(0, 0, -d)), at, fov };
 }
 function catPose() {

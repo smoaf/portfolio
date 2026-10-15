@@ -44,6 +44,7 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 ### Library
 - 8.5 m long. All-in-one computer (unbranded) square on the desk, facing the chair (was angled; straightened 15 Oct 2026), reading chair corner, standing lamp, bookshelves.
 - Simon's own things (15 Oct 2026, LIBRARY_PLAN L1): on the shelf his waving lucky cat, a small terrarium in a glass carafe and a painted porcelain vase (some books taken out to make room); a big monstera in a terracotta pot and woven basket on the left by the window. The cat waves while the room is open or in view; clicking it zooms the camera close to it, nothing else.
+- The computer holds Simon's papers (15 Oct 2026, LIBRARY_PLAN L2): clicking it brings the camera close until the screen almost fills the view, and the screen shows a plain list of papers in the site's style. For now one entry, his bachelor's thesis (HRTF Acquisition Methods, St. Pölten University of Applied Sciences, 2022, German), with one button, Open, which opens the PDF in a new tab (no download button). The list is `library/papers.json`; more papers will be added by Simon later.
 - Content: science, publications, thesis.
 
 ### Office (collaborative)
