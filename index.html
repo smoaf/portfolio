@@ -351,6 +351,7 @@ import './workshop/tape.js';
 import './workshop/rack.js';
 import { telescope } from './relay/telescope.js';
 import { relay } from './relay/house.js';
+import { library } from './library/library.js';
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -1430,6 +1431,7 @@ const onModel = (gltf) => {
   setupPerson(gltf.scene);
   setupAccents(gltf.scene); workshop.setup(wsHost, gltf.scene);   // accents first: cloning a material copies its clip planes
   telescope.setup(tsHost, gltf.scene); relay.setup(rlHost, gltf.scene);
+  library.setup(lbHost, gltf.scene);                                // shelf things, monstera, the waving cat (library/library.js)
   setupCamp(gltf.scene);
   collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
@@ -1619,7 +1621,7 @@ function stepTween(now) {
 }
 
 function enter(p) {
-  campReset(); workshop.reset(); telescope.reset(); relay.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset();
   nav.place = p; nav.mode = p.view.type;
   closePanel();
   document.body.classList.add('in-place');
@@ -1638,7 +1640,7 @@ function enter(p) {
   }
 }
 function leave() {
-  campReset(); workshop.reset(); telescope.reset(); relay.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
   document.body.classList.remove('in-place');
@@ -1723,6 +1725,7 @@ el.addEventListener('pointerup', (ev) => {
   if (nav.place.id === 'workshop') { workshop.tap(ev); return; }
   if (nav.place.id === 'dish') { telescope.tap(ev); return; }
   if (nav.place.id === 'relay') { relay.tap(ev); return; }
+  if (nav.place.id === 'library') { library.tap(ev); return; }
   if (nav.place.id === 'showroom' && hitRoof(ev)) setRoof(!roof.closed);
 });
 el.addEventListener('wheel', (ev) => {
@@ -1757,6 +1760,7 @@ function hover(ev) {
     if (nav.place.id === 'workshop') { tip.hidden = true; workshop.hover(ev); return; }
     if (nav.place.id === 'dish') { tip.hidden = true; telescope.hover(ev); return; }
     if (nav.place.id === 'relay') { tip.hidden = true; relay.hover(ev); return; }
+    if (nav.place.id === 'library') { tip.hidden = true; library.hover(ev); return; }
     setTip(null);
   });
 }
@@ -2481,12 +2485,12 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 function frame(now) {
-  const away = !!workshop.focused || relay.inside;  // a workshop station or the radio room is open: nothing else runs
+  const away = !!workshop.focused || relay.inside || library.zoomed;  // a workshop station, the radio room or the cat close up: nothing else runs
   if (!away) { stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); }
   stepPlaces(now); stepSky(now);
   if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); }
   if (!away || relay.inside) telescope.step(now);  // the radio room's moon bounce needs it to keep tracking
-  workshop.step(now); relay.step(now); stepFps(now);
+  workshop.step(now); relay.step(now); library.step(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
   if (roof.start || PROJ.start) markShadows();                      // things that cast shadows are moving
@@ -2523,7 +2527,7 @@ const station = {
     station.held = false;
     const now = performance.now();
     skyState.last = person.last = turbine.last = showDark.last = camp.last = now;
-    workshop.resume(now); telescope.resume(now); relay.resume(now);
+    workshop.resume(now); telescope.resume(now); relay.resume(now); library.resume(now);
     if (fire.last) fire.last = now;
     quality.settle = now + 3000;
     if (camp.van && camp.van.outer.visible) camp.van.start();
@@ -2573,6 +2577,16 @@ const rlHost = {
   moonsUp: () => { let n = 0; for (let i = 0; i < Math.round(SKY.moons); i++) if (moonDirs[i].y > 0.035) n++; return n; },
 };
 
+// --- library (library/library.js): the cat close up takes the camera like a workshop station
+const lbHost = {
+  scene, camera, el, ray, setRay, flyTo, portrait, reduceMotion, closePanel,
+  tweening: () => tween.active,
+  inPlace: () => !!nav.place && nav.place.id === 'library',
+  holdView() { const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance }; nav.mode = 'fixed'; return h; },
+  fixedFov(f) { camp.fov = f; },
+  releaseView(h) { const v = PLACES.find((q) => q.id === 'library').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
+};
+
 // hooks used for test renders
 window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
 window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days]); return out; };
@@ -2599,6 +2613,7 @@ window.__safari = () => camp.safari;
 window.__workshop = workshop;
 window.__telescope = telescope;
 window.__relay = relay;
+window.__library = library;
 window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
 window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
