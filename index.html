@@ -352,6 +352,7 @@ import './workshop/rack.js';
 import { telescope } from './relay/telescope.js';
 import { relay } from './relay/house.js';
 import { library } from './library/library.js';
+import { hub } from './hub/screens.js';
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -454,7 +455,8 @@ composer.addPass(new OutputPass());
 // --- model
 const status = document.getElementById('status');
 const lightstrips = [];
-const turbine = { rotor: null, q0: null, angle: 0, last: 0 };
+// a click on the turbine (from any view it is in) eases the rotor to a stop, the next one back up to speed
+const turbine = { rotor: null, q0: null, angle: 0, last: 0, on: true, ramp: 1, meshes: [], block: [] };
 function stepTurbine(now) {
   const r = turbine.rotor;
   if (!r) return;
@@ -462,7 +464,8 @@ function stepTurbine(now) {
   const dt = turbine.last ? Math.min(0.1, (now - turbine.last) / 1000) : 0;
   turbine.last = now;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  turbine.angle += dt * 1.1;                    // about 10 turns a minute
+  turbine.ramp = Math.min(1, Math.max(0, turbine.ramp + (turbine.on ? dt : -dt) / 1.5));   // 1.5 s down or up
+  turbine.angle += dt * 1.1 * turbine.ramp * turbine.ramp * (3 - 2 * turbine.ramp);       // about 10 turns a minute
   r.quaternion.copy(turbine.q0).multiply(qTmp.setFromAxisAngle(xAxis, turbine.angle));
 }
 // --- projection mapping: three projectors fold out of ground boxes at night and light the
@@ -1399,7 +1402,7 @@ const onModel = (gltf) => {
       o.receiveShadow = false;
       return;
     }
-    if (m.name === 'hills') { o.castShadow = false; o.receiveShadow = false; m.envMapIntensity = 0.3; hazeFade(m, true); return; }
+    if (m.name === 'hills') { turbine.block.push(o); o.castShadow = false; o.receiveShadow = false; m.envMapIntensity = 0.3; hazeFade(m, true); return; }
     if (m.name === 'beacon') {
       o.material = m.clone(); o.material.emissive = new THREE.Color(0xff1a10); o.material.emissiveIntensity = 0.6; beacons.push({ mesh: o, light: null });
       o.castShadow = false;
@@ -1416,12 +1419,13 @@ const onModel = (gltf) => {
       return;
     }
     if (m.name === 'lightstrip') { m.emissive = new THREE.Color(0xfff1dc); m.emissiveIntensity = 0; lightstrips.push(m); }
-    if (/^propsturbine/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; if (o.name === 'propsturbine_rotor') turbine.rotor = o; }
+    if (/^propsturbine/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; turbine.meshes.push(o); if (o.name === 'propsturbine_rotor') turbine.rotor = o; }
     if (/^propsdish_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, false, 0.7); o.castShadow = false;
       if (m.name === 'dishmesh') { o.material.opacity = 0.55; o.material.side = THREE.DoubleSide; o.material.depthWrite = false; } }   // steerable dish on the hill; open mesh reflector   // big radio dish on the hill
     if (/^propshill_/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.5); o.castShadow = false; }   // boulders, bushes, grass, cacti on the hill
     if (/^propssolar/.test(o.name)) { o.material = m.clone(); hazeFade(o.material, true, 0.32); o.castShadow = false; }   // on the hill: same haze and fade as the hill under it
-    if (m.name === 'ground' || m.name === 'cliff') addFade(m);
+    if (m.name === 'ground' || m.name === 'cliff') { addFade(m); turbine.block.push(o); }
+    if (/shell$/.test(o.name) && !/ghost/.test(o.name)) turbine.block.push(o);   // what can stand between a view and the turbine
     o.castShadow = m.name !== 'ground' && m.name !== 'cliff' && m.name !== 'lightstrip' && !/^propsturbine/.test(o.name);
     o.receiveShadow = true;
     m.envMapIntensity = m.name === 'linework' ? 0.9 : 0.45;
@@ -1432,6 +1436,7 @@ const onModel = (gltf) => {
   setupAccents(gltf.scene); workshop.setup(wsHost, gltf.scene);   // accents first: cloning a material copies its clip planes
   telescope.setup(tsHost, gltf.scene); relay.setup(rlHost, gltf.scene);
   library.setup(lbHost, gltf.scene);                                // shelf things, monstera, the waving cat (library/library.js)
+  hub.setup(hubHost, gltf.scene);                                   // the hanging screens and their slideshows (hub/screens.js)
   setupCamp(gltf.scene);
   collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
@@ -1515,7 +1520,7 @@ document.getElementById('btn-roof-closed').addEventListener('click', () => setRo
 // Order: counterclockwise seen from above (Smo), so 'next' moves to the right along the front.
 const PLACES = [
   { id: 'hub', name: 'Hub', zone: { c: [-22.9, 5.0, 0.0], r: 6.2 },
-    view: { type: 'inside', eye: [-20.4, 4.65, -2.8], look: [-23.6, 4.3, 0.6], fov: 72 } },
+    view: { type: 'inside', eye: [-27.7, 4.65, 0.0], look: [-21.0, 4.75, 0.0], fov: 72 } },   // from the top of the stairs, facing the screens
   { id: 'showroom', name: 'Showroom', zone: { c: [-14.7, 5.5, 14.1], r: 9.5 },
     view: { type: 'inside', eye: [-14.6, 4.65, 9.6], look: [-14.5, 4.4, 14.3], fov: 72 },
     onEnter: () => { if (roof.closed) setRoof(false); } },
@@ -1580,6 +1585,14 @@ function zoneAt(ev) {
     if (k < score) { score = k; best = p; }
   });
   return best;
+}
+function hitTurbine(ev) {                            // the turbine, unless a hill or a module is in front of it
+  if (!turbine.rotor || workshop.focused || relay.inside || library.zoomed || camp.safari) return false;
+  setRay(ev);
+  const hit = ray.intersectObjects(turbine.meshes, false)[0];
+  if (!hit) return false;
+  const near = ray.intersectObjects(turbine.block, false)[0];
+  return !near || near.distance > hit.distance;
 }
 function hitRoof(ev) {
   setRay(ev);
@@ -1720,6 +1733,7 @@ el.addEventListener('pointerup', (ev) => {
   const tap = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) < 6 && performance.now() - downAt.t < 600;
   downAt = null;
   if (!tap) return;
+  if (hitTurbine(ev)) { turbine.on = !turbine.on; return; }
   if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }
   if (nav.place.id === 'camp') { campTap(ev); return; }
   if (nav.place.id === 'workshop') { workshop.tap(ev); return; }
@@ -1754,6 +1768,7 @@ function hover(ev) {
   requestAnimationFrame(() => {
     hoverPending = false;
     if (tween.active) return setTip(null);
+    if (hitTurbine(ev)) { setTip(null); el.style.cursor = 'pointer'; return; }   // no label, only the pointer
     if (!nav.place) return setTip(zoneAt(ev));
     if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = hitRoof(ev) ? 'pointer' : ''; return; }
     if (nav.place.id === 'camp') { tip.hidden = true; campHover(ev); return; }
@@ -2490,7 +2505,7 @@ function frame(now) {
   stepPlaces(now); stepSky(now);
   if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); }
   if (!away || relay.inside) telescope.step(now);  // the radio room's moon bounce needs it to keep tracking
-  workshop.step(now); relay.step(now); library.step(now); stepFps(now);
+  workshop.step(now); relay.step(now); library.step(now); hub.step(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
   scene.fog.near = d + 50; scene.fog.far = d + 300;
   if (roof.start || PROJ.start) markShadows();                      // things that cast shadows are moving
@@ -2527,7 +2542,7 @@ const station = {
     station.held = false;
     const now = performance.now();
     skyState.last = person.last = turbine.last = showDark.last = camp.last = now;
-    workshop.resume(now); telescope.resume(now); relay.resume(now); library.resume(now);
+    workshop.resume(now); telescope.resume(now); relay.resume(now); library.resume(now); hub.resume(now);
     if (fire.last) fire.last = now;
     quality.settle = now + 3000;
     if (camp.van && camp.van.outer.visible) camp.van.start();
@@ -2587,6 +2602,13 @@ const lbHost = {
   releaseView(h) { const v = PLACES.find((q) => q.id === 'library').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
 };
 
+// --- hub (hub/screens.js): the hanging screens play their slideshows while the hub is seen
+const hubHost = {
+  scene, camera, el, reduceMotion,
+  inPlace: () => !!nav.place && nav.place.id === 'hub',
+  night: () => skyState.d,
+};
+
 // hooks used for test renders
 window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
 window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days]); return out; };
@@ -2614,6 +2636,8 @@ window.__workshop = workshop;
 window.__telescope = telescope;
 window.__relay = relay;
 window.__library = library;
+window.__hub = hub;
+window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
 window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
 window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
