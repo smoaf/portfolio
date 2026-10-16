@@ -7,6 +7,8 @@
 //     screen; out of view the slideshows pause where they are
 //   - an empty list (or an image not loaded yet) shows a calm standby picture: dark, faint scan lines
 //   - the picture is unlit and a little brighter at night, so it reads as a screen that is on
+//   - a screen whose entry in screens.json says "type": "video" (the center one: the films) is
+//     driven by media/media.js instead; its image list stays as the fallback if the films fail
 // The tall free-standing intro panel of the model ('hubintro_panel') is taken out at load.
 import * as THREE from 'three';
 
@@ -104,6 +106,7 @@ function show(s) {                                               // the current 
   if (s.items.length > 1) load(s, s.items[(s.k + 1) % s.items.length], 'next');
 }
 function stepScreen(s, dt) {
+  if (s.video) return;                                            // media/media.js plays this one
   const n = s.items.length;
   if (!n) return;
   if (!s.cur) { load(s, s.items[s.k], 'cur'); return; }
@@ -136,6 +139,8 @@ function loadConfig() {
       s.items = Array.isArray(c.items) ? c.items.filter((p) => typeof p === 'string' && p) : [];
       s.interval = Math.max(2, +c.interval || 8);
       s.k = s.items.length ? i % s.items.length : 0;             // stagger: neighbours never start on the same image
+      const films = c.type === 'video' && Array.isArray(c.films) ? c.films.filter((f) => f && typeof f.src === 'string' && f.src) : [];
+      s.video = films.length ? { films } : null;
     });
     S.config = cfg;
   }).catch(() => { S.config = { screens: [] }; });               // no list: every screen stays on standby
@@ -175,9 +180,15 @@ export const hub = {
     S.screens.forEach((s) => { s.mat.uniforms.uTime.value = S.t; s.mat.uniforms.uBright.value = bright; });
   },
   resume(now) { S.last = now; },
+  // media/media.js: the screen that plays films (its picture material and size), once the list is read
+  video() {
+    const s = S.screens.find((q) => q.video);
+    return s ? { id: s.id, films: s.video.films, mat: s.mat, w: s.L.w, h: s.L.h, seen: S.on } : null;
+  },
+  noVideo(id) { const s = S.screens.find((q) => q.id === id); if (s) s.video = null; },   // the films fail: back to the slideshow
   // tests
   state: () => ({ on: S.on, panel: S.panel, config: !!S.config,
-    screens: S.screens.map((s) => ({ id: s.id, k: s.k, cur: s.cur && s.cur.path, loaded: !!(s.cur && s.cur.tex), next: s.next && s.next.path, fading: s.fading, t: +s.t.toFixed(2) })) }),
+    screens: S.screens.map((s) => ({ id: s.id, k: s.k, cur: s.cur && s.cur.path, loaded: !!(s.cur && s.cur.tex), next: s.next && s.next.path, fading: s.fading, t: +s.t.toFixed(2), video: !!s.video })) }),
   screen(id) {                                                   // where on the page a screen's middle is
     const s = S.screens.find((q) => q.id === id), v = s.group.getWorldPosition(new THREE.Vector3()).project(S.host.camera);
     const r = S.host.el.getBoundingClientRect();
