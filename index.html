@@ -1515,12 +1515,12 @@ document.getElementById('btn-roof-closed').addEventListener('click', () => setRo
 // Content data, one entry per place (three.js coordinates: y is up, the station's open side faces -z).
 //   zone: centre and radius of the invisible tap sphere, bigger than the thing itself
 //   view.type 'cutaway': orbit in front of the open side, limited turning and zoom
-//   view.type 'inside':  stand inside and look all round (hub, showroom)
+//   view.type 'inside':  stand inside and look all round (hub, showroom); fovPortrait: the field of view on tall screens
 //   view.type 'object':  orbit round the thing within limits
 // Order: counterclockwise seen from above (Smo), so 'next' moves to the right along the front.
 const PLACES = [
   { id: 'hub', name: 'Hub', zone: { c: [-22.9, 5.0, 0.0], r: 6.2 },
-    view: { type: 'inside', eye: [-27.7, 4.65, 0.0], look: [-21.0, 4.75, 0.0], fov: 72 } },   // from the top of the stairs, facing the screens
+    view: { type: 'inside', eye: [-27.7, 4.65, 0.0], look: [-21.0, 4.75, -0.4], fov: 72, fovPortrait: 84 } },   // from the top of the stairs, facing the screens
   { id: 'showroom', name: 'Showroom', zone: { c: [-14.7, 5.5, 14.1], r: 9.5 },
     view: { type: 'inside', eye: [-14.6, 4.65, 9.6], look: [-14.5, 4.4, 14.3], fov: 72 },
     onEnter: () => { if (roof.closed) setRoof(false); } },
@@ -1645,7 +1645,7 @@ function enter(p) {
   if (v.type === 'inside') {
     const eye = new THREE.Vector3(...v.eye), at = new THREE.Vector3(...v.look);
     const d = at.clone().sub(eye).normalize();
-    look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y); look.fov = portrait() ? v.fov + 8 : v.fov;
+    look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y); look.fov = portrait() ? (v.fovPortrait || v.fov + 8) : v.fov;
     flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, () => openPanel(p.id));
   } else {
     const f = fitPose(new THREE.Vector3(...v.pos), new THREE.Vector3(...v.target), v.fit);

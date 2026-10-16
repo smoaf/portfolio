@@ -17,10 +17,10 @@ const ceiling = (x, z) => DOME.rim + DOME.rise * Math.max(0, 1 - ((x - DOME.x) *
 // each screen: picture size (m), where it hangs as seen from the eye (degrees to the right, metres
 // away), the height of its middle, and its place in the stagger (index offset into its list)
 const LAYOUT = {
-  center: { w: 2.0, h: 1.125, a: 0, d: 8.1, y: 5.25 },
-  'left-1': { w: 0.72, h: 1.08, a: -12.0, d: 7.5, y: 5.1 },
-  'left-2': { w: 0.72, h: 1.08, a: -19.5, d: 6.8, y: 5.05 },
-  'right-1': { w: 0.72, h: 1.08, a: 13.0, d: 7.3, y: 5.1 },
+  center: { w: 2.3, h: 1.29, a: 0, d: 8.1, y: 5.2 },
+  'left-1': { w: 0.84, h: 1.26, a: -12.5, d: 7.5, y: 5.08 },
+  'left-2': { w: 0.84, h: 1.26, a: -20.0, d: 6.8, y: 5.04 },
+  'right-1': { w: 0.84, h: 1.26, a: 13.5, d: 7.3, y: 5.08 },
 };
 const BEZEL = 0.035, DEPTH = 0.05;
 const FADE = 1.2;                                         // seconds of crossfade

@@ -65,7 +65,8 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 ### Hub
 - Same round shape, 10.8 m across. Lower than the showroom, taller than the modules: walls 4.9 m and a flat dome, top about 7.5 m above ground (modules 5.9 m, showroom 9.4 m).
 - Plaster wall only up to hip height (1.0 m above the floor), glass sides above and a low glass dome. Calm frame: 24 mullions, one transom, 24 radial ribs and two rings on the dome. Plaster collars where the tubes come in, a frame round the door.
-- Inside: round table with stools, ring lamp hanging from the dome, curved bench, free-standing intro panel. Entrance door and outside stair on the outer side.
+- Inside: round table with stools, ring lamp hanging from the dome, curved bench. Entrance door and outside stair on the outer side. The free-standing intro panel is gone (Oct 2026); instead four screens hang from the dome on thin cables: one 16:9 screen in the middle and three 2:3 poster screens (two left, one right), each playing a slideshow of images (`hub/screens.json`; placeholders: Simon's series "Rohrschach reimagined").
+- The hub's view stands at the top of the stairs, just inside the door, looking into the room towards the screens.
 - Content: name, intro, contact, CV.
 
 ### Van
