@@ -1,0 +1,7 @@
+{ "screens": [
+    { "id": "center", "type": "video", "films": [{ "src": "assets/media/hub-films/other-windows-1.mp4", "still": "assets/media/hub-films/other-windows-1-still.webp" }, { "src": "assets/media/hub-films/other-windows-2.mp4", "still": "assets/media/hub-films/other-windows-2-still.webp" }, { "src": "assets/media/hub-films/other-windows-3.mp4", "still": "assets/media/hub-films/other-windows-3-still.webp" }, { "src": "assets/media/hub-films/other-windows-4.mp4", "still": "assets/media/hub-films/other-windows-4-still.webp" }],
+      "interval": 6, "items": ["assets/hub/placeholders/rohrschach-reimagined-01-wide.webp", "assets/hub/placeholders/rohrschach-reimagined-02-wide.webp", "assets/hub/placeholders/rohrschach-reimagined-03-wide.webp", "assets/hub/placeholders/rohrschach-reimagined-04-wide.webp"] },
+    { "id": "left-1", "interval": 8, "items": ["assets/hub/placeholders/rohrschach-reimagined-01-poster.webp", "assets/hub/placeholders/rohrschach-reimagined-03-poster.webp"] },
+    { "id": "left-2", "interval": 8, "items": ["assets/hub/placeholders/rohrschach-reimagined-02-poster.webp", "assets/hub/placeholders/rohrschach-reimagined-04-poster.webp"] },
+    { "id": "right-1", "interval": 8, "items": ["assets/hub/placeholders/rohrschach-reimagined-03-poster.webp", "assets/hub/placeholders/rohrschach-reimagined-01-poster.webp"] }
+] }

@@ -42,7 +42,9 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 - Linear ceiling light strips.
 
 ### Library
-- 8.5 m long. iMac-style all-in-one computer (unbranded) angled on a desk, reading chair corner, standing lamp, bookshelves.
+- 8.5 m long. All-in-one computer (unbranded) square on the desk, facing the chair (was angled; straightened 15 Oct 2026), reading chair corner, standing lamp, bookshelves.
+- Simon's own things (15 Oct 2026, LIBRARY_PLAN L1): on the shelf his waving lucky cat, a small terrarium in a glass carafe and a painted porcelain vase (some books taken out to make room); a big monstera in a terracotta pot and woven basket on the left by the window. The cat waves while the room is open or in view; clicking it zooms the camera close to it, nothing else.
+- The computer holds Simon's papers (15 Oct 2026, LIBRARY_PLAN L2): clicking it brings the camera close until the screen almost fills the view, and the screen shows a plain list of papers in the site's style. For now one entry, his bachelor's thesis (HRTF Acquisition Methods, St. Pölten University of Applied Sciences, 2022, German), with one button, Open, which opens the PDF in a new tab (no download button). The list is `library/papers.json`; more papers will be added by Simon later.
 - Content: science, publications, thesis.
 
 ### Office (collaborative)
@@ -57,17 +59,26 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 - Twelve-sided oval, 11.8 × 19.2 m, walls 7.2 m. The tallest building (top 9.4 m above ground).
 - Roof as a jalousie: 21 slats that turn on their long axis.
 - Continuous window band round the walls (about 1.7 m high, from 3.8 m above the floor), filled with 85 vertical fins. Fins and slats open and close together on the same click, in one wave. Open by default.
-- Interior: 360 degree screen ring, immersive (Atmos-style) speaker rigging on floor towers, projectors, plaster sculptures for projection mapping.
+- Interior: 360 degree screen ring, immersive (Atmos-style) speaker rigging on floor towers, projectors, plaster sculptures for projection mapping. The ring screen plays Simon's 360° panorama "Echoes 2026" all the way round (Oct 2026, `media/media.js`); it loads only while the showroom is the open place, the still shows meanwhile.
 - Content: media work.
 
 ### Hub
 - Same round shape, 10.8 m across. Lower than the showroom, taller than the modules: walls 4.9 m and a flat dome, top about 7.5 m above ground (modules 5.9 m, showroom 9.4 m).
 - Plaster wall only up to hip height (1.0 m above the floor), glass sides above and a low glass dome. Calm frame: 24 mullions, one transom, 24 radial ribs and two rings on the dome. Plaster collars where the tubes come in, a frame round the door.
-- Inside: round table with stools, ring lamp hanging from the dome, curved bench, free-standing intro panel. Entrance door and outside stair on the outer side.
+- Inside: round table with stools, ring lamp hanging from the dome, curved bench. Entrance door and outside stair on the outer side. The free-standing intro panel is gone (Oct 2026); instead four screens hang from the dome on thin cables: one 16:9 screen in the middle and three 2:3 poster screens (two left, one right), each playing a slideshow of images (`hub/screens.json`; placeholders: Simon's series "Rohrschach reimagined"). The middle screen plays the four "Other windows" films instead (one at random, then another; only while the hub is the open place, the film's still meanwhile); its images stay as the fallback.
+- The hub's view stands at the top of the stairs, just inside the door, looking into the room towards the screens.
 - Content: name, intro, contact, CV.
 
 ### Van
 - Expedition camper in the style of a Mercedes 208: 208 body with short bonnet, raked windscreen, dark grille band with square headlights; big all-terrain tyres with arch flares; bull bar, snorkel, railed roof deck, roof box, jerrycans, light bar, ladder, spare wheel, awning. No badges, no plates.
+
+### Radio telescope (was "Radio dish")
+- The big steerable dish on the hill (after the Stanford Dish photos). Renamed "Radio telescope" (Oct 2026); the place id stays `dish`.
+- Interactive (relay plan, phase R1): a click turns it to the sun or a moon above the horizon (the one nearest its pointing) and it keeps following that object; a second click parks it. With nothing in the sky it sweeps once and says "Nothing in view". The relay station's radio room (phase R2) uses it for a moon-bounce signal. It prefers a target it can really point at (10° up or more; the dish stops at 14°) over a nearer one just over the horizon (phase R3).
+
+### Relay station
+- Lattice tower with dishes and a small equipment hut (props.py). The hut has a window on the side the relay view looks at, lit warm at night (relay plan, phase R2).
+- Click the hut to sit inside: a small radio room after Smo's references (vintage receivers on a pine desk, Morse key, desk microphone, clock, map). Its receiver plays "Tune in": find eleven stations on the band by ear and by the S-meter, each gives a QSL card; a twelfth, the moon bounce, only answers while the radio telescope tracks a moon. Texts on the air are placeholders. Difficulty (phase R3): a station is heard faintly and the needle stirs about 0.1 MHz before it comes in, and letting go within 0.08 MHz settles on it, so each one takes seconds.
 
 ### Still open
 - Next module (under construction): museum and curation?
