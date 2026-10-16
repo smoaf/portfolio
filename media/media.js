@@ -34,17 +34,25 @@ function panoBand(screenMesh) {
   for (let i = 0; i < n; i++) P.push(new THREE.Vector3().fromBufferAttribute(src, i).applyMatrix4(screenMesh.matrixWorld));
   if (g !== screenMesh.geometry) g.dispose();
   const box = new THREE.Box3().setFromPoints(P), c = box.getCenter(new THREE.Vector3());
-  const ab = new THREE.Vector3(), ac = new THREE.Vector3(), nrm = new THREE.Vector3(), mid = new THREE.Vector3();
-  const tris = [];
+  // the inner face: the upright faces with nothing between them and the middle (the export's
+  // winding can't be trusted, so this goes by position, and each triangle is turned to face the middle)
+  const ab = new THREE.Vector3(), ac = new THREE.Vector3(), nrm = new THREE.Vector3(), hit = new THREE.Vector3();
+  const cand = [];
   for (let i = 0; i + 2 < n; i += 3) {
-    const [a, b, d] = [P[i], P[i + 1], P[i + 2]];
+    const a = P[i], b = P[i + 1], d = P[i + 2];
     nrm.crossVectors(ab.subVectors(b, a), ac.subVectors(d, a));
-    if (nrm.lengthSq() < 1e-10) continue;
-    nrm.normalize();
-    mid.copy(a).add(b).add(d).divideScalar(3);
-    const toC = new THREE.Vector3(c.x - mid.x, 0, c.z - mid.z).normalize();
-    if (nrm.dot(toC) > 0.5) tris.push(a, b, d);                  // faces the middle: the inner face
+    if (nrm.lengthSq() < 1e-10 || Math.abs(nrm.normalize().y) > 0.3) continue;   // tops and bottoms out
+    const mid = a.clone().add(b).add(d).divideScalar(3);
+    cand.push({ a, b, d, mid, facing: nrm.x * (c.x - mid.x) + nrm.z * (c.z - mid.z) });
   }
+  const ray = new THREE.Ray(), tris = [];
+  cand.forEach((t) => {
+    ray.origin.set(c.x, t.mid.y, c.z); ray.direction.set(t.mid.x - c.x, 0, t.mid.z - c.z);
+    const far = ray.direction.length() - 0.004; ray.direction.normalize();
+    const covered = cand.some((o) => o !== t && ray.intersectTriangle(o.a, o.b, o.d, false, hit) && hit.distanceTo(ray.origin) < far);
+    if (covered) return;
+    if (t.facing > 0) tris.push(t.a, t.b, t.d); else tris.push(t.a, t.d, t.b);
+  });
   // the inner face's own extent: an oval with half-widths A (x) and B (z), height y0..y1
   const inner = new THREE.Box3().setFromPoints(tris), A = (inner.max.x - inner.min.x) / 2, B = (inner.max.z - inner.min.z) / 2;
   const y0 = inner.min.y, y1 = inner.max.y;
@@ -103,7 +111,8 @@ function hubPicture(tex, iw, ih) {
 function showHubStill() {                              // the chosen film's still on the middle screen
   const v = M.hub.video();
   if (!v || M.film < 0) return;
-  const want = M.film;
+  const want = M.film, u = v.mat.uniforms;
+  if (u.uA.value && u.uA.value.isVideoTexture) { u.uA.value = null; u.uHasA.value = 0; }   // the video is let go: standby until the still is in
   still(v.films[want].still, (t) => { if (M.film === want && !(M.owner === 'hub' && M.live)) hubPicture(t, t.image.width, t.image.height); });
 }
 function pickFilm(n) {                                  // at random, never the one just played
