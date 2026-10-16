@@ -159,10 +159,15 @@ function renderPapers(list) {
 // lay the list over the screen as it is seen now; a phone held upright gets the whole view instead
 function fitScreen() {
   const el = S.els.screen, r = S.host.el.getBoundingClientRect();
-  if (S.host.portrait()) { const top = S.els.back.getBoundingClientRect().bottom + 12; Object.assign(el.style, { left: '0px', top: top + 'px', width: r.width + 'px', height: Math.max(0, r.bottom - top) + 'px' }); return; }
+  if (S.host.portrait()) { const top = S.els.back.getBoundingClientRect().bottom + 12; setRect(el, 0, top, r.width, Math.max(0, r.bottom - top)); return; }
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   S.pc.corners.forEach((c) => { const [x, y] = screenOf(vT.copy(c)); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
-  Object.assign(el.style, { left: x0 + 'px', top: y0 + 'px', width: (x1 - x0) + 'px', height: (y1 - y0) + 'px' });
+  setRect(el, x0, y0, x1 - x0, y1 - y0);
+}
+function setRect(el, x, y, w, h) {                      // only when it moved: no style writes while the view stands still
+  const k = `${Math.round(x)},${Math.round(y)},${Math.round(w)},${Math.round(h)}`;
+  if (k === S.rect) return;
+  S.rect = k; Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
 }
 
 // ---- glow and picking (the cat only)
@@ -226,6 +231,7 @@ function zoom(what = 'cat') {
   S.zoomed = true; S.opening = true; S.armed = null; S.what = what; setHover(null);
   document.body.classList.add('lib-sub');
   S.els.back.hidden = false;
+  if (S.kbd) S.els.back.focus({ preventScroll: true });   // the key row it came from goes away
   if (what === 'pc') loadPapers();
   const p = what === 'pc' ? pcPose() : catPose();
   S.host.fixedFov(p.fov);
@@ -241,18 +247,25 @@ function hideScreen() { S.els.screen.classList.remove('on'); S.els.screen.hidden
 function back() {
   if (!S.zoomed) return;
   const tok = ++S.seq, h = S.home;
-  if (S.kbd) S.refocus = true;
+  if (S.kbd) S.refocus = S.what;
   S.zoomed = false; S.opening = false; S.what = null; hideScreen();
   document.body.classList.remove('lib-sub');
   S.els.back.hidden = true;
   S.host.flyTo(h.pos.clone(), h.target.clone(), h.fov, () => { if (tok === S.seq) { S.host.releaseView(h); S.home = null; } });
 }
 
-// ---- keyboard: Esc goes back; a hidden button (shown on focus, as at the camp) zooms to the cat
+// ---- keyboard: Esc goes back, Tab stays on Back and the screen; hidden buttons (shown on focus, as
+// at the camp) zoom to the cat or the computer, and focus returns to the same one
 function onKey(e) {
   if (!S.host || !S.host.inPlace() || !S.zoomed) return;
   if (e.target.closest && e.target.closest('input, textarea')) return;
   if (e.key === 'Escape') { e.stopImmediatePropagation(); back(); return; }
+  if (e.key === 'Tab') {                                // Tab goes round Back and the screen's buttons, nothing behind them
+    const loop = [S.els.back, ...(S.els.screen.hidden ? [] : S.els.screen.querySelectorAll('a[href]'))];
+    const i = loop.indexOf(document.activeElement), n = loop.length;
+    loop[i < 0 ? 0 : (i + (e.shiftKey ? n - 1 : 1)) % n].focus({ preventScroll: true });
+    e.preventDefault(); e.stopImmediatePropagation(); return;
+  }
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopImmediatePropagation();   // no place switching while zoomed
 }
 function stepKeys() {
@@ -268,8 +281,9 @@ function stepKeys() {
     S.els.keys.appendChild(b);
   });
   const lost = !document.activeElement || document.activeElement === document.body || !document.activeElement.offsetParent;
-  if (S.refocus && lost) S.els.keys.firstChild.focus({ preventScroll: true });
-  S.refocus = false;
+  const ret = S.refocus ? ids().indexOf(S.refocus) : -1;
+  if (ret >= 0 && lost) S.els.keys.children[ret].focus({ preventScroll: true });
+  S.refocus = null;
 }
 
 // ---- is the room on screen? (the library is the open place, or the camera is near and sees the cat)
