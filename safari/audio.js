@@ -8,7 +8,7 @@ const MUTE_KEY = 'smo.safari.mute';
 export function mutedByDefault() {
   try { return localStorage.getItem(MUTE_KEY) === '1'; } catch (e) { return false; }
 }
-function saveMute(on) {
+export function saveMute(on) {
   try { localStorage.setItem(MUTE_KEY, on ? '1' : '0'); } catch (e) { /* ignore */ }
 }
 
