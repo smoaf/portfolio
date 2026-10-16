@@ -7,6 +7,7 @@ Instructions for scheduled cloud runs that work on the site at night. Each file 
 |---|---|---|
 | Fri 16 Oct, 22:00 | 01 loading animation | light |
 | Fri 16 Oct, 23:00 | 02 small bug fixes | light |
+| Sat 17 Oct, 00:00 | 07 showroom robot | very heavy |
 | Sat 17 Oct, 03:00 | 03 safari: new species and album notes | heavy |
 | Sat 17 Oct, 22:00 | 04 safari: camera and controls | heavy |
 | Sun 18 Oct, 03:00 | 06 van interior | heavy |
