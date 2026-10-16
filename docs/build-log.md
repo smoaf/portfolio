@@ -217,3 +217,8 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 - Only one `<video>` element exists, so the two can never load at once. Leaving a place pauses it and lets the file go (`src` cleared, `load()`); an open panel, the safari or a hidden tab pauses it where it is.
 - Sound: always muted at first; a "Muted / Sound" button (top right, the workshop's style) turns the sound on and off and writes the site's shared mute (`safari/audio.js`). Once turned on, later videos start with sound unless muted elsewhere.
 - Tested headless (software GL) at 1440×900 and 390×844 touch (with short VP8 test copies of the files swapped in by the test, as the test browser can't decode H.264, and once with the real files and once with missing ones): stills before loading, the right file per screen size, the next film after one ends, the video stops when leaving and on an open panel, the sound button and shared mute, the fallback to the slideshow. No console errors.
+
+## 16 Oct 2026: All areas live, cleanup
+- Workshop (#2) merged; relay & telescope, library, hub and media went live together via #7 (#3–#6 superseded). All cloud routines are done and switched off; the run plans in portfolio-refs are retired.
+- Removed unused files (still in Git history): old `.glb` exports (`3d/models/`), test renders (`3d/renders/`), generator scripts the current build doesn't import (`arrangement_v4.py`, `arrangement_v6.py`, `build_module.py`, `build_station.py`), `mktest.sh`.
+- New `docs/open-items.md`: known issues per area from all run logs, and suggested refactors. `CLAUDE.md` rewritten as a compact map for new sessions.

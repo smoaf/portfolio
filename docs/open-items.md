@@ -1,0 +1,27 @@
+# Open items
+
+Collected 16 Oct 2026 from the progress logs of all build runs (Photo Safari, workshop, relay, library, hub, media) and a structure review. What each feature does is described in its pull request: #1 camp & Photo Safari, #2 workshop, #3 relay & telescope, #4 library, #5 hub, #6 media (all live via #1, #2 and #7).
+
+## Everywhere
+- Real-phone check: every feature was tested only in a headless cloud browser. Frame rate, touch targets and sound are unverified on phones.
+- Placeholders: texts, captions, rack remarks, the tape card (draft translation), demo audio (guitar loop, tape demo; Smo's own audio file is still to come).
+- Model size: `arrangement_v7.glb` is 14 MB. Compress (Draco or meshopt) before sharing the site widely.
+
+## Per area
+- **Workshop:** synth knobs (~20 px) and tape head buttons (~12 px) small on phones; desk small in the overview on phones; the station layout is applied at load time (`workshop/layout.js`) instead of in `3d/scripts/build_station_v4.py`; old bench-device cables still on the bench; partition hidden while the rack is open (Smo to judge); printer head traces concave layers roughly.
+- **Relay & telescope:** elevation limit 14° (maybe lower); tracking label wraps on phones; arrow-key tuning snaps back to a nearby station after a pause.
+- **Library:** prop sizes are guesses; monstera leaf slits thin from afar; the papers list overlay uses the screen's bounding rectangle (the screen leans back a little).
+- **Hub:** no extra glow light at night; the intro panel is still in the model (only hidden at load).
+- **Media:** H.264 playback not verified in a codec-capable browser; with the text panel open on arrival, the video loads but stays paused until the panel closes.
+- **Photo Safari:** van interior not drawn around the viewfinder; running out of film just drives to the end; markhor ruff and saiga shape could be better; no URL hash for camp sub-views.
+
+## Structure: suggested refactors (none done yet)
+In order of value. Do them one at a time, each in its own pull request, and check the site after each.
+
+1. **One way to plug in an area.** Each area (workshop, telescope, relay, library, hub, media) gets a hand-built "host" object in `index.html` (about 70 lines, with `holdView`/`releaseView` copied four times), and `index.html` calls every area one by one in about eight places (`setup`, `step`, `tap`, `hover`, `reset`, `arrive`, `resume`). Better: one `makeHost(placeId)` and an `AREAS` list that the page loops over. New areas then need one line.
+2. **A `shared/` folder.** Shared code lives inside feature folders: `safari/audio.js` is the audio base for media, relay and workshop; `workshop/stations.js` (panels, materials, kit) is used by the relay room; `safari/fieldlog.js` is used by the van. Four places create their own audio context. Move these into `shared/` (audio, ui kit, storage), with one audio context for the whole site.
+3. **Split `index.html` (2,650 lines).** It holds the viewer core, sky and day cycle, the figure, places and navigation, the site GUI, and about 500 lines of camp interactions. The camp logic belongs in `camp/` (that folder exists but holds only the van, album and form). Viewer parts can move into `station/` modules (`sky.js`, `figure.js`, `places.js`, `gui.js`).
+4. **Content out of code.** `MENU`, `PAGES` and `PLACES` are tables inside `index.html`. Move them into a data file (planned since the concept), so texts can be changed without touching code.
+5. **Load less at start.** All 24 area files load at startup. Load each area's code on first arrival, as the safari already does.
+6. **Generator names.** The 3D build chain imports `arrangement_v2/v3/v5` for shared helpers. Rename them by role (`layout.py`, `export.py`, `helpers.py`) and bake runtime fixes back into the model (workshop layout, hub intro panel).
+7. **Test hooks.** About 25 `window.__*` test functions ship to visitors. Keep them, but only switch them on with `?test` in the URL.

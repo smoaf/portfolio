@@ -63,8 +63,6 @@ Viewer
   the camp, printer animation, colour touches, site GUI). The figure, sky and GUI are built in
   that page, not in the .glb. It loads `arrangement_v7.glb` from the same folder.
 - To update the site after a rebuild: copy `3d/scripts/arrangement_v7.glb` to the top folder.
-- `mktest.sh`: packs a .glb into gzip + base64 for the Cowork preview host, which does not
-  serve .glb. Not needed for the real site.
 - Rebuilt on a Mac (Python 3.12, 9 Oct 2026): all parts match the live model except
   `hub/shell` (3,480 instead of 3,488 triangles), a numerical difference of the boolean cut
   between Linux and macOS.
