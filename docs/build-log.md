@@ -191,3 +191,9 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 - The list is read from `library/papers.json` (`title`, `authors`, `year`, `type`, `institution`, `language`, `pdf`) on the first visit to the screen. To add a paper: put the PDF in `assets/papers/` and add an entry.
 - One entry: "HRTF Acquisition Methods – Thesis", Simon's bachelor's thesis (St. Pölten University of Applied Sciences, 2022, German); the PDF (about 27 MB, without the signature page) is `assets/papers/HRTF-Acquisition-Methods-Thesis.pdf`. It is only linked, never preloaded (checked: no PDF request while browsing).
 - Tested headless (software GL) at 1280×760 (hover, click, Esc, then the cat still zooms) and 390×700 touch (two taps, Back). No console errors.
+
+## 16 Oct 2026: Library plan, phase L3 (polish), branch `feat/library`
+- Played through the library headless (software GL) at 1280×760 (mouse, keyboard, light and dark) and 390×700 touch: the cat waves in the library and rests once the camera leaves, the cat zoom, the monstera, the shelf items, the computer zoom, the papers list, Back and Esc. No console errors (the font request is blocked in the test sandbox only). The PDF is never requested while browsing.
+- Keyboard: when a hidden key button ("Lucky cat", "Papers") starts a zoom, focus moves to Back straight away (the key row it came from disappears); at the computer it then moves to Open. While zoomed, Tab and Shift+Tab go round Back and the screen's Open buttons only. After Back or Esc, focus returns to the same key button it came from (before, it always went to "Lucky cat").
+- Performance: the screen overlay's position is written only when it actually moves (before, every frame).
+- Mute: the library makes no sound, so there is nothing to mute.
