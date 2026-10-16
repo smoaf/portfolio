@@ -19,7 +19,7 @@ const PANO = {
 const INSET = 0.012;                                   // the picture sits this far inside the ring's inner face
 
 const M = { host: null, hub: null, ready: false, el: null, tex: null, owner: null, src: '', held: false, live: false,
-  pano: null, film: -1, lastFilm: -1, stills: new Map(), sound: false, btn: null, errors: 0 };
+  pano: null, film: -1, lastFilm: -1, stills: new Map(), sound: false, btn: null, tried: new Set() };
 const loader = new THREE.TextureLoader();
 
 const small = () => Math.min(screen.width, screen.height) <= 820 || matchMedia('(max-width: 820px)').matches ||
@@ -130,7 +130,7 @@ function makeVideo() {
   v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
   v.addEventListener('playing', () => {
     if (!M.owner || M.live) return;
-    M.live = true; M.errors = 0;
+    M.live = true; M.tried.clear();
     if (M.owner === 'showroom') { M.pano.mat.map = M.tex; M.pano.mat.needsUpdate = true; }
     else hubPicture(M.tex, v.videoWidth || 16, v.videoHeight || 9);
   });
@@ -144,8 +144,15 @@ function makeVideo() {
   v.addEventListener('error', () => {
     if (!M.owner || !v.getAttribute('src')) return;
     const f = M.owner === 'hub' && M.hub.video();
-    if (f && ++M.errors < f.films.length) { M.lastFilm = M.film; M.film = pickFilm(f.films.length); load(f.films[M.film].src); return; }
-    if (f) { const id = f.id; release(); M.hub.noVideo(id); return; }   // none of the films play: the slideshow again
+    if (f) M.tried.add(M.film);
+    const left = f ? f.films.map((x, k) => k).filter((k) => !M.tried.has(k)) : [];
+    if (left.length) {                                     // try a film not tried yet, after the element has settled
+      M.lastFilm = M.film; M.film = left[Math.floor(Math.random() * left.length)];
+      const film = f.films[M.film].src;
+      setTimeout(() => { if (M.owner === 'hub') load(film); }, 300);
+      return;
+    }
+    if (f) { const id = f.id; release(); M.film = -1; M.hub.noVideo(id); return; }   // none of the films play: the slideshow again
     release(true);                                       // the panorama stays on its still
   });
   document.body.appendChild(v);
@@ -175,7 +182,7 @@ function play() {
   paintSound();
 }
 function start(owner) {
-  M.owner = owner; M.errors = 0;
+  M.owner = owner; M.tried.clear();
   if (owner === 'showroom') load(small() ? PANO.small : PANO.big);
   else {
     const f = M.hub.video();

@@ -59,13 +59,13 @@ https://www.dezeen.com/2013/02/06/halley-vi-worlds-first-mobile-research-centre-
 - Twelve-sided oval, 11.8 × 19.2 m, walls 7.2 m. The tallest building (top 9.4 m above ground).
 - Roof as a jalousie: 21 slats that turn on their long axis.
 - Continuous window band round the walls (about 1.7 m high, from 3.8 m above the floor), filled with 85 vertical fins. Fins and slats open and close together on the same click, in one wave. Open by default.
-- Interior: 360 degree screen ring, immersive (Atmos-style) speaker rigging on floor towers, projectors, plaster sculptures for projection mapping.
+- Interior: 360 degree screen ring, immersive (Atmos-style) speaker rigging on floor towers, projectors, plaster sculptures for projection mapping. The ring screen plays Simon's 360° panorama "Echoes 2026" all the way round (Oct 2026, `media/media.js`); it loads only while the showroom is the open place, the still shows meanwhile.
 - Content: media work.
 
 ### Hub
 - Same round shape, 10.8 m across. Lower than the showroom, taller than the modules: walls 4.9 m and a flat dome, top about 7.5 m above ground (modules 5.9 m, showroom 9.4 m).
 - Plaster wall only up to hip height (1.0 m above the floor), glass sides above and a low glass dome. Calm frame: 24 mullions, one transom, 24 radial ribs and two rings on the dome. Plaster collars where the tubes come in, a frame round the door.
-- Inside: round table with stools, ring lamp hanging from the dome, curved bench. Entrance door and outside stair on the outer side. The free-standing intro panel is gone (Oct 2026); instead four screens hang from the dome on thin cables: one 16:9 screen in the middle and three 2:3 poster screens (two left, one right), each playing a slideshow of images (`hub/screens.json`; placeholders: Simon's series "Rohrschach reimagined").
+- Inside: round table with stools, ring lamp hanging from the dome, curved bench. Entrance door and outside stair on the outer side. The free-standing intro panel is gone (Oct 2026); instead four screens hang from the dome on thin cables: one 16:9 screen in the middle and three 2:3 poster screens (two left, one right), each playing a slideshow of images (`hub/screens.json`; placeholders: Simon's series "Rohrschach reimagined"). The middle screen plays the four "Other windows" films instead (one at random, then another; only while the hub is the open place, the film's still meanwhile); its images stay as the fallback.
 - The hub's view stands at the top of the stairs, just inside the door, looking into the room towards the screens.
 - Content: name, intro, contact, CV.
 
