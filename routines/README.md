@@ -7,11 +7,13 @@ Instructions for scheduled cloud runs that work on the site at night. Each file 
 |---|---|---|
 | Fri 16 Oct, 22:00 | 01 loading animation | light |
 | Fri 16 Oct, 23:00 | 02 small bug fixes | light |
-| Sat 17 Oct, 00:00 | 07 showroom robot | very heavy |
-| Sat 17 Oct, 03:00 | 03 safari: new species and album notes | heavy |
-| Sat 17 Oct, 22:00 | 04 safari: camera and controls | heavy |
-| Sun 18 Oct, 03:00 | 06 van interior | heavy |
-| Sun 18 Oct, 22:00 | 05 safari: pacing and animals (needs 03 merged) | heavy |
+| Sat 17 Oct, 03:00 | 07 showroom robot | very heavy |
+| Sat 17 Oct, 22:00 | 03 safari: new species and album notes | heavy |
+| Sun 18 Oct, 03:00 | 04 safari: camera and controls | heavy |
+| Sun 18 Oct, 22:00 | 06 van interior | heavy |
+| Mon 19 Oct, 03:00 | 05 safari: pacing and animals (needs 03 merged) | heavy |
+
+Slots are five hours apart (22:00 and 03:00), one heavy run per slot, so the runs don't share one usage window.
 
 ## Every run
 1. Work in a fresh clone of `smoaf/portfolio`, branched from the latest `main`.
