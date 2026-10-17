@@ -8,12 +8,13 @@ Each night has two slots: 22:00, and five hours later 03:00. One run per slot, e
 | When | Run | Effort |
 |---|---|---|
 | Sat 17 Oct, 22:00 | 01 loading animation | light |
+| Sat 17 Oct, 23:00 | 02 small bug fixes (ran early) | light |
 | Sun 18 Oct, 03:00 | 07 showroom robot | very heavy |
 | Sun 18 Oct, 22:00 | 03 safari: new species and album notes | heavy |
 | Mon 19 Oct, 03:00 | 04 safari: camera and controls | heavy |
 | Mon 19 Oct, 22:00 | 06 van interior | heavy |
 | Tue 20 Oct, 03:00 | 05 safari: pacing and animals (needs 03 merged) | heavy |
-| Tue 20 Oct, 22:00 | 02 small bug fixes | light |
+| Tue 20 Oct, 22:00 | 08 loading animation fix | light |
 
 ## Every run
 1. Work in a fresh clone of `smoaf/portfolio`, branched from the latest `main`.
