@@ -38,7 +38,7 @@ Add detail where the eye lands from the starting view, guided by the references.
 
 **Expected:**
 - The polaroids lie on top of the album, loosely: slightly overlapping, each turned a little differently, not lined up.
-- They are big enough that the photo on each can be made out from the starting view (see open questions).
+- They keep their current size (about 8.5 by 10 cm). Smo decided the size is fine. No click to open them large.
 - They keep showing photos that are also in the album. They already do: the five polaroid photos are all on album pages. Keep it that way if the selection changes.
 
 ## 6. Clear tape
@@ -67,7 +67,3 @@ Add detail where the eye lands from the starting view, guided by the references.
 ## Finish
 - Open a pull request into `main` from `night/06-van-interior` with before and after screenshots from the starting view and the album view, day and night, plus the colour table.
 - Do not merge. Smo merges after looking at it.
-
-## Decide on your own
-Nobody is available during the night run. For each point below, choose the sensible option, build it, and state the choice in the pull request so Smo can change it.
-- **Polaroid size:** make the prints bigger, or keep them small and open a polaroid large when it is clicked?
