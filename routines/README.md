@@ -15,7 +15,7 @@ Each night has two slots: 22:00, and five hours later 03:00. One run per slot, e
 | Mon 19 Oct, 22:00 | 06 van interior | heavy |
 | Tue 20 Oct, 03:00 | 05 safari: pacing and animals (needs 03 merged) | heavy |
 | Tue 20 Oct, 22:00 | 08 loading animation fix | light |
-| Wed 21 Oct, 03:00 | 09 one tap on mobile | light |
+| Wed 21 Oct, 03:00 | 09 one tap on mobile (audit of the whole site) | medium |
 
 ## Every run
 1. Work in a fresh clone of `smoaf/portfolio`, branched from the latest `main`.

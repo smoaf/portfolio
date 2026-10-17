@@ -1,39 +1,55 @@
 # Night run 09: one tap on mobile
 
 Status: requested by Smo, 17 Oct 2026
-Effort: light
+Effort: medium (a careful audit of the whole site, then mostly small changes)
 Depends on: nothing
 Branch: `night/09-single-tap-on-mobile`
 
 ## Goal
-On phones and tablets, tapping a clickable object currently only highlights it and shows its label. A **second tap** is needed to actually go to it. Smo wants **one tap** to go straight to the object, the same as a mouse click on a computer.
+On phones and tablets, Smo often has to tap a clickable thing **twice** before anything happens. **Every clickable thing must act on the first tap**, the same as a mouse click on a computer. This applies **everywhere on the site**: the station overview, every area, and everything inside a zoomed-in station, room or screen.
 
-## Where the two-tap step lives
-Each of these has the same pattern: on a non-mouse pointer, the first tap only sets `armed` and shows the hover glow and label, then returns. Checked on `main` on 17 Oct; line numbers may have moved slightly.
-- `index.html`, `campTap` (around line 1945): figure, fire, van and the other camp things (`camp.armed`).
-- `workshop/stations.js` (around line 332): every workshop station (`S.armed`).
-- `relay/telescope.js` (around line 270): the radio telescope (`t.armed`).
-- `relay/house.js` (around line 457): the relay house (`S.armed`).
-- `library/library.js` (around line 341): the lucky cat, the computer and the other library things (`S.armed`).
+Smo says this happens in **many more places** than the obvious ones, so this run is an **audit first**: find every place where a single tap on touch does nothing (or only highlights), then fix them all.
 
-Search the whole repository for any other place with the same pattern (`pointerType !== 'mouse'` together with an `armed` check, in the hub, media, safari, van or anywhere else) and change it the same way.
+## Known causes (checked on `main`, 17 Oct; line numbers may have moved)
+1. **"First tap only highlights" on purpose.** On a non-mouse pointer, the first tap sets `armed`, shows the glow and label, and returns. Only a second tap acts. Remove this step in:
+   - `index.html`, `campTap` (around line 1945): figure, fire, van and the other camp things.
+   - `workshop/stations.js` (around line 332): every workshop station.
+   - `relay/telescope.js` (around line 270): the radio telescope.
+   - `relay/house.js` (around line 457): the relay house.
+   - `library/library.js` (around line 341): the cat, the computer, etc.
+2. **Taps that count as drags.** The main `pointerup` handler in `index.html` (around line 1758) treats a touch as a tap only if the finger moved **less than 6 px** within 600 ms. Real fingers often move more than that, so the tap is silently ignored as a tiny drag, and people tap again. Use a larger allowance for touch (about 12–16 px; keep 6 px for the mouse). Check the other modules that have their own tap/drag test (for example the radio room in `relay/house.js`, the workshop stations, the safari, the album) for the same problem.
+3. **Taps lost while the camera is moving.** The same handler drops every tap while `tween.active` is true. A tap during or right at the end of a camera move does nothing. Instead, a tap during a move should act (for example go to the newly tapped place or object).
+4. **Other places from inside a place.** From the overview a tap on a place goes there, but once you are in a place, taps only reach that place's own things. If another place is clearly visible and tappable-looking from there, decide sensibly whether one tap should go there, and say what you chose in the pull request.
 
-## What to change
-- **Touch and pen: one tap acts**, exactly like a mouse click does today (zoom to the station, open the house, track with the telescope, zoom to the cat, and so on).
-- **Keep the finger-friendly tolerance**: near misses still count on touch (`nearThing` / `nearest`), so small objects stay easy to hit.
-- **Mouse is unchanged**: hovering still shows the glow and label, a click acts.
-- **Dragging is unchanged**: a drag to look around or rotate must never count as a tap (the existing tap test in the `pointerup` handler in `index.html`).
-- Remove the `armed` state where it is no longer needed. Leave the test hooks working (for example `window.__camp.armed()` may simply always return `null`).
-- Update the code comments that describe the old "first tap shows, second tap acts" rule (`index.html` around 1858 and 1944, `library/library.js` line 7, `relay/house.js` 456, `relay/telescope.js` 269, `workshop/stations.js` line 3), and any on-screen hint that tells people to tap twice.
-- Don't add anything new. No new labels, toasts or effects to replace the first tap.
+## Then audit everything else
+Go through the **whole site with touch emulation** and list every clickable thing: everything that gets a pointer cursor, glow, label or button look on desktop. That includes:
+- the station overview and its places
+- the camp: figure, fire, van, the van's screen and its route list, the album
+- all workshop stations and the controls inside them
+- the radio telescope; the relay house and everything in the radio room (dial, key, card box, hint card…)
+- the library: cat, computer, the papers list and its Open button
+- the hub (screens, the wind turbine)
+- the showroom (roof, screen)
+- the safari (start, controls, end screen)
+- the menus and buttons of the page (navigation arrows, Back, Close, panel links)
+
+For **each**, check that **one tap acts**. Fix every one that doesn't, whatever the cause: the patterns above, a missed `click` on touch, an element above that swallows the first touch, a hover-only menu, and so on.
+
+## Must stay the same
+- **Mouse:** hovering still shows the glow and label, and a click acts.
+- **Drags never act:** dragging to look around, rotate, or turn a knob must never trigger a tap.
+- **Fingers can still miss slightly:** keep the near-miss tolerance for touch (`nearThing` / `nearest`).
+- Remove `armed` where it isn't needed any more, but keep the test hooks working (for example `window.__camp.armed()` may always return `null`).
+- Update the code comments that describe the old "first tap shows, second tap acts" rule.
+- Add nothing new: no new labels, toasts or effects to replace the first tap.
 
 ## Rules for this run
-- Follow `CLAUDE.md` and `README.md`. Change only the tap handling described here.
+- Follow `CLAUDE.md` and `README.md`. Change only tap/click handling.
 
 ## Check before opening the pull request
-- In a phone-sized viewport with **touch emulation** (pointer events with `pointerType: 'touch'`), tap every clickable thing once in every area: camp (figure, fire, van, screen, album), workshop (every station), radio telescope, relay house, library (cat, computer). Each one must act on the **first** tap. List them in the pull request with a tick each.
-- Drag on the screen in each area: it must still only look around and never trigger anything.
-- Desktop with a mouse: hover glow and labels, and click to act, work as before.
+- Phone-sized viewport with **real touch emulation** (`pointerType: 'touch'`, including a few pixels of finger movement between down and up, like a real finger). Tap every item from the audit list **once**. Put the full list in the pull request with ✓ (acts on the first tap) for each, and say what was wrong where you had to fix something.
+- Drag in every area: it must only look around or turn things, never trigger a tap.
+- Desktop with a mouse: works as before.
 - No console errors.
 - Add a dated entry to `docs/build-log.md`.
 
