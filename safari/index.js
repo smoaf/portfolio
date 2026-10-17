@@ -333,7 +333,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   async function finish() {
     if (S.over) return;
     S.over = true;
-    audio.drive(0, 0);
+    audio.park();
     await hud.report({
       shots: S.shots, route: R, tod, store, fresh: S.fresh,
       onDone: () => leave(),
