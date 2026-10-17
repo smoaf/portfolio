@@ -8,6 +8,7 @@ Branch: `night/08-loading-animation-fix`
 ## Why
 Night run 01 added the three-dot loading animation (`#status` in `index.html`). It is live, but Smo says it doesn't work well and isn't what `01-loading-animation.md` describes. Checked on the live site on 17 Oct:
 
+0. **Visitors see no movement at all (Smo's main complaint, confirmed).** On a normal connection the whole loading screen lasts only about 1.5 s (measured 17 Oct through a no-cache relay to the live site: dots shown from 0.13 s, hidden at 1.49 s). Run 01's loop **starts with a 0.5 s rest**, followed by one slow, eased 0.8 s step that barely moves at first. So in a real visit the dots sit still and then twitch once before they vanish, and it looks like nothing happens. Only with a slow connection, as in run 01's own tests, does the loop ever get to the triangle laps and the circle.
 1. **Too small to read.** The dots are 6 px wide on a 12 px radius inside a 44 px box. On the full-screen page it reads as a speck, and the motion can't be followed.
 2. **The three shapes look the same.** The "circle" has the same radius as the triangle's corners. Three dots evenly spaced on a circle look exactly like three dots on a triangle, so phase 2 just looks like the triangle spinning faster.
 3. **The triangle phase is too short.** The spec says the dots move around the triangle "two times". Run 01 made two single steps of one corner each, which is only two-thirds of one lap.
@@ -15,6 +16,8 @@ Night run 01 added the three-dot loading animation (`#status` in `index.html`). 
 
 ## What to build
 Keep the idea from `01-loading-animation.md`. Same loop, but readable and smooth:
+
+- **Movement from the very first frame.** No rest at the start of the loop. The dots must be clearly moving within the first 0.2 s, and a visitor who only sees the screen for 1–1.5 s must see real motion (at least one full corner-to-corner move plus the next one starting). Keep the rests between moves short (≤ 0.15 s).
 
 1. **Triangle, two full laps.** The three dots sit on the corners of a triangle and travel along its **straight edges** to the next corner, again and again, until each dot has gone **twice all the way round** (6 corner-to-corner moves). Ease each move, with a very short rest at the corners.
 2. **Circle, fast.** The dots move outwards onto a **clearly larger circle** (about 1.5× the triangle's corner radius), spread evenly, and spin around it **noticeably faster** than in the triangle phase (about two turns).
@@ -32,7 +35,7 @@ Every change is smooth: the dots never jump, and not even the loop restart is vi
 - No library.
 
 ## Check before opening the pull request
-- Test with a **cold cache** and a **throttled network** so the loading screen stays up. Record frame times from page start until the station is drawn: the dots must keep moving the whole time, and **there must be no frozen, empty moment between the dots disappearing and the station appearing**. Report the before/after numbers in the pull request (the old build froze for about 0.5 s right after the dots vanished, on a fast desktop). No console errors.
+- Test with a **cold cache** and a **throttled network** so the loading screen stays up. Record frame times from page start until the station is drawn: the dots must keep moving the whole time, and **there must be no frozen, empty moment between the dots disappearing and the station appearing**. Also test with a **normal, fast connection and no cache**, where the screen is only up for about 1.5 s: the motion must be obvious there too. Report the before/after numbers in the pull request (the old build froze for about 0.5 s right after the dots vanished, on a fast desktop). No console errors.
 - Desktop and phone width, day and night, reduced motion, failed load.
 - Attach a short capture of one full loop to the pull request, on a separate captures branch like run 01 did.
 - Add a dated entry to `docs/build-log.md`.
