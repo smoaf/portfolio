@@ -58,4 +58,4 @@ Currently listed: 1. radio tuning snaps back, 2. papers list does not line up wi
 
 ## Finish
 - Open a pull request into `main` from `night/02-small-bugfixes` with one section per bug: what was wrong, what changed, how it was tested, and before and after screenshots where the bug is visible.
-- Do not merge. Smo merges after looking at it.
+- Then merge it into `main` as described in `README.md` ("Every run", step 4). Smo tests the live site instead of reviewing the code.

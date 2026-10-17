@@ -88,7 +88,7 @@ The set (each one different, not variations of one move):
 
 ## Finish
 - Open a pull request into `main` from `night/07-showroom-robot`. Show each pose next to its screenshot, list every animation with a short capture, and explain how the robot is put together (model changes, bones, the animation system) so later runs can add more animations.
-- Do not merge. Smo merges after looking at it.
+- Then merge it into `main` as described in `README.md` ("Every run", step 4). Smo tests the live site instead of reviewing the code.
 
 ## Decide on your own
 Nobody is available during the night run. For each point below, choose the sensible option, build it, and state the choice in the pull request so Smo can change it.

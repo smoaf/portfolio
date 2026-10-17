@@ -35,7 +35,7 @@ The changes between shapes are smooth. The dots never jump.
 
 ## Finish
 - Open a pull request into `main` from `night/01-loading-animation` that describes what was built and shows the captures.
-- Do not merge. Smo merges after looking at it.
+- Then merge it into `main` as described in `README.md` ("Every run", step 4). Smo tests the live site instead of reviewing the code.
 
 ## Not part of this run
 - Compressing `arrangement_v7.glb`. Smo decided to wait until the model is finished.

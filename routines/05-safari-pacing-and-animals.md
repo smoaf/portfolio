@@ -55,4 +55,4 @@ Fix the placement of every animal that fails. List all checks and results in the
 
 ## Finish
 - Open a pull request into `main` from `night/05-safari-pacing-and-animals` with the speed table, the visibility table and screenshots of animals that were moved.
-- Do not merge. Smo merges after looking at it.
+- Then merge it into `main` as described in `README.md` ("Every run", step 4). Smo tests the live site instead of reviewing the code.

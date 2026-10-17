@@ -51,7 +51,7 @@ Add three new things to the Photo Safari and hint at the time-bound ones with ha
 
 ## Finish
 - Open a pull request into `main` from `night/03-safari-species-and-notes` with screenshots of each new species (day and night where it changes) and of the album pages with notes.
-- Do not merge. Smo merges after looking at it.
+- Then merge it into `main` as described in `README.md` ("Every run", step 4). Smo tests the live site instead of reviewing the code.
 
 ## Decide on your own
 Nobody is available during the night run. For each point below, choose the sensible option, build it, and state the choice in the pull request so Smo can change it.

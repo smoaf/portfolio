@@ -57,4 +57,4 @@ Files: `safari/hud.js` (everything drawn on top), `safari/safari.css` (its look)
 
 ## Finish
 - Open a pull request into `main` from `night/04-safari-camera-and-controls` with before and after screenshots of the viewfinder (day and night), the feed button on a phone, and the report with the large photo open.
-- Do not merge. Smo merges after looking at it.
+- Then merge it into `main` as described in `README.md` ("Every run", step 4). Smo tests the live site instead of reviewing the code.

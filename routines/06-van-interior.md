@@ -66,4 +66,4 @@ Add detail where the eye lands from the starting view, guided by the references.
 
 ## Finish
 - Open a pull request into `main` from `night/06-van-interior` with before and after screenshots from the starting view and the album view, day and night, plus the colour table.
-- Do not merge. Smo merges after looking at it.
+- Then merge it into `main` as described in `README.md` ("Every run", step 4). Smo tests the live site instead of reviewing the code.
