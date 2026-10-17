@@ -19,7 +19,7 @@ Smo says this happens in **many more places** than the obvious ones, so this run
    - `library/library.js` (around line 341): the cat, the computer, etc.
 2. **Taps that count as drags.** The main `pointerup` handler in `index.html` (around line 1758) treats a touch as a tap only if the finger moved **less than 6 px** within 600 ms. Real fingers often move more than that, so the tap is silently ignored as a tiny drag, and people tap again. Use a larger allowance for touch (about 12–16 px; keep 6 px for the mouse). Check the other modules that have their own tap/drag test (for example the radio room in `relay/house.js`, the workshop stations, the safari, the album) for the same problem.
 3. **Taps lost while the camera is moving.** The same handler drops every tap while `tween.active` is true. A tap during or right at the end of a camera move does nothing. Instead, a tap during a move should act (for example go to the newly tapped place or object).
-4. **Other places from inside a place.** From the overview a tap on a place goes there, but once you are in a place, taps only reach that place's own things. If another place is clearly visible and tappable-looking from there, decide sensibly whether one tap should go there, and say what you chose in the pull request.
+4. **Not in this run:** reaching *other* places from inside a place is night run 10. Here, only make sure that what is already clickable acts on one tap.
 
 ## Then audit everything else
 Go through the **whole site with touch emulation** and list every clickable thing: everything that gets a pointer cursor, glow, label or button look on desktop. That includes:
