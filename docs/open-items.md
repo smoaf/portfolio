@@ -24,4 +24,4 @@ In order of value. Do them one at a time, each in its own pull request, and chec
 4. **Content out of code.** `MENU`, `PAGES` and `PLACES` are tables inside `index.html`. Move them into a data file (planned since the concept), so texts can be changed without touching code.
 5. **Load less at start.** All 24 area files load at startup. Load each area's code on first arrival, as the safari already does.
 6. **Generator names.** The 3D build chain imports `arrangement_v2/v3/v5` for shared helpers. Rename them by role (`layout.py`, `export.py`, `helpers.py`) and bake runtime fixes back into the model (workshop layout, hub intro panel).
-7. ~~**Test hooks.**~~ Done 20 Oct 2026 (night run 02): the `window.__*` functions exist only with `?test` in the URL.
+7. ~~**Test hooks.**~~ Done 17 Oct 2026 (night run 02): the `window.__*` functions exist only with `?test` in the URL.
