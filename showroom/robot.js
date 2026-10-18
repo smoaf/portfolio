@@ -163,13 +163,13 @@ function step(now) {
   if (S.wakeAt && now > S.wakeAt) { S.wakeAt = 0; }
   if (M.clipName === 'sleep' && !M.wake && !night) wake();
   if (!M.clip && !M.queue.length) choose();
-  if (S.hovered && !M.big && M.state === 'stand' && M.clipName !== 'look') { M.queue.length = 0; M.play('look', { until: () => S.hovered }); }
+  if (S.hovered && !S.night && !M.big && M.state === 'stand' && M.clipName !== 'look') { M.queue.length = 0; M.play('look', { until: () => S.hovered }); }
   M.update(dt);
   // the glow: eases in on hover, a short pulse on a tap
   S.pulse = Math.max(0, S.pulse - dt);
   const want = S.hovered || S.pulse > 0 ? 1 : 0;
   S.glow += (want - S.glow) * Math.min(1, dt * 8);
-  S.shell.forEach((m) => { m.emissive.copy(GLOW); m.emissiveIntensity = 0.3 * S.glow; });
+  S.shell.forEach((m) => { m.emissive.copy(GLOW); m.emissiveIntensity = 0.16 * S.glow; });
   // the soft shadow follows the body, wider when it stands
   const b = S.rig.body.position, spread = THREE.MathUtils.clamp((b.y - R) / (H - R), 0, 1);
   vA.copy(b).applyMatrix4(M.root.matrix);
@@ -198,14 +198,16 @@ function hover(ev) {
 function tap(ev) {
   if (!hit(ev)) return false;
   const M = S.M;
-  S.pulse = 0.6;
+  S.pulse = 0.5;
   if (M.clipName === 'sleep' || (S.night && M.state === 'ball')) { wake(); return true; }
   if (M.big || M.queue.some(([n]) => n === 'roll' || n === 'bloom' || n === 'twitch')) return true;   // never cut a big one short
   M.queue.length = 0;
-  if (M.state === 'ball') { M.then([['peek'], ['bloom'], ['spin']]); S.story = 2; return true; }
+  if (S.night) { choose(); return true; }               // standing at night: off to sleep
+  if (M.state === 'ball') { M.then([['peek'], ['bloom'], ['spin']]); S.story = 2; const [n, o] = M.queue.shift(); M.play(n, o); return true; }
   const part = STORY[S.story % STORY.length]; S.story++;
   M.then(part.length === 1 ? sequence(part[0]) : sequence('roll'));
   S.prev = part[0];
+  const [n, o] = M.queue.shift(); M.play(n, o);       // at once: idling, walking or looking give way
   return true;
 }
 // arriving in the showroom: asleep at night, otherwise as it was

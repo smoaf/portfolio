@@ -20,7 +20,7 @@ import { R, LEG, psi, ballAngles } from './robot-model.js';
 const V3 = THREE.Vector3, Q = THREE.Quaternion;
 const UP = new V3(0, 1, 0), ONE = new V3(1, 1, 1), ZERO = new V3();
 export const H = 0.385, RH = 0.455;                          // standing body height and foot radius
-const H_CROUCH = 0.29, R_CROUCH = 0.36, H_CROWN = 0.5, R_CROWN = 0.33;
+const H_CROUCH = 0.245, R_CROUCH = 0.4, H_CROWN = 0.5, R_CROWN = 0.33;
 const BALL = ballAngles();
 
 // ---- easing
@@ -28,7 +28,6 @@ const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
 const smooth = (t) => { t = clamp01(t); return t * t * t * (t * (6 * t - 15) + 10); };
 const inOut = (t) => { t = clamp01(t); return 0.5 - 0.5 * Math.cos(Math.PI * t); };
 const outBack = (t, s = 1.6) => { t = clamp01(t) - 1; return 1 + t * t * ((s + 1) * t + s); };
-const outQuad = (t) => { t = clamp01(t); return 1 - (1 - t) * (1 - t); };
 const seg = (t, a, b) => clamp01((t - a) / (b - a));              // 0..1 while t runs from a to b
 const env = (t, a, b, c, d) => smooth(seg(t, a, b)) * (1 - smooth(seg(t, c, d)));   // up a..b, hold, down c..d
 const wobble = (t, f, damp) => (t <= 0 ? 0 : Math.exp(-damp * t) * Math.sin(2 * Math.PI * f * t));
@@ -49,7 +48,7 @@ export const lerpAngles = (P, k, a, b, t) => { for (let i = 0; i < 3; i++) P.q[k
 
 // ---- scratch (nothing is allocated per frame)
 const vA = new V3(), vB = new V3(), vC = new V3(), qA = new Q(), qB = new Q();
-const mBody = new THREE.Matrix4(), mRoot = new THREE.Matrix4(), mBS = new THREE.Matrix4(), mInv = new THREE.Matrix4(), mRootInv = new THREE.Matrix4();
+const mBody = new THREE.Matrix4(), mBS = new THREE.Matrix4(), mInv = new THREE.Matrix4(), mRootInv = new THREE.Matrix4();
 const qTmp = new Float32Array(3), qIK = new Float32Array(3), gA = new V3();
 
 // ---- the motion controller
@@ -133,7 +132,7 @@ export class Motion {
     const rad = dx * Math.cos(a) - dz * Math.sin(a), lat = dx * Math.sin(a) + dz * Math.cos(a);
     let q0, h;
     if (Math.abs(rad) < 1e-6) { q0 = 0; h = 0; } else { q0 = Math.atan(-lat / rad); h = Math.sign(rad) * Math.hypot(rad, lat); }
-    q0 = Math.max(-1.1, Math.min(1.1, q0));
+    q0 = Math.max(-1.35, Math.min(1.35, q0));
     const u = h - LEG.lc, v = dy, lf = LEG.lf, lt = LEG.lt;
     const L = Math.max(lt - lf + 1e-3, Math.min(lf + lt - 1e-3, Math.hypot(u, v)));
     const b = Math.atan2(v, u);
@@ -231,8 +230,11 @@ class Gait {
       if (!this.on[k] && s < 1 && s0 > s && (need || this.far(k, x, z, h) > 0.01)) { this.on[k] = 1; this.from[k].copy(M.feet[k]).setY(0); }
       if (this.on[k]) {
         M.footHome(k, x + vel.x * T, z + vel.z * T, h + omega * T, this.radius, this.to[k]);
-        const e = inOut(Math.min(1, s));
-        P.foot[k].lerpVectors(this.from[k], this.to[k], e);
+        // swing round the body (angle and distance), so a fast turn never pulls a foot under it
+        const e = inOut(Math.min(1, s)), f0 = this.from[k], f1 = this.to[k];
+        const a0 = Math.atan2(f0.z - z, f0.x - x), a1 = a0 + wrap(Math.atan2(f1.z - z, f1.x - x) - a0);
+        const r = lerp(Math.hypot(f0.x - x, f0.z - z), Math.hypot(f1.x - x, f1.z - z), e), an = lerp(a0, a1, e);
+        P.foot[k].set(x + r * Math.cos(an), 0, z + r * Math.sin(an));
         P.foot[k].y = this.lift * Math.sin(Math.PI * Math.min(1, s)) * (0.6 + 0.4 * Math.min(1, speed * 6 + Math.abs(omega)));
         if (s >= 1) { this.on[k] = 0; P.foot[k].y = 0; }
       } else { P.foot[k].copy(M.feet[k]); P.foot[k].y = 0; }
@@ -335,7 +337,7 @@ CLIPS.turn = {
     M.heading = wrap(M.heading + this.omega * dt);
     const moving = M.gait.step(dt, ZERO, this.omega, P);
     const b = M.gait.bob() * Math.min(1, Math.abs(this.omega));
-    P.bpos.set(0, H - 0.005 * b - 0.003, 0); tilt(P, 0, 0, 0.12 * this.omega / 1.3 * 0); P.ground = 0; P.mast = 0; P.petal.fill(0);
+    P.bpos.set(0, H - 0.005 * b - 0.003, 0); P.bq.identity(); P.ground = 0; P.mast = 0; P.petal.fill(0);
     return Math.abs(err) < 0.02 && Math.abs(this.omega) < 0.05 && !moving;
   },
 };
@@ -351,7 +353,7 @@ CLIPS.look = {
     if (this.around) want = this.base === undefined ? (this.base = M.heading) : this.base + 0.55 * Math.sin(t * 1.3);
     const err = wrap(want - M.heading);
     const turning = !this.around && Math.abs(err) > 0.12 && this.leanT < 0;
-    const wWant = turning ? Math.max(-1.4, Math.min(1.4, err * 3)) : this.around ? 0 : 0;
+    const wWant = turning ? Math.max(-1.4, Math.min(1.4, err * 3)) : 0;
     this.omega += (wWant - this.omega) * Math.min(1, dt * 5);
     M.heading = wrap(M.heading + this.omega * dt);
     const moving = M.gait.step(dt, ZERO, this.omega, P);
@@ -422,7 +424,7 @@ CLIPS.fold = {
       if (t > 2.15) { P.ik[k] = false; P.q.set(BALL, k * 3); }
     }
     const crack = env(t, 0.1, 0.4, 1.5, 2.1);
-    for (let i = 0; i < 6; i++) P.petal[i] = crack * 0.12 - 0.02 * wobble(t - 2.1, 4, 6) * 0;
+    for (let i = 0; i < 6; i++) P.petal[i] = crack * 0.12;
     P.ground = 0; P.mast = 0;
     if (t > 2.15) { ballPose(M, P); P.bpos.y = R; }
     if (t > 2.6) { M.state = 'ball'; return true; }
@@ -531,7 +533,7 @@ CLIPS.bloom = {
   },
   update(M, dt, P) {
     const t = (this.t += dt / this.slow);
-    if (this.upright) return this.unfold(M, dt, P, t + 0);
+    if (this.upright) return this.unfold(M, dt, P, t);
     const r = smooth(seg(t, 0, 0.7));
     if (t < 0.75) {                                         // the settling roll
       ballPose(M, P); P.ground = 1;
@@ -548,8 +550,8 @@ CLIPS.bloom = {
       const reach = env(t, 1.3, 1.6, 1.9, 2.3);
       const qq = qTmp;
       qq[0] = 0.12 * Math.sin(k * 1.7) * reach;
-      qq[1] = lerp(BALL[1], 0.4, s) + 0.22 * reach;
-      qq[2] = lerp(BALL[2], -1.0, s) + 0.4 * reach;
+      qq[1] = lerp(BALL[1], -0.2, s) - 0.12 * reach;
+      qq[2] = lerp(BALL[2], -0.85, s) + 0.3 * reach;
       const flip = smooth(seg(t, 2.2, 3.1));
       for (let i = 0; i < 3; i++) P.q[k * 3 + i] = lerp(qq[i], M.STAND[i], flip);
       P.ik[k] = false;
@@ -602,8 +604,7 @@ CLIPS.crown = {
   blend: 0.3, big: true,
   start(M, o) { this.t = 0; M.gait.reset(R_CROWN); this.stepT = -1; this.hold = o.hold || 2.2; this.dir = rnd() < 0.5 ? -1 : 1; },
   update(M, dt, P) {
-    let t = (this.t += dt);
-    const x = M.root.position.x, z = M.root.position.z;
+    const t = (this.t += dt);
     // first the feet step in under the body, then the show
     if (this.stepT < 0) {
       M.gait.radius = R_CROWN;
@@ -648,8 +649,8 @@ CLIPS.stretch = {
       const e = env(u, 0, 0.38, 0.62, 0.95);
       P.foot[k].copy(this.base[k]);
       if (e > 0) {
-        M.footHome(k, x, z, M.heading, 0.64, vA);
-        P.foot[k].lerp(vA, e); P.foot[k].y = 0.11 * e + 0.05 * Math.sin(Math.PI * seg(u, 0, 0.38)) * (1 - e) + 0.008 * Math.sin(u * 30) * env(u, 0.38, 0.45, 0.55, 0.62);
+        M.footHome(k, x, z, M.heading, 0.7, vA);
+        P.foot[k].lerp(vA, e); P.foot[k].y = 0.15 * e + 0.05 * Math.sin(Math.PI * seg(u, 0, 0.38)) * (1 - e) + 0.008 * Math.sin(u * 30) * env(u, 0.38, 0.45, 0.55, 0.62);
         lx -= Math.cos(psi(k)) * e; lz += Math.sin(psi(k)) * e;
       }
     }
@@ -668,14 +669,14 @@ CLIPS.spin = {
   update(M, dt, P) {
     const t = (this.t += dt);
     if (this.hopT < 0) {
-      const turned = smooth(seg(t, 0.15, 1.45));
+      const turned = smooth(seg(t, 0.15, 3.0));
       const want = this.h0 + this.dir * 2 * Math.PI * turned;
       const prev = M.heading; M.heading = wrap(want);
       this.omega = wrap(M.heading - prev) / Math.max(dt, 1e-3);
-      const moving = M.gait.step(dt, ZERO, this.omega, P, 3.4);
+      const moving = M.gait.step(dt, ZERO, this.omega, P, 3.6);
       P.bpos.set(0, H - 0.008 * M.gait.bob() * Math.min(1, Math.abs(this.omega) / 3) - 0.01 * env(t, 0, 0.12, 0.15, 0.3), 0);
       tilt(P, 0, -0.06 * this.dir * Math.min(1, Math.abs(this.omega) / 4)); P.petal.fill(0); P.mast = 0; P.ground = 0;
-      if (t > 1.5 && !moving) { this.hopT = t; for (let k = 0; k < 6; k++) this.base[k] = (this.base[k] || new V3()).copy(M.feet[k]); }
+      if (t > 3.0 && !moving) { this.hopT = t; for (let k = 0; k < 6; k++) this.base[k] = (this.base[k] || new V3()).copy(M.feet[k]); }
       return false;
     }
     // the hop: squash, up, petals pop open, down with a squash
@@ -704,7 +705,7 @@ CLIPS.wave = {
     const up = env(t, 0.35, 0.85, 2.6, 3.1), shift = env(t, 0, 0.45, 2.75, 3.25);
     const a = psi(k) + M.heading, ca = Math.cos(a), sa = -Math.sin(a);
     P.bpos.set(-0.035 * shift * Math.cos(psi(k)), H + 0.012 * shift, 0.035 * shift * Math.sin(psi(k)));
-    tilt(P, 0.13 * shift * Math.cos(psi(k)), -0.13 * shift * Math.sin(psi(k)) * 0, 0);
+    tilt(P, 0.13 * shift * Math.cos(psi(k)), 0);
     const w = Math.sin((t - 0.85) * 2 * Math.PI * 2.1) * env(t, 0.85, 1.0, 2.4, 2.6);
     const r = lerp(RH, 0.43, up), side = 0.11 * w * up;
     vA.set(M.root.position.x + r * ca - side * sa, 0.2 * up + 0.02 * Math.sin(Math.PI * seg(t, 0.35, 0.85)), M.root.position.z + r * sa + side * ca);
