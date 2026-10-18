@@ -49,8 +49,11 @@ export const ROUTE = {
   id: 'jungle',
   name: 'Jungle',
   seconds: 96,
-  // the animal that only comes out at one time of day (the van's field log hints at it)
-  secrets: [{ id: 'poodle-moth', name: 'Poodle moth', when: 'NIGHT' }],
+  // the ones that only come out at one time of day (the van's field log hints at them)
+  secrets: [
+    { id: 'poodle-moth', name: 'Poodle moth', when: 'NIGHT' },
+    { id: 'glow-mushroom', name: 'Fluorescent mushrooms', when: 'NIGHT' },
+  ],
   eyeHeight: 2.05,
   yawLimit: 2.7,
   palette: {
@@ -487,6 +490,8 @@ export const ROUTE = {
     spawn('tarsier', perch(uA(0.8), 6.5, 3.6), {}, small);
     spawn('flower-mantis', beside(uA(0.9), -6.5, 0.9), { perch: true }, small);
     if (night) { spawn('poodle-moth', beside(uA(0.4), -5, 3), {}, small); spawn('poodle-moth', beside(uA(0.75), 6, 3.4), {}, small); }
+    // the night secret on the forest floor: fluorescent mushrooms on fallen wood and at a tree's foot
+    if (night) { spawn('glow-mushroom', beside(uA(0.26), -6.5), {}, small); spawn('glow-mushroom', onTrunk(uA(0.56), 7, 0), { log: false }, small); }
 
     // the river: the mudflat by the south bank, the open water, the islands, the north bank
     const uR = (k) => lerp(uIn, uOut, k);
@@ -497,6 +502,8 @@ export const ROUTE = {
     spawn('crocodile', onWater(uR(0.74), 20));
     spawn('river-dolphin', onWater(uR(0.38), 12, -1.2)); spawn('river-dolphin', onWater(uR(0.5), -14, -1.2)); spawn('river-dolphin', onWater(uR(0.56), 18, -1.2));
     spawn('archerfish', onWater(uR(0.3), 9, -0.3)); spawn('archerfish', onWater(uR(0.8), -9, -0.3));
+    // moon jellyfish swarms out in the channel: deep by day, up under the surface at dusk, glowing at night
+    spawn('moon-jelly', onWater(uR(0.34), -13)); spawn('moon-jelly', onWater(uR(0.47), 15), { count: 10 }); spawn('moon-jelly', onWater(uR(0.66), -12));
     spawn('frigatebird', onWater(uR(0.45), 30, 22), {}, { seeAt: 320 });
     spawn('frigatebird', onWater(uR(0.6), -40, 28), {}, { seeAt: 320 });
     // sea birds coming in from the coast: a few riding one thermal over the mouth
@@ -513,6 +520,7 @@ export const ROUTE = {
     spawn('flower-mantis', beside(uC(0.7), 6.5, 0.9), { perch: true }, small);
     spawn('giant-anteater', beside(uC(0.85), -13));
     if (night) spawn('poodle-moth', beside(uC(0.6), 5, 3.2), {}, small);
+    if (night) spawn('glow-mushroom', beside(uC(0.42), -6.5), {}, small);
 
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);

@@ -9,6 +9,7 @@
 //   treehopper      on a twig under a tall pitted helmet; the helmet lights up and it hops
 //   eyespot-moth    flat on a trunk; flashes its eyespots and flutters (dusk)
 //   poodle-moth     the secret: a white felt moth circling a glowing pod; comes to hover at the van
+//   glow-mushroom   the other night secret: clusters on fallen wood or at a tree's foot, glowing softly
 //
 // Insects and the tarsier are scaled up (the research-station twist). Perched animals bring a short
 // piece of their own perch (stem, twig, trunk or flower) so they never hang in the air; `opts.stub =
@@ -24,6 +25,7 @@ export const SPECIES = {
   treehopper: { id: 'treehopper', name: 'Helmet treehopper', points: 210, call: { hz: 1500, kind: 'trill' } },
   'eyespot-moth': { id: 'eyespot-moth', name: 'Eyespot moth', points: 180, call: { hz: 4800, kind: 'noise' } },
   'poodle-moth': { id: 'poodle-moth', name: 'Poodle moth', points: 450, call: { hz: 6400, kind: 'chirp' } },
+  'glow-mushroom': { id: 'glow-mushroom', name: 'Fluorescent mushrooms', points: 240, call: { hz: 3400, kind: 'trill' } },
 };
 
 // ---- small shared helpers
@@ -969,6 +971,89 @@ export function buildPoodleMoth(K, home, opts = {}) {
   return K.lod(c, near, far, 40);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Fluorescent mushrooms (a night secret): clusters of small bell caps on thin pale stems, growing
+// on a piece of fallen wood or round the foot of a tree, glowing a soft green that breathes slowly.
+// Scaled up like the insects. Feed landing close, or the night by itself, sets off the rare show:
+// the caps flare and a puff of glowing spores drifts up from them. opts.log = false leaves out the
+// fallen wood (the route puts them at the foot of a real tree).
+let mushId = 0;
+export function buildGlowMushrooms(K, home, opts = {}) {
+  const log = opts.log !== false, id = ++mushId;
+  const capM = K.glow(0x2cff5c, 0.55, { name: 'mushCap' + id, color: 0x1f5a2a }), gillM = K.glow(0x00ffb4, 0.6, { name: 'mushGill' + id, color: 0x0e4a3a });
+  const stemM = K.mat(0x9ab894, { emissive: 0x58ff70, emissiveIntensity: K.glowLevel * 0.16, roughness: 0.7 });
+  const sporeM = K.mat(0xd8ffc0, { emissive: 0xb8ff9a, emissiveIntensity: 2.5, transparent: true, opacity: 0.85, depthWrite: false, name: 'mushSpore' + id });
+  const bark = K.mat(0x4a3a2a, { roughness: 1 }), moss = K.mat(0x3e5a2c, { roughness: 1 });
+  [capM, gillM].forEach((m) => { m.userData.base = m.emissiveIntensity; });
+  const cap = K.lathe('mushCap', [[0.001, -0.06], [0.42, -0.07], [0.98, 0.0], [0.92, 0.22], [0.7, 0.46], [0.38, 0.62], [0, 0.68]], 12);
+  const gills = K.cone(0.95, 0.12, 12);
+
+  const root = K.group(), near = K.group(null, root), far = K.group(null, root);
+  const body = K.group(null, near);
+  // the bed they grow from: a mossy fallen log, or nothing (the route's tree)
+  const bedY = log ? 0.28 : 0;
+  if (log) {
+    K.mesh(K.cyl(0.3, 0.34, 2.6, 8), bark, [0, 0.28, 0], body, [0, 0, PI / 2]);
+    K.mesh(K.cyl(0.31, 0.31, 0.04, 8), K.mat(0x8a6e4e, { roughness: 1 }), [1.31, 0.28, 0], body, [0, 0, PI / 2]);
+    K.mesh(K.sphere(1, 8, 5), moss, [-0.3, 0.52, 0.05], body, null, [0.9, 0.12, 0.32]);
+    K.mesh(K.sphere(1, 6, 4), moss, [0.7, 0.5, -0.08], body, null, [0.4, 0.1, 0.26]);
+  }
+  // three clusters, each its own group so they breathe a little out of step
+  const SPOTS = log
+    ? [[[-0.75, 0.05], [-0.55, -0.12], [-0.62, 0.2], [-0.4, 0.08]], [[0.15, 0.18], [0.32, 0.05], [0.0, -0.05]], [[0.85, -0.15], [1.0, 0.08], [0.7, 0.12], [1.12, -0.05]]]
+    : [[[-0.5, 0.35], [-0.35, 0.55], [-0.7, 0.2], [-0.25, 0.3]], [[0.1, 0.6], [0.3, 0.45], [-0.05, 0.42]], [[0.6, 0.3], [0.75, 0.1], [0.48, 0.15], [0.8, 0.4]]];
+  const clusters = SPOTS.map((spots, ci) => {
+    const g = K.group([0, bedY, 0], near);
+    // every mushroom has a small one or two growing at its foot
+    const all = [];
+    spots.forEach(([x, z], k) => { all.push([x, z, 1]); all.push([x + 0.08 * ((k % 2) * 2 - 1), z + 0.06, 0.5]); if (k % 2) all.push([x - 0.06, z - 0.07, 0.38]); });
+    all.forEach(([x, z, f], k) => {
+      const h = (0.22 + ((ci * 3 + k * 5) % 7) * 0.05) * f, r = (0.09 + ((ci + k * 3) % 4) * 0.025) * (0.4 + 0.6 * f), lean = ((k % 3) - 1) * 0.18;
+      const y0 = log ? Math.sqrt(Math.max(0, 0.09 - z * z)) - 0.06 : 0;       // on top of the round log
+      K.mesh(K.cyl(0.018, 0.026, h, 5), stemM, [x + lean * h * 0.5, y0 + h / 2, z], g, [0, 0, -lean]);
+      K.mesh(cap, capM, [x + lean * h, y0 + h, z], g, [0, 0, -lean], r);
+      K.mesh(gills, gillM, [x + lean * h, y0 + h - 0.03 * r / 0.1, z], g, [0, 0, -lean], [r * 0.9, r * 0.5, r * 0.9]);
+    });
+    return g;
+  });
+  // the spores of the show: a loose cloud of glowing specks, hidden until then
+  const spores = K.group([0, bedY + 0.4, 0], near);
+  for (let k = 0; k < 18; k++) K.mesh(K.sphere(1, 4, 3), sporeM, [Math.sin(k * 2.3) * 0.9, (k % 6) * 0.12, Math.cos(k * 1.7) * 0.35], spores, null, 0.02 + (k % 3) * 0.008);
+  spores.visible = false;
+  // far: the log and a few glowing blobs
+  if (log) K.mesh(K.cyl(0.3, 0.3, 2.6, 5), bark, [0, 0.28, 0], far, [0, 0, PI / 2]);
+  for (const x of [-0.6, 0.2, 0.9]) K.mesh(K.sphere(1, 6, 4), capM, [x, bedY + 0.38, 0], far, null, [0.22, 0.12, 0.22]);
+
+  near.scale.setScalar(1.4); far.scale.setScalar(1.4);
+  K.place(root, home);
+  const toCam = new THREE.Vector3(0, 0, 1);
+  let show = 0, puff = 0;
+  const c = perch(K.makeCreature({
+    species: SPECIES['glow-mushroom'], root, home, radius: 1.1, eye: new THREE.Vector3(0, (bedY + 0.35) * 1.4, 0),
+    ground: K.groundY, speed: 0, roam: 0, fleeAt: 0, curiousAt: 0, shy: 0, rareChance: 0.9, rareAt: 'night', yaw: opts.yaw ?? 0,
+    pose(c, dt, env) {
+      toCam.copy(env.camPos).sub(c.root.position).setY(0).normalize();
+      rareCue(c, env);
+      show = damp(show, c.state === 'rare' ? 1 : 0, 2.5, dt);
+      // the slow breath of the glow, and each cluster swelling a hair with it
+      const br = 0.5 + 0.5 * Math.sin(env.t * 0.7 + c.bob);
+      capM.emissiveIntensity = capM.userData.base * (0.75 + 0.35 * br) + show * 1.6;
+      gillM.emissiveIntensity = gillM.userData.base * (0.7 + 0.4 * br) + show * 1.4;
+      clusters.forEach((g, i) => g.scale.setScalar(1 + 0.025 * Math.sin(env.t * 0.7 + c.bob + i * 1.4) + show * 0.05));
+      // the spores: a puff that rises, spreads and fades out once per show
+      puff = c.state === 'rare' ? Math.min(1, puff + dt / 4) : (puff > 0 && puff < 1 ? Math.min(1, puff + dt / 4) : 0);
+      spores.visible = puff > 0 && puff < 1;
+      if (spores.visible) {
+        spores.position.y = bedY + 0.4 + puff * 1.4;
+        spores.scale.set(1 + puff * 0.8, 1 + puff * 1.2, 1 + puff * 0.8);
+        sporeM.opacity = 0.85 * (1 - puff);
+      }
+    },
+  }));
+  c.forward = (out) => out.copy(toCam);                 // a cluster has no front
+  return K.lod(c, near, far, 34);
+}
+
 export const BUILDERS = {
   tarsier: buildTarsier,
   'giant-panda': buildGiantPanda,
@@ -978,4 +1063,5 @@ export const BUILDERS = {
   treehopper: buildTreehopper,
   'eyespot-moth': buildEyespotMoth,
   'poodle-moth': buildPoodleMoth,
+  'glow-mushroom': buildGlowMushrooms,
 };

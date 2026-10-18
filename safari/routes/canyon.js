@@ -428,6 +428,8 @@ export const ROUTE = {
     // the salamanders of the pool (walking its floor, gills glowing) and shoals of tetras above them
     spawn('axolotl', PD(zs(0.08), 3, 0), {}, small); spawn('axolotl', PD(zs(0.47), -5, 0), {}, small); spawn('axolotl', PD(zs(0.8), 6, 0), {}, small);
     spawn('lantern-tetra', PD(zs(0.18), -2, 4.5)); spawn('lantern-tetra', PD(zs(0.5), 4, 5.5), { count: 36 }); spawn('lantern-tetra', PD(zs(0.88), -4, 4));
+    // gardens of sea anemones on the floor beside them, at every time of day (their tips glow after dark)
+    spawn('sea-anemone', PD(zs(0.12), 7, 0), {}, small); spawn('sea-anemone', PD(zs(0.44), -9, 0), { count: 8 }, small); spawn('sea-anemone', PD(zs(0.76), 10, 0), {}, small);
     // the secret: the goblin shark only comes up from the deep at night
     if (night) spawn('goblin-shark', PD(zs(0.55), 0, 5));
 
