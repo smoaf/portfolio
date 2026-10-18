@@ -12,6 +12,7 @@
     --accent: #b3602d;         /* warm lamp amber, used for the active state */
     --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
     --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --font-hand: "Caveat", "Segoe Print", "Bradley Hand", "Chalkboard SE", cursive;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -262,6 +263,10 @@
   .album-tape { position: absolute; height: calc(var(--pw) * 0.042); box-shadow: 0 1px 1px rgba(60, 40, 20, 0.12);
                 background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 3px, transparent 3px 7px);
                 clip-path: polygon(2% 0, 98% 4%, 100% 50%, 97% 100%, 1% 96%, 0 50%); }
+  .album-note { position: absolute; box-sizing: border-box; padding: calc(var(--pw) * 0.03) calc(var(--pw) * 0.03) calc(var(--pw) * 0.022); display: flex; align-items: center;
+                background: repeating-linear-gradient(180deg, transparent 0 calc(var(--pw) * 0.036), rgba(90, 120, 160, 0.16) calc(var(--pw) * 0.036) calc(var(--pw) * 0.038)), #fdf8e6;
+                box-shadow: 0 1px 2px rgba(40, 30, 20, 0.22), 0 3px 8px rgba(40, 30, 20, 0.1); }
+  .album-note p { margin: 0; font: 500 calc(var(--pw) * 0.043)/1.15 var(--font-hand); color: #2c3a5a; }
   .album-no { position: absolute; bottom: calc(var(--pw) * 0.03); right: calc(var(--pw) * 0.05); font: 400 11px/1 var(--font-display); letter-spacing: 0.12em; color: rgba(60, 50, 40, 0.5); }
   .album-sheet .album-page:nth-child(1):not(:last-child) .album-no { right: auto; left: calc(var(--pw) * 0.05); }
   .album-page.blank .album-no { display: none; }
@@ -281,7 +286,7 @@
   .album-count { display: grid; place-items: center; min-width: 110px; padding: 0 12px; border-left: 1px solid var(--glass-line); border-right: 1px solid var(--glass-line);
                  font: 400 11px/1 var(--font-display); letter-spacing: 0.16em; font-variant-numeric: tabular-nums; }
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@500&display=swap">
 
 <div id="stage"></div>
 <header class="site" id="site">

@@ -65,6 +65,12 @@
           "w": 1050,
           "h": 1400
         }
+      ],
+      "notes": [
+        {
+          "text": "Night in the jungle: glowing mushrooms on the forest floor.",
+          "placeholder": true
+        }
       ]
     },
     {
@@ -200,6 +206,12 @@
           "thumb": "assets/album/thumb/photo-26.webp",
           "w": 1050,
           "h": 1400
+        }
+      ],
+      "notes": [
+        {
+          "text": "Jellyfish rise in the jungle's river at dusk. After dark they glow.",
+          "placeholder": true
         }
       ]
     },
@@ -346,6 +358,12 @@
           "thumb": "assets/album/thumb/photo-46.webp",
           "w": 1050,
           "h": 1400
+        }
+      ],
+      "notes": [
+        {
+          "text": "After dark the anemones in the canyon pool light up.",
+          "placeholder": true
         }
       ]
     },

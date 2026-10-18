@@ -2,6 +2,8 @@
 // pool with its feathery gills glowing; its land cousin, the fire salamander, only comes out on the
 // wet banks in the half light (dawn and dusk, the canyon's twilight secret); and a shoal of lantern
 // tetras turns in the open water of the pool, one instanced draw per part however many fish there are.
+// A little garden of sea anemones sits on the pool floor at every time of day; their tentacle tips
+// glow with the kit's glow level, faint by day and bright at night.
 //
 // The salamanders are skinned over a small skeleton (the rig from deep.js): the spine and tail bend
 // side to side as they walk, the legs swing in diagonal pairs, the gills flutter.
@@ -12,6 +14,7 @@ export const SPECIES = {
   axolotl: { id: 'axolotl', name: 'Axolotl', points: 220, call: { hz: 1900, kind: 'chirp' } },
   'fire-salamander': { id: 'fire-salamander', name: 'Fire salamander', points: 260, call: { hz: 1400, kind: 'chirp' } },
   'lantern-tetra': { id: 'lantern-tetra', name: 'Lantern tetra shoal', points: 150, call: { hz: 2400, kind: 'trill' } },
+  'sea-anemone': { id: 'sea-anemone', name: 'Sea anemones', points: 140, call: { hz: 1100, kind: 'trill' } },
 };
 
 const PI = Math.PI, TAU = PI * 2;
@@ -367,8 +370,130 @@ export function buildLanternTetras(K, home, opts = {}) {
   return c;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Sea anemones: a little garden of them on the pool floor, there at every time of day. Each is a
+// short column, an oral disc and a crown of tentacles with glowing tips that sway in the water. The
+// tips take the kit's glow level, so they are faint by day and bright at night. The van coming close
+// makes them pull their crowns in; feed sinking among them, or the night by itself, sets off the
+// rare show: the crowns open wide and rings of light run out along the tentacles. Scaled up (the
+// research-station twist), and instanced: one draw per part for the whole garden.
+// opts: { count = 7, spread = 1.6 }
+export function buildSeaAnemones(K, home, opts = {}) {
+  const N = clamp(opts.count ?? 7, 3, 10), spread = opts.spread ?? 1.6;
+  const RING = [[16, 0.14, 1.1], [11, 0.1, 0.72], [6, 0.05, 0.32]];                 // tentacles per ring: [count, radius, tilt]
+  const TN = RING.reduce((n, r) => n + r[0], 0);
+  const colM = K.mat(0xffffff, { roughness: 0.6 }), discM = K.sheen(0xf0a07e, { roughness: 0.45 });
+  const tentM = K.mat(0xffffff, { roughness: 0.4, transparent: true, opacity: 0.88, emissive: 0x3fe0c0, emissiveIntensity: K.glowLevel * 0.12 });
+  const tipM = flash(K, 0x00ff7a, 0.6, { roughness: 0.5, color: 0x0b3a2c }), mouthM = flash(K, 0xffd27a, 0.5);
+  const colG = K.geo('anemCol', () => xf(K.lathe('anemCol', [[0.19, -0.02], [0.18, 0.02], [0.14, 0.07], [0.115, 0.13], [0.125, 0.18], [0.155, 0.212], [0.16, 0.228], [0.13, 0.236]], 14), null, null, 1));
+  const discG = K.geo('anemDisc', () => xf(K.sphere(1, 14, 5), [0, 0.225, 0], null, [0.15, 0.03, 0.15]));
+  const mouthG = K.geo('anemMouth', () => xf(K.sphere(1, 8, 5), [0, 0.25, 0], null, [0.035, 0.012, 0.026]));
+  const tentG = K.geo('anemTent', () => merge([[K.cyl(0.011, 0.024, 0.28, 6), [0, 0.14, 0], null, 1], [K.sphere(1, 6, 4), [0, 0.0, 0], null, 0.024]]));
+  const tipG = K.geo('anemTip', () => xf(K.sphere(1, 6, 4), [0, 0.29, 0], null, 0.025));
+
+  const root = K.group(), near = K.group(null, root), far = K.group(null, root);
+  const inst = (g, m, n, parent = near) => {
+    const im = new THREE.InstancedMesh(g, m, n);
+    im.frustumCulled = false;
+    im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    parent.add(im);
+    return im;
+  };
+  const cols = inst(colG, colM, N), discs = inst(discG, discM, N), mouths = inst(mouthG, mouthM, N);
+  const tents = inst(tentG, tentM, N * TN), tips = inst(tipG, tipM, N * TN);
+  // each anemone: a spot on the floor (local to the root), a size, a turn, a colour and a phase
+  const COLOURS = [0xb85466, 0xc97a58, 0x9a6aa6, 0xc4647e, 0xc99a5a];
+  const A = [], col = new THREE.Color(), tint = new THREE.Color(), WHITE = new THREE.Color(0xffeee6);
+  const floorAt = (x, z) => K.groundY(home.x + x, home.z + z) - home.y;
+  for (let i = 0; i < N; i++) {
+    const a = i * 2.4 + K.rand() * 0.6, r = i ? spread * (0.35 + 0.65 * Math.sqrt(i / N)) : 0;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const an = { p: new THREE.Vector3(x, floorAt(x, z) - 0.02, z), s: 1.7 + K.rand() * 1.1, yaw: K.rand() * TAU, ph: K.rand() * TAU, open: 1 };
+    an.m = new THREE.Matrix4().compose(an.p, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, an.yaw, 0)), new THREE.Vector3().setScalar(an.s));
+    col.setHex(COLOURS[i % COLOURS.length]);
+    tint.copy(col).lerp(WHITE, 0.3);
+    cols.setColorAt(i, col);
+    cols.setMatrixAt(i, an.m);
+    for (let j = 0; j < TN; j++) tents.setColorAt(i * TN + j, tint);
+    A.push(an);
+  }
+  // the tentacles' places on the disc: [angle, radius, tilt], the same for every anemone
+  const TP = [];
+  RING.forEach(([n, rr, tilt], k) => { for (let j = 0; j < n; j++) TP.push([(j / n) * TAU + k * 0.3, rr, tilt]); });
+  // far: a few soft domes, the tips' glow on top
+  A.slice(0, 4).forEach((an) => {
+    K.mesh(K.sphere(1, 7, 4), discM, [an.p.x, an.p.y + 0.2 * an.s, an.p.z], far, null, [0.24 * an.s, 0.2 * an.s, 0.24 * an.s]);
+    K.mesh(K.sphere(1, 6, 3), tipM, [an.p.x, an.p.y + 0.36 * an.s, an.p.z], far, null, [0.3 * an.s, 0.08 * an.s, 0.3 * an.s]);
+  });
+  K.place(root, home);
+
+  const MOVING = [discs, mouths, tents, tips];
+  const C = new THREE.Vector3(0, 0.55, 0), local = new THREE.Vector3(), toCam = new THREE.Vector3(0, 0, 1), sTent = new THREE.Vector3();
+  let show = 0, wave = 0;
+  const c = {
+    species: SPECIES['sea-anemone'], root, home: home.clone(), radius: 1.1, state: 'idle', t: 0, hold: 3,
+    visible: true, near: 99, bob: K.rand() * 6, pellet: null,
+  };
+  c.go = (s, hold = 5) => { if (c.state === s) return; c.state = s; c.t = 0; c.hold = hold; if (s === 'rare' && c._env && c._env.call) c._env.call(c, 'rare'); };
+  c.photoPoint = (out) => out.copy(C).applyMatrix4(c.root.matrixWorld);
+  // they have no front: whichever way the lens looks at them is the right way
+  c.forward = (out) => out.copy(toCam);
+  K.lod(c, near, far, 36);
+  c.step = (dt, env) => {
+    c.t += dt; c._env = env;
+    const camL = local.copy(env.camPos).sub(c.root.position);
+    toCam.copy(camL).setY(0).normalize();
+    const camD = camL.distanceTo(C);
+    // the mood: shut when the van is close, open again slowly; feed and the night set off the show
+    if (c.state !== 'flee' && c.state !== 'rare' && camD < 3.6) c.go('flee', 4);
+    else if (c.state === 'idle') {
+      const pellet = env.pellets.find((p) => !p.eaten && (p.sunk || p.landed) && p.pos.distanceTo(c.root.position) < spread + 2.5);
+      if (pellet) { c.pellet = pellet; c.go('eat', 2.5); }
+      else if (env.tod === 'night' && Math.random() < dt * 0.05) c.go('rare', 6);
+    } else if (c.state === 'eat') {
+      if (c.t > 1.2) {
+        if (c.pellet && !c.pellet.eaten) { c.pellet.eaten = true; c.pellet.eatenAt = env.t; if (env.call) env.call(c, 'eat'); }
+        c.go(Math.random() < 0.8 ? 'rare' : 'idle', 6);
+      }
+    } else if (c.t > c.hold) c.go('idle', 3);
+
+    show = ease(show, c.state === 'rare' ? 1 : 0, dt * 2);
+    wave += dt * (1.2 + show * 3);
+    lit(tipM, show * 2.6 + (K.night ? 0.35 * Math.sin(env.t * 0.9 + c.bob) : 0));
+    lit(mouthM, show * 1.2);
+    for (let i = 0; i < N; i++) {
+      const an = A[i];
+      const want = c.state === 'flee' ? 0.12 : 1;
+      an.open = want < an.open ? ease(an.open, want, dt * 6) : ease(an.open, want, dt * 0.5);   // snap shut, open slowly
+      const o = an.open;
+      mB.makeScale(1 + (1 - o) * 0.12, 0.75 + o * 0.25, 1 + (1 - o) * 0.12).premultiply(an.m);
+      discs.setMatrixAt(i, mB); mouths.setMatrixAt(i, mB);
+      for (let j = 0; j < TN; j++) {
+        const [a, rr, tilt] = TP[j], k = i * TN + j;
+        // the sway: a slow lean in the current, each tentacle a little after the one before
+        const sw = Math.sin(env.t * 0.9 + an.ph + j * 0.45) * 0.16, sw2 = Math.cos(env.t * 0.7 + an.ph * 1.3 + j * 0.6) * 0.1;
+        const t0 = tilt * (0.25 + 0.75 * o) * (1 + show * 0.25) + sw * o;
+        vA.set(Math.sin(a) * rr * (0.5 + 0.5 * o), 0.225 - (1 - o) * 0.05, Math.cos(a) * rr * (0.5 + 0.5 * o));
+        qA.setFromEuler(eA.set(t0, a + sw2, 0, 'YXZ'));
+        mA.compose(vA, qA, sTent.set(0.7 + 0.3 * o, 0.3 + 0.7 * o, 0.7 + 0.3 * o)).premultiply(an.m);
+        tents.setMatrixAt(k, mA);
+        // the tips: rings of light running outwards in the show (they swell as the ring passes)
+        const ring = show * Math.pow(Math.max(0, Math.sin(wave * 2 - rr * 30 - i * 0.7)), 4);
+        mB.makeScale(1 + ring * 0.9, 1 + ring * 0.9, 1 + ring * 0.9);
+        vB.set(0, 0.29, 0);
+        mB.setPosition(vB.multiplyScalar(-ring * 0.9));
+        tips.setMatrixAt(k, mB.premultiply(mA));
+      }
+    }
+    for (const im of MOVING) im.instanceMatrix.needsUpdate = true;
+    c.root.updateMatrixWorld();
+  };
+  return c;
+}
+
 export const BUILDERS = {
   axolotl: buildAxolotl,
   'fire-salamander': buildFireSalamander,
   'lantern-tetra': buildLanternTetras,
+  'sea-anemone': buildSeaAnemones,
 };
