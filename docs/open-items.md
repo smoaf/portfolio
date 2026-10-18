@@ -13,6 +13,7 @@ Collected 16 Oct 2026 from the progress logs of all build runs (Photo Safari, wo
 - **Library:** prop sizes are guesses; monstera leaf slits thin from afar; the papers list overlay uses the screen's bounding rectangle (the screen leans back a little).
 - **Hub:** no extra glow light at night; the intro panel is still in the model (only hidden at load).
 - **Media:** H.264 playback not verified in a codec-capable browser; with the text panel open on arrival, the video loads but stays paused until the panel closes.
+- **Showroom robot:** compared with the stills, the walking pose shows less of the dark frame between dome and plates, and the crouch is taller and less flared than `pose-crouch`; while turning fast, neighbouring plates can overlap a little; size (1.5× the real robot) is a guess to judge on the live site.
 - **Photo Safari:** van interior not drawn around the viewfinder; running out of film just drives to the end; markhor ruff and saiga shape could be better; no URL hash for camp sub-views.
 
 ## Structure: suggested refactors (none done yet)
