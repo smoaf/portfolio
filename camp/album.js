@@ -10,7 +10,7 @@
 //     a slip of paper taped on beside a photo, over its corner at most, never over its middle
 const PAGE_H = 1.3;                          // page height in page widths (portrait pages)
 const FRAME = 0.016;                         // white print border, in page widths
-const TAPES = ['rgba(222, 204, 158, 0.9)', 'rgba(170, 205, 194, 0.88)', 'rgba(232, 172, 150, 0.88)', 'rgba(196, 180, 222, 0.88)', 'rgba(236, 214, 120, 0.88)'];
+const TAPES = ['rgba(255, 255, 250, 0.2)', 'rgba(248, 252, 255, 0.18)', 'rgba(255, 253, 244, 0.24)', 'rgba(250, 250, 250, 0.16)'];   // clear tape, a hint of tint
 
 function rng(seed) {                         // small deterministic generator (mulberry32)
   return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
