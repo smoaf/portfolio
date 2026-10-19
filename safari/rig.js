@@ -29,6 +29,8 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
     u: 0, speed: 0, fov: FOV.wide, yaw: 0, pitch: 0,
     yawLimit: route.yawLimit ?? 2.6, pitchLimit: 1.0,
     lastDrag: -10, auto: new THREE.Vector2(), bump: 0, done: false,
+    aim: null,                                          // with a mouse: where the cursor asks the lens to look
+
     seconds: route.seconds ?? 120, t: 0,
   };
 
@@ -74,7 +76,14 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
 
     // auto-look: when nobody has dragged for a moment, the lens drifts a little towards whatever is
     // worth seeing. It never takes the view over: a drag wins at once.
-    const idle = S.t - S.lastDrag > 1.6;
+    // with a mouse the lens is where the cursor is, so it never drifts on its own
+    const idle = !S.aim && S.t - S.lastDrag > 1.6;
+    if (S.aim) {
+      // smoothed, and a little slower on the long lens, where a small shake shows most
+      const k = Math.min(1, dt * (3.5 + 4.5 * (S.fov - FOV.long) / (FOV.wide - FOV.long)));
+      S.yaw += (S.aim.x - S.yaw) * k;
+      S.pitch += (S.aim.y - S.pitch) * k;
+    }
     let tx = 0, ty = 0;
     if (idle && poi) {
       const a = angles(poi);
@@ -108,14 +117,24 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
       S.pitch = THREE.MathUtils.clamp(S.pitch + dy * k, -S.pitchLimit, S.pitchLimit);
       S.lastDrag = S.t; S.auto.set(0, 0);
     },
+    // mouse aim: nx, ny from -1 to 1 across the screen. The middle of the screen is straight ahead
+    // and the edges are the limits of the view; the curve keeps the middle calm for fine aiming
+    aim(nx, ny) {
+      const c = (v) => { v = THREE.MathUtils.clamp(v, -1, 1); return 0.4 * v + 0.6 * v * v * v; };
+      S.aim = { x: -c(nx) * S.yawLimit, y: -c(ny) * S.pitchLimit };
+      S.lastDrag = S.t; S.auto.set(0, 0);
+    },
     angles,
     aimAt(point) {                                      // tests and set pieces: look straight at it
       const a = angles(point);
       S.yaw = THREE.MathUtils.clamp(a.yaw, -S.yawLimit, S.yawLimit);
       S.pitch = THREE.MathUtils.clamp(a.pitch, -S.pitchLimit, S.pitchLimit);
-      S.auto.set(0, 0); S.lastDrag = S.t;
+      S.auto.set(0, 0); S.lastDrag = S.t; S.aim = null;
     },
-    nudge(x, y) { S.yaw = THREE.MathUtils.clamp(S.yaw + x, -S.yawLimit, S.yawLimit); S.pitch = THREE.MathUtils.clamp(S.pitch + y, -S.pitchLimit, S.pitchLimit); S.lastDrag = S.t; },
+    nudge(x, y) {
+      S.yaw = THREE.MathUtils.clamp(S.yaw + x, -S.yawLimit, S.yawLimit); S.pitch = THREE.MathUtils.clamp(S.pitch + y, -S.pitchLimit, S.pitchLimit); S.lastDrag = S.t;
+      if (S.aim) S.aim = { x: S.yaw, y: S.pitch };     // the keys move the aim until the mouse moves again
+    },
     zoom(factor) { return setZoom(S.fov * factor); },
     setZoom,
     resize(a) { camera.aspect = a; camera.updateProjectionMatrix(); },
