@@ -14,7 +14,8 @@ Collected 16 Oct 2026 from the progress logs of all build runs (Photo Safari, wo
 - **Hub:** no extra glow light at night; the intro panel is still in the model (only hidden at load).
 - **Media:** H.264 playback not verified in a codec-capable browser; with the text panel open on arrival, the video loads but stays paused until the panel closes.
 - **Showroom robot:** compared with the stills, the walking pose shows less of the dark frame between dome and plates, and the crouch is taller and less flared than `pose-crouch`; while turning fast, neighbouring plates can overlap a little; size (1.5× the real robot) is a guess to judge on the live site.
-- **Photo Safari:** van interior not drawn around the viewfinder; running out of film just drives to the end; markhor ruff and saiga shape could be better; no URL hash for camp sub-views.
+- **Photo Safari:** van interior not drawn around the viewfinder; running out of film just drives to the end (now after 20 frames); markhor ruff and saiga shape could be better; no URL hash for camp sub-views.
+- **Photo Safari, run 04 (camera and controls):** mouse aim at the long lens (18°) is quick, because the whole screen maps to the full turning range; judge on a real mouse. The split-image spot is drawn, not optical (the halves don't shift with focus). The torch change is hard to judge headless.
 - **Photo Safari, run 03 (new species, album notes):** night glow of the moon jellyfish reads softly through the water in the headless test (judge on a real screen); mushroom fallen logs are hard to see at night; album notes are placeholders, and only the three new time-bound finds have notes (the goblin shark, fire salamander and poodle moth could get one too).
 
 ## Structure: suggested refactors (none done yet)
