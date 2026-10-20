@@ -164,6 +164,15 @@
   max-width: calc(100vw - 32px); width: max-content; text-align: center; pointer-events: none; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--vf); text-shadow: 0 0 1px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7); padding: 4px 8px; transition: opacity .6s; }
 .sf-help.gone { opacity: 0; }
+/* the zoom hint: the same quiet finder lettering, a little larger, between two zoom brackets */
+.sf-hint { position: absolute; left: 50%; bottom: calc(50% + 72px); transform: translate(-50%, 4px); max-width: calc(100vw - 32px); width: max-content;
+  text-align: center; pointer-events: none; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--vf);
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7); padding: 4px 8px; opacity: 0; transition: opacity .5s, transform .5s; }
+.sf-hint::before, .sf-hint::after { content: ''; display: inline-block; width: 7px; height: 11px; vertical-align: -1px; border: 1px solid var(--vf); }
+.sf-hint::before { border-right: 0; margin-right: 10px; }
+.sf-hint::after { border-left: 0; margin-left: 10px; }
+.sf-hint.on { opacity: 1; transform: translate(-50%, 0); }
+.safari.reporting .sf-hint { display: none; }
 
 @media (max-width: 560px) {
   .sf-corner { width: 22px; height: 22px; }
@@ -180,4 +189,5 @@
   #sf-film.low { animation: none; }
   .sf-hatch.shut i, .sf-hatch.shut span { animation-duration: .01s; }
   .sf-title.on { animation: none; opacity: 1; }
+  .sf-hint { transition: none; }
 }

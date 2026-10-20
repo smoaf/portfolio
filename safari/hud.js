@@ -53,6 +53,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     <div class="sf-say" id="sf-say"></div>
     <div class="sf-flash" id="sf-flash"></div>
     <div class="sf-help" id="sf-help"></div>
+    <div class="sf-hint" id="sf-hint" aria-live="polite"></div>
     <div class="sf-rail"><i id="sf-rail"></i></div>`;
   host.appendChild(root);
   root.querySelector('.sf-dust').style.backgroundImage = dust();
@@ -60,7 +61,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
   const q = (id) => root.querySelector('#' + id);
   const filmEl = q('sf-film'), zoomEl = q('sf-zoom'), feedEl = q('sf-feed'), shotsEl = q('sf-shots'),
         sayEl = q('sf-say'), flashEl = q('sf-flash'), helpEl = q('sf-help'), railEl = q('sf-rail'),
-        muteEl = q('sf-mute'), exitEl = q('sf-exit'), clockEl = q('sf-clock'), titleEl = q('sf-title'), hatchEl = q('sf-hatch'), hatchSay = q('sf-hatch-say');
+        muteEl = q('sf-mute'), hintEl = q('sf-hint'), exitEl = q('sf-exit'), clockEl = q('sf-clock'), titleEl = q('sf-title'), hatchEl = q('sf-hatch'), hatchSay = q('sf-hatch-say');
 
   // buttons must never also take a photo, so they swallow the tap before the view sees it
   const stop = (e) => e.stopPropagation();
@@ -126,6 +127,11 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     },
     under(k) { root.style.setProperty('--under', k.toFixed(3)); root.classList.toggle('under', k > 0.02); },
     help(text) { helpEl.textContent = text; helpEl.classList.remove('gone'); setTimeout(() => helpEl.classList.add('gone'), 5000); },
+    // how to zoom, on the first stretch where the lens needs it; it stays until the visitor zooms
+    zoomHint(on) {
+      if (on) { hintEl.textContent = touch ? 'Pinch to zoom' : 'Scroll or pinch the trackpad to zoom'; helpEl.classList.add('gone'); }
+      hintEl.classList.toggle('on', !!on);
+    },
 
     // ---- the field report: every shot on its own card, the total, and the board for this route and
     // time. The total counts the best frame of each species (the cards say which one counts).
