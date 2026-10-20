@@ -23,6 +23,7 @@ import { chunkScenery } from './terrain.js';
 
 const FILM = 20, PELLETS = 8;
 const vA = new THREE.Vector3(), vB = new THREE.Vector3();
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const frustum = new THREE.Frustum(), mView = new THREE.Matrix4(), ball = new THREE.Sphere();
 const srgb = (hex) => new THREE.Color(hex).convertSRGBToLinear();
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -130,7 +131,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   // ---- state
   const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false,
-    under: 0, diving: false, section: -1, fresh: 0 };
+    under: 0, diving: false, section: -1, fresh: 0, zoomed: false, hinted: false };
   const pellets = [];
   const bigs = [];                                       // object URLs of the large frames, freed on exit
   const pelletGeo = keep(new THREE.SphereGeometry(0.16, 8, 6));
@@ -180,6 +181,34 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     pellets.push({ mesh: m, pos: m.position, vel: v, landed: false, eaten: false, born: S.t });
     audio.throwPellet();
     hud.say('Feed', 'thrown');
+    lookRound();
+  }
+
+  // feed thrown: every animal that shows the van its back turns round to look, wherever the feed
+  // lands. One rule for all: only bodies that face the way their root points (not birds in the air,
+  // shoals or swarms), and a stroller stands still while it looks, so it doesn't walk sideways. The
+  // turn holds for a few seconds; running off or going for the feed ends it.
+  function lookRound() {
+    for (const c of world.creatures) {
+      if (!c.visible || c.flock || c.flyer || c.air || !c.forward || !c.root) continue;
+      const ry = c.root.rotation.y;
+      c.forward(vA);
+      if (Math.abs(vA.x - Math.sin(ry)) + Math.abs(vA.z - Math.cos(ry)) > 0.05) continue;   // its front is not its root's
+      const dx = env.camPos.x - c.root.position.x, dz = env.camPos.z - c.root.position.z;
+      if (vA.x * dx + vA.z * dz >= 0) continue;          // already facing the van: unchanged
+      c.face = 3.6; c.faceYaw = ry;
+    }
+  }
+  function stepFace(c, dt) {
+    if (!(c.face > 0)) return;
+    if (c.state === 'flee' || c.state === 'eat') { c.face = 0; return; }
+    if (c.state === 'wander' && c.go) c.go('idle', c.face);
+    c.face -= dt;
+    const want = Math.atan2(env.camPos.x - c.root.position.x, env.camPos.z - c.root.position.z);
+    c.faceYaw += THREE.MathUtils.clamp(wrap(want - c.faceYaw), -2.2 * dt, 2.2 * dt);
+    c.root.rotation.y = c.faceYaw;
+    if (c.face <= 0 && c._y0 !== undefined) c._y0 = c.faceYaw;   // a percher keeps its new heading
+    c.root.updateMatrixWorld();
   }
 
   function stepPellets(dt) {
@@ -262,7 +291,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       ball.set(vA, (c.radius || 1) * 2.5 + 1.5);
       c.root.visible = c.visible && (c.flock || d < 6 || frustum.intersectsSphere(ball));
       if (c.lod) c.lod(d);
-      if (c.visible) { env.dist = d; c.step(dt, env); }
+      if (c.visible) { env.dist = d; c.step(dt, env); stepFace(c, dt); }
       if (d < poiD && d > 7) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }
     }
     if (!poi && world.poi) poi = world.poi(rig.progress);
@@ -330,6 +359,13 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       hud.under(k);
       audio.muffle(k);
     }
+    // the zoom hint: once, on the first stretch where the lens needs the zoom, unless the visitor has
+    // already zoomed; it goes at the first zoom, or when the stretch is behind the van
+    if (world.zoomHint && !S.zoomed) {
+      const [z0, z1] = world.zoomHint;
+      if (!S.hinted && u >= z0 && u < z1) { S.hinted = true; hud.zoomHint(true); }
+      else if (S.hinted && u >= z1) { S.zoomed = true; hud.zoomHint(false); }
+    }
     if (world.sections) {
       let i = -1;
       world.sections.forEach((s, k) => { if (u >= s.u) i = k; });
@@ -354,6 +390,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   }
   // Exit and Esc: with photos in the bag the run ends in the report, otherwise straight back to the van
   const quit = () => (!S.over && S.shots.length ? finish() : leave());
+
+  const zoomed = () => { if (!S.zoomed) { S.zoomed = true; if (S.hinted) hud.zoomHint(false); } };
 
   // ---- input: the HUD element is on top of everything, so the station never sees any of it
   const abort = new AbortController(), sig = { signal: abort.signal };
@@ -384,6 +422,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       hud.setZoom(rig.setZoom(fov0 * pinch / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))), FOV.wide);
+      if (Math.abs(rig.state.fov - fov0) > 1) zoomed();
     }
   }, sig);
   const up = (ev) => {
@@ -395,7 +434,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   };
   el.addEventListener('pointerup', up, sig);
   el.addEventListener('pointercancel', (ev) => { pointers.delete(ev.pointerId); downAt = null; }, sig);
-  el.addEventListener('wheel', (ev) => { ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); }, { passive: false, signal: abort.signal });
+  el.addEventListener('wheel', (ev) => { ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); zoomed(); }, { passive: false, signal: abort.signal });
   el.addEventListener('contextmenu', (ev) => ev.preventDefault(), sig);
   window.addEventListener('keydown', (ev) => {
     if (hud.viewing) return;                          // a photo is open large in the report: its keys
@@ -414,8 +453,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     else if (k.startsWith('Arrow')) {
       ev.preventDefault(); ev.stopImmediatePropagation();
       rig.nudge(k === 'ArrowLeft' ? -0.12 : k === 'ArrowRight' ? 0.12 : 0, k === 'ArrowUp' ? 0.09 : k === 'ArrowDown' ? -0.09 : 0);
-    } else if (k === '+' || k === '=') { hud.setZoom(rig.zoom(0.85), FOV.wide); }
-    else if (k === '-' || k === '_') { hud.setZoom(rig.zoom(1.18), FOV.wide); }
+    } else if (k === '+' || k === '=') { hud.setZoom(rig.zoom(0.85), FOV.wide); zoomed(); }
+    else if (k === '-' || k === '_') { hud.setZoom(rig.zoom(1.18), FOV.wide); zoomed(); }
   }, { capture: true, signal: abort.signal });
 
   // the safari rests with the tab (Global rule 1)
