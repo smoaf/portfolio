@@ -131,7 +131,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   // ---- state
   const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false,
-    under: 0, diving: false, section: -1, fresh: 0, zoomed: false, hinted: false };
+    under: 0, diving: false, section: -1, fresh: 0, zoomed: false, hinted: false,
+    drawnAt: performance.now(), doneAt: 0, endedAt: 0, broke: false };
   const pellets = [];
   const bigs = [];                                       // object URLs of the large frames, freed on exit
   const pelletGeo = keep(new THREE.SphereGeometry(0.16, 8, 6));
@@ -263,7 +264,19 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   // picture is drawn: that way nothing ever reads a position from the frame before.
   const env = { camPos: new THREE.Vector3(), t: 0, tod, pellets, call: callFor, dist: 0, under: 0, u: 0, lens: 1 };
   let poi = null;
+  // one frame of the drive. An error inside it must not end the run: three.js books the next frame
+  // only after this one returns, so a throw would freeze the picture for good. It is logged once, and
+  // the end of the road is checked whatever happened.
   function frame(now) {
+    try {
+      drive(now);
+      S.drawnAt = performance.now();
+    } catch (err) {
+      if (!S.broke) { S.broke = true; console.error('Safari frame failed', err); }
+    }
+    if (rig.done && !S.over) finish();
+  }
+  function drive(now) {
     const dt = S.last ? Math.min(0.08, (now - S.last) / 1000) : 0.016;
     S.last = now;
     S.t += dt; env.t = S.t;
@@ -310,7 +323,6 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     renderer.render(scene, rig.camera);
     if (S.pending) takeShot();
     adapt(now);
-    if (rig.done && !S.over) finish();
   }
 
   // ---- the frame rate: slow phones get fewer pixels instead of a stutter. Every two seconds the
@@ -380,13 +392,36 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   async function finish() {
     if (S.over) return;
     S.over = true;
-    audio.park();
-    await hud.report({
-      shots: S.shots, route: R, tod, store, fresh: S.fresh,
-      onDone: () => leave(),
-      onAgain: () => leave({ again: true }),
-    });
+    S.endedAt = performance.now();
+    try { audio.park(); } catch (err) { console.error('Safari sound failed', err); }
+    await showReport();
   }
+  async function showReport() {
+    try {
+      await hud.report({
+        shots: S.shots, route: R, tod, store, fresh: S.fresh,
+        onDone: () => leave(),
+        onAgain: () => leave({ again: true }),
+      });
+    } catch (err) { console.error('Safari report failed', err); }
+  }
+
+  // ---- the safety net, on its own clock, so it still works when the drawing loop has stopped:
+  // the road has ended (or Exit ended the run) and no report shows 5 s later: show it; the picture
+  // hasn't changed for 5 s in a visible tab: end the run, with the report, and start drawing again.
+  const GRACE = 5000;
+  const guard = setInterval(() => {
+    if (S.dead || S.paused || document.hidden) return;
+    const now = performance.now();
+    if (rig.done && !S.doneAt) S.doneAt = now;
+    if (!S.over && (now - S.drawnAt > GRACE || (S.doneAt && now - S.doneAt > GRACE))) {
+      renderer.setAnimationLoop(frame);
+      finish();
+    } else if (S.over && !hud.reportShown && now - S.endedAt > GRACE) {
+      S.endedAt = now;
+      showReport();
+    }
+  }, 500);
 
   function leave(opts = {}) {
     if (S.dead) return;
@@ -472,7 +507,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     if (S.dead || on === S.paused) return;
     S.paused = on;
     if (on) { renderer.setAnimationLoop(null); audio.suspend(); }
-    else { S.last = 0; RES.t0 = 0; renderer.setAnimationLoop(frame); audio.resume(); }
+    else { S.last = 0; RES.t0 = 0; S.drawnAt = performance.now(); renderer.setAnimationLoop(frame); audio.resume(); }
   }
 
   // ---- hand the renderer over: the station has already stopped its own loop
@@ -482,6 +517,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   renderer.setSize(host.clientWidth, host.clientHeight, false);
   rig.resize(host.clientWidth / Math.max(1, host.clientHeight));
   hud.setZoom(rig.state.fov, FOV.wide);
+  S.drawnAt = performance.now();
   renderer.setAnimationLoop(frame);
 
   return {
@@ -499,6 +535,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     dispose() {
       if (S.dead) return;
       S.dead = true;
+      clearInterval(guard);
       abort.abort();
       renderer.setAnimationLoop(null);
       hud.dispose();
