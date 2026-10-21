@@ -1642,6 +1642,37 @@ function hitTurbine(ev) {                            // the turbine, unless a hi
   const near = ray.intersectObjects(turbine.block, false)[0];
   return !near || near.distance > hit.distance;
 }
+// ---- from inside a place: the other place under the pointer. The first thing the ray meets in the
+// model counts (a wall in front hides what is behind it; glass and cut-away parts let it through),
+// found by its name (glTF drops the '/': 'libraryshell'), or else by the zone it stands in.
+const PART_OF = [[/^library/, 'library'], [/^office/, 'office'], [/^hub/, 'hub'], [/^showroom/, 'showroom'], [/^workshop/, 'workshop'],
+  [/^future/, 'new-module'], [/^(van|firepit|camp)/, 'camp'], [/^propsrelay/, 'relay'], [/^propsdish/, 'dish'],
+  [/^(terrain|flora|tube|props)/, null]];               // ground, hills, plants, the tubes between modules: nothing
+const seeThrough = (o) => {
+  for (let q = o; q; q = q.parent) if (!q.visible) return true;
+  const m = o.material;
+  return !m || Array.isArray(m) || m.visible === false || (m.transparent && m.opacity < 0.5);
+};
+function placeOfHit(h) {
+  for (let q = h.object; q; q = q.parent) {
+    const hit = q.name && PART_OF.find(([re]) => re.test(q.name));
+    if (hit) return hit[1] && PLACES.find((p) => p.id === hit[1]);
+  }
+  let best = null, k = 1;                              // built at run time (robot, hut, figure, props): the zone it stands in
+  PLACES.forEach((p, i) => { const d = zoneSpheres[i].center.distanceTo(h.point) / zoneSpheres[i].radius; if (d < k) { k = d; best = p; } });
+  return best;
+}
+function otherPlaceAt(ev) {
+  if (!nav.place || tween.active || camp.safari) return null;
+  setRay(ev);
+  if (!PLACES.some((p, i) => p !== nav.place && ray.ray.intersectsSphere(zoneSpheres[i]))) return null;   // nothing else in line
+  for (const h of ray.intersectObject(scene, true)) {
+    if (!h.object.isMesh || seeThrough(h.object)) continue;
+    const p = placeOfHit(h);
+    return p && p !== nav.place ? p : null;
+  }
+  return null;
+}
 function hitRoof(ev) {
   setRay(ev);
   return ray.intersectObjects(roof.slats.map((s) => s.mesh), false).length > 0;
@@ -1810,13 +1841,20 @@ el.addEventListener('pointerup', (ev) => {
   if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }   // also while flying home: go there instead
   if (tween.active) tapDuringFlight(ev, tapPlace); else tapPlace(ev);
 });
+// the place's own things first (each says whether the tap was its own); otherwise another place in sight goes there
 function tapPlace(ev) {
-  if (nav.place.id === 'camp') { campTap(ev); return; }
-  if (nav.place.id === 'workshop') { workshop.tap(ev); return; }
-  if (nav.place.id === 'dish') { telescope.tap(ev); return; }
-  if (nav.place.id === 'relay') { relay.tap(ev); return; }
-  if (nav.place.id === 'library') { library.tap(ev); return; }
-  if (nav.place.id === 'showroom') { if (robot.tap(ev)) return; if (hitRoof(ev)) setRoof(!roof.closed); }
+  if (tapOwn(ev)) return;
+  const p = otherPlaceAt(ev);
+  if (p) setRoute(p.id);
+}
+function tapOwn(ev) {
+  if (nav.place.id === 'camp') return campTap(ev);
+  if (nav.place.id === 'workshop') return workshop.tap(ev);
+  if (nav.place.id === 'dish') return telescope.tap(ev);
+  if (nav.place.id === 'relay') return relay.tap(ev);
+  if (nav.place.id === 'library') return library.tap(ev);
+  if (nav.place.id === 'showroom') { if (robot.tap(ev)) return true; if (hitRoof(ev)) { setRoof(!roof.closed); return true; } }
+  return false;
 }
 el.addEventListener('wheel', (ev) => {
   if (nav.mode !== 'inside') return;
@@ -1846,14 +1884,18 @@ function hover(ev) {
     if (tween.active) return setTip(null);
     if (hitTurbine(ev)) { setTip(null); el.style.cursor = 'pointer'; return; }   // no label, only the pointer
     if (!nav.place) return setTip(zoneAt(ev));
-    if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = robot.hover(ev) || hitRoof(ev) ? 'pointer' : ''; return; }
-    if (nav.place.id === 'camp') { tip.hidden = true; campHover(ev); return; }
-    if (nav.place.id === 'workshop') { tip.hidden = true; workshop.hover(ev); return; }
-    if (nav.place.id === 'dish') { tip.hidden = true; telescope.hover(ev); return; }
-    if (nav.place.id === 'relay') { tip.hidden = true; relay.hover(ev); return; }
-    if (nav.place.id === 'library') { tip.hidden = true; library.hover(ev); return; }
-    setTip(null);
+    if (hoverOwn(ev)) { if (hoverCand) { hoverCand = hovered = null; tip.hidden = true; } return; }   // the place's own glow and label; its pointer stays
+    setTip(otherPlaceAt(ev));                          // another place in sight: pointer and its name, as on the overview
   });
+}
+function hoverOwn(ev) {
+  if (nav.place.id === 'showroom') { const on = robot.hover(ev) || hitRoof(ev); el.style.cursor = on ? 'pointer' : ''; return on; }
+  if (nav.place.id === 'camp') return campHover(ev);
+  if (nav.place.id === 'workshop') return workshop.hover(ev);
+  if (nav.place.id === 'dish') return telescope.hover(ev);
+  if (nav.place.id === 'relay') return relay.hover(ev);
+  if (nav.place.id === 'library') return library.hover(ev);
+  return false;
 }
 el.addEventListener('pointerleave', () => { setTip(null); robot.hover(null); });
 const markers = document.getElementById('markers');
@@ -1871,8 +1913,8 @@ document.getElementById('btn-places').addEventListener('click', () => {
 });
 const vTmp = new THREE.Vector3();
 function stepMarkers() {
-  if (hoverCand && !hovered && !nav.place && !tween.active && performance.now() - hoverSince > HOVER_DELAY) showTip(hoverCand);
-  if (hovered && !nav.place && !tween.active) {
+  if (hoverCand && !hovered && !tween.active && performance.now() - hoverSince > HOVER_DELAY) showTip(hoverCand);
+  if (hovered && !tween.active) {
     anchor(hovered, vTmp).project(camera);
     tip.style.left = ((vTmp.x + 1) / 2 * el.clientWidth) + 'px'; tip.style.top = ((1 - vTmp.y) / 2 * el.clientHeight) + 'px';
   } else if (hovered) setTip(null);
@@ -1983,17 +2025,21 @@ function screenUV(ev) {                                // where on the start scr
   const h = ray.intersectObject(camp.van.screen.mesh, false)[0];
   return h ? h.uv : null;
 }
+// both return true if the pointer was the camp's: one of its things, or any of its close views (they keep every tap)
 function campHover(ev) {
-  if (tween.active || camp.view === 'figure' || camp.view === 'album') return setCampHover(null);
-  if (camp.view === 'screen') { const id = camp.van.screen.hover(screenUV(ev)); el.style.cursor = id ? 'pointer' : ''; return; }
-  setCampHover(campPick(ev));
+  if (tween.active || camp.view === 'figure' || camp.view === 'album') { setCampHover(null); return !!camp.view; }
+  if (camp.view === 'screen') { const id = camp.van.screen.hover(screenUV(ev)); el.style.cursor = id ? 'pointer' : ''; return true; }
+  const id = campPick(ev);
+  setCampHover(id);
+  return !!id || !!camp.view;
 }
 function campTap(ev) {
-  if (camp.view === 'screen') { camp.van.screen.press(screenUV(ev)); return; }
+  if (camp.view === 'screen') { camp.van.screen.press(screenUV(ev)); return true; }
   const id = campPick(ev);
   setCampHover(null);
-  if (!id) return;
+  if (!id) return !!camp.view || !!camp.safari;
   ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum })[id]();
+  return true;
 }
 // the same choices for the keyboard: a row of buttons that follows the view (and the screen's menu)
 const campKeys = { el: document.getElementById('camp-keys'), sig: '' };
@@ -2715,6 +2761,8 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__zoneScreen = (id) => { const p = PLACES.find((q) => q.id === id); const q = new THREE.Vector3(...p.zone.c).project(camera);
     const r = renderer.domElement.getBoundingClientRect(); return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height]; };
   window.__station = station;
+  window.__otherAt = (x, y) => { const p = otherPlaceAt({ clientX: x, clientY: y }); return p ? p.id : null; };   // tests: the place a tap there would go to
+  window.__scene = scene;
   const campScreen = (id) => {                           // tests: where on screen a camp target is
     const c = { figure: () => vTmp.copy(person.root.position).setY(person.root.position.y + (isSeated() ? 0.75 : 1.0)), fire: () => vTmp.copy(CAMP.fire).setY(0.35),
       poke: () => vTmp.copy(CAMP.fire).setY(0.35), van: () => vanAt(-0.6, 0, 2.0, vTmp), screen: () => camp.van.screen.centre(vTmp), album: () => camp.van.albumAt(vTmp) }[id]();

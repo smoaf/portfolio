@@ -183,10 +183,17 @@ function setRect(el, x, y, w, h) {                      // only when it moved: n
 const THINGS = {
   cat: { label: 'Lucky cat', pick: () => S.cat.pick, anchor: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.3, S.cat.group.position.z),
     near: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.12, S.cat.group.position.z) },
-  pc: { label: 'Papers', pick: () => S.pc.pick, anchor: (out) => out.copy(S.pc.centre).setY(S.pc.centre.y + S.pc.h * 0.5 + 0.08), near: (out) => out.copy(S.pc.centre) },
+  pc: { label: 'Papers', pick: () => S.pc.pick, glow: () => [S.pc.face], anchor: (out) => out.copy(S.pc.centre).setY(S.pc.centre.y + S.pc.h * 0.5 + 0.08), near: (out) => out.copy(S.pc.centre) },
 };
 const ids = () => (S.pc ? ['cat', 'pc'] : ['cat']);
-function mats(id) { return THINGS[id].pick().map((m) => m.material).filter((m, i, a) => m.emissive && a.indexOf(m) === i); }
+// what lights up on hover: the computer's body counts for the click, but only its screen glows. Each glowing
+// mesh gets its own material first (the body's plaster is the whole room's, Smo: the room turned yellow)
+function mats(id) {
+  return (THINGS[id].glow || THINGS[id].pick)().map((m) => {
+    if (!m.userData.ownMat) { m.material = m.material.clone(); m.userData.ownMat = true; }
+    return m.material;
+  }).filter((m, i, a) => m.emissive && a.indexOf(m) === i);
+}
 function setHover(id) {
   if (id === S.hover) return;
   const glow = (k, on) => k && mats(k).forEach((m) => {
@@ -342,15 +349,19 @@ export const library = {
     S.cat.arm.rotation.x = -WAVE.swing * (0.5 - 0.5 * Math.cos(S.t * Math.PI * 2 / WAVE.period));   // beckons forward and back
     S.monstera.sway.value = S.t;
   },
+  // true if the tap was the library's (the cat or the computer close up keeps every tap)
   tap(ev) {
-    if (S.zoomed || S.host.tweening()) return;
+    if (S.zoomed || S.host.tweening()) return true;
     const id = hitThing(ev) || (ev.pointerType !== 'mouse' ? nearThing(ev, 28) : null);
-    if (!id) { setHover(null); return; }
+    if (!id) { setHover(null); return false; }
     zoom(id);
+    return true;
   },
   hover(ev) {
-    if (S.zoomed || S.host.tweening()) return setHover(null);
-    setHover(hitThing(ev));
+    if (S.zoomed || S.host.tweening()) { setHover(null); return true; }
+    const id = hitThing(ev);
+    setHover(id);
+    return !!id;
   },
   // leaving the library some other way (menu, browser back, another place): put everything back at once
   reset() {
