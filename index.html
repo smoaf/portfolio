@@ -109,7 +109,7 @@
           color: var(--glass-ink); display: grid; place-items: center; }
   .gear svg { width: 20px; height: 20px; }
   .controls { top: auto !important; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); z-index: 21; flex-direction: column; align-items: flex-end; }
-  .skypanel { top: calc(96px + env(safe-area-inset-top, 0px)) !important; z-index: 21; }
+  .skypanel { top: calc(96px + env(safe-area-inset-top, 0px)) !important; z-index: 21; max-height: calc(100vh - 391px); }   /* ends above the controls (Sky and the gear stay clickable) */
   .nav { z-index: 19; background: var(--glass) !important; border-color: var(--glass-line) !important; color: var(--glass-ink); -webkit-backdrop-filter: var(--blur); }
   .nav button { color: inherit; }
   .tip, .marker { background: var(--glass-strong); border-color: var(--glass-line); color: var(--glass-ink); }
@@ -147,7 +147,9 @@
     .panel-close { top: 14px; right: 10px; }
     .panel h2 { font-size: 28px; }
     .gear { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
-    .skypanel { top: auto !important; }
+    /* the controls stand above the gear and the sky panel above them, so the gear and Sky can be tapped to close them */
+    .controls { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
+    .skypanel { top: auto !important; bottom: calc(342px + env(safe-area-inset-bottom, 0px)); max-height: calc(100vh - 378px - var(--hh, 70px)); }
   }
 
   /* ---- every GUI element in the site style (Smo): glass, Archivo, spaced capitals ---- */
