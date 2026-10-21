@@ -27,7 +27,7 @@ How bugs and features for Smo's portfolio site (https://smoaf.github.io/portfoli
 - The ID also names the branch (`bug/BUG-004-radio-dial`, `feat/FEAT-007-...`) and starts the pull request title, so card, branch and pull request can always be found from each other.
 
 ## Creating a card together with Claude
-When Smo describes a bug or feature, Claude fills in the matching template below and **asks about every required field that is missing or vague** before creating the card. Ask all missing points in one go, in plain language, at most about five questions. Suggest an answer where one is obvious ("Phone and computer, or only phone?"). **Always ask how it must not be**, even when everything else is clear: it is the easiest thing for a night run to get wrong.
+When Smo describes a bug or feature, Claude fills in the matching template below and **asks about every required field that is missing or vague** before creating the card. Ask the missing points in plain language, grouped together, and keep asking until nothing is open. Suggest an answer where one is obvious ("Phone and computer, or only phone?"). **Always ask how it must not be**, even when everything else is clear: it is the easiest thing for a night run to get wrong.
 
 Claude also checks what it can itself before asking: look at the live site, find the code involved, and add **Where in the code** (file and function) to the card. A night run then starts faster and guesses less.
 
