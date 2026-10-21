@@ -31,7 +31,7 @@ When Smo describes a bug or feature, Claude fills in the matching template below
 
 Claude also checks what it can itself before asking: look at the live site, find the code involved, and add **Where in the code** (file and function) to the card. A night run then starts faster and guesses less.
 
-A card is **ready** only when every field marked *(required)* is filled in. Otherwise it gets the comment `needs info: …` and runs skip it.
+A card goes on the list only when **every question is answered**: all fields marked *(required)* are filled in and nothing is left open. The card is the complete instruction for the night run; the run doesn't ask back.
 
 Images and videos go on the card as attachments. Reference photos that must stay private go into `smoaf/portfolio-refs`; the card names the path.
 
@@ -139,16 +139,13 @@ One run works on **one card at a time, start to finish**, then decides whether t
 In the Portfolio list, from top to bottom:
 1. **First, unfinished work:** a card with a `started` comment and no `done` comment. A run before this one was cut off, so continue it on its branch.
 2. **Then bugs** (label `bug`), **then features** (label `feature`), in list order.
-3. Skip cards with a `needs info` comment that hasn't been answered, cards whose **Depends on** cards aren't live yet, and cards of size L.
+3. Skip cards whose **Depends on** cards aren't live yet.
 
-## 2. Check the card
-- If a required field is missing or the card is too vague to build without guessing, **don't guess**. Comment `needs info: <precise questions>` and go to the next card.
-- Read `CLAUDE.md` in the repo, then the code named on the card.
-
-## 3. Mark it as started
+## 2. Mark it as started
 Comment on the card: `started <date time, Vienna> · branch <name>`.
 
-## 4. Build
+## 3. Build
+- Read `CLAUDE.md` in the repo, then the code the card names under "Where in the code".
 - Branch from the latest `origin/main`: `bug/<ID>-<slug>` or `feat/<ID>-<slug>`.
 - Do **only** what the card says. Nothing extra.
 - **Push after every finished piece, at least every 20 minutes**, so a cut-off loses almost nothing.
@@ -158,7 +155,7 @@ Comment on the card: `started <date time, Vienna> · branch <name>`.
   - Copy nothing from `smoaf/portfolio-refs` unless the card allows it.
   - Never push to `main` directly.
 
-## 5. Test
+## 4. Test
 - Serve locally (`python3 -m http.server 8000`) and test in a headless browser:
   - **desktop and phone size**, with real touch emulation on the phone (`pointerType: 'touch'`, a few pixels of finger movement per tap);
   - **day and night**;
@@ -169,7 +166,7 @@ Comment on the card: `started <date time, Vienna> · branch <name>`.
 - **Check that nothing else broke:** open every area once and look at the things the change touches.
 - Keep screenshots few and small.
 
-## 6. Pull request and merge
+## 5. Pull request and merge
 - Title: `<ID>: <short title>`. At the top of the body: two or three plain sentences on what Smo should try on the live site. Then what changed, how it was tested, and the Trello card link.
 - Just before merging, merge the latest `origin/main` into the branch. If that brought changes, test again.
 - Merge on GitHub with a merge commit, the run's own pull request only. Don't merge if:
@@ -180,7 +177,7 @@ Comment on the card: `started <date time, Vienna> · branch <name>`.
   In those cases, leave the pull request open and say why at its top.
 - After the merge, wait for the GitHub Pages build and check the live site once.
 
-## 7. Close the card
+## 6. Close the card
 - **Label:** `bug` → `bugfix`, or `feature` → `feature implemented`.
 - **Comment:** `done <date time>` followed by
   - what changed (short),
@@ -189,10 +186,10 @@ Comment on the card: `started <date time, Vienna> · branch <name>`.
   - **usage spent** (five-hour and weekly percent before → after the card).
 - **If it couldn't be finished:** leave the label. Comment what is done, what is left, and the branch name, so the next run can continue.
 
-## 8. Next card or stop
+## 7. Next card or stop
 Go back to step 0. Stop when:
 - the budget says so, or
-- there are no ready cards, or
+- there are no more cards labelled `bug` or `feature` (other than ones waiting on **Depends on**), or
 - it is past **06:00 Vienna** (the site is never left mid-change in the morning).
 
 Before ending, make sure nothing is left unpushed.
