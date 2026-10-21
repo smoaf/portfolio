@@ -4,6 +4,7 @@
 // swimmers come up to take them.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { FEED_REACH } from '../creature.js';
 
 export const SPECIES = {
   heron: { id: 'heron', name: 'Grey-blue heron', points: 150, call: { hz: 320, kind: 'noise' } },
@@ -344,7 +345,7 @@ export function buildFrigatebird(K, home, opts = {}) {
     // decide: the van is too close, there is feed on the water, the van is interesting, or showing off
     if (c.state !== 'flee' && c.state !== 'rare' && c.state !== 'eat' && env.dist < c.fleeAt) c.go('flee', 6);
     if (c.state === 'idle' || c.state === 'wander') {
-      const p = env.pellets.find((q) => q.landed && !q.eaten && Math.hypot(q.pos.x - st.cx, q.pos.z - st.cz) < 50);
+      const p = env.pellets.find((q) => q.landed && !q.eaten && Math.hypot(q.pos.x - st.cx, q.pos.z - st.cz) < 50 * FEED_REACH);
       if (p) { c.pellet = p; c.go('eat', 9); startSwoop(p.pos); }
       else if (env.dist < c.curiousAt && Math.random() < dt * 0.12) c.go('curious', 9);
       else if (c.rareAt === env.tod && Math.random() < dt * 0.03) c.go('rare', 10);
@@ -1144,7 +1145,7 @@ export function buildMoonJellies(K, home, opts = {}) {
     // the mood: the van close makes them sink, floating feed brings them up, the night sets off the show
     if (c.state !== 'flee' && c.state !== 'rare' && camD < 4) c.go('flee', 4);
     else if (c.state === 'idle' || c.state === 'wander') {
-      const pellet = env.pellets.find((p) => !p.eaten && p.landed && p.pos.distanceTo(vA.copy(C).add(c.root.position)) < spread + 6);
+      const pellet = env.pellets.find((p) => !p.eaten && p.landed && p.pos.distanceTo(vA.copy(C).add(c.root.position)) < (spread + 6) * FEED_REACH);
       if (pellet) { c.pellet = pellet; c.go('eat', 8); }
       else if (env.tod === 'night' && Math.random() < dt * 0.05) c.go('rare', 6);
       else if (c.t > c.hold) c.go(c.state === 'idle' ? 'wander' : 'idle', 5 + Math.random() * 4);

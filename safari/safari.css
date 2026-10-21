@@ -64,8 +64,10 @@
 
 /* the feed: one button at the bottom middle, under a thumb on a phone */
 .sf-tools { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
-.sf-tools button { min-width: 116px; background: rgba(12, 11, 9, 0.32); -webkit-backdrop-filter: none; backdrop-filter: none;
+.sf-tools button { min-width: 116px; padding-left: 2.7em; padding-right: 2.7em; white-space: nowrap;   /* about 1.5x its text */
+  background: rgba(12, 11, 9, 0.32); -webkit-backdrop-filter: none; backdrop-filter: none;
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.5); }
+.sf-tools .sf-key { opacity: 0.62; }      /* the key, a little dimmer than the count */
 .sf-tools button:disabled { opacity: 0.4; cursor: default; }
 /* the shot that just slid out of the camera, bottom right, stacked a few deep */
 .sf-feed { position: absolute; right: var(--pad); bottom: calc(11% + 12px); width: 132px; display: grid; gap: 8px; pointer-events: none; }

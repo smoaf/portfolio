@@ -5,6 +5,7 @@
 // shine, and the insects and the spider grown to a size you can photograph from the van.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { FEED_REACH } from '../creature.js';
 
 export const SPECIES = {
   'frilled-lizard': { id: 'frilled-lizard', name: 'Frilled lizard', points: 160, call: { hz: 1800, kind: 'noise' } },
@@ -1062,7 +1063,7 @@ export function buildLadybird(K, home, opts = {}) {
     c.t += dt;
     // a feed pellet nearby, or the dark, sets them spiralling up
     if (c.state !== 'rare') {
-      const fed = env.pellets.some((p) => p.landed && !p.eaten && p.pos.distanceTo(c.root.position) < 12);
+      const fed = env.pellets.some((p) => p.landed && !p.eaten && p.pos.distanceTo(c.root.position) < 12 * FEED_REACH);
       if (fed || (env.tod === 'night' && Math.random() < dt * 0.03) || Math.random() < dt * 0.006) {
         c.go('rare', 8);
         if (env.call) env.call(c, 'rare');
