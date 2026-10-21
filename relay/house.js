@@ -1,5 +1,5 @@
 // The relay station's hut (RELAY_PLAN phase R2). It gets a window on the side the relay view looks
-// at, with warm light behind it at night. A click on the hut (touch: two taps) flies the camera to
+// at, with warm light behind it at night. A click on the hut (or one tap) flies the camera to
 // the window, fades, and the visitor sits inside, in the radio room (relay/room.js), at the receiver
 // that plays "Tune in" (relay/radio.js). Back or Esc returns outside, the same way the van works.
 //
@@ -38,7 +38,7 @@ const CSS = `
 
 let host = null;
 const S = {
-  ready: false, hover: false, armed: false, inside: false, entering: false, seq: 0, home: null,
+  ready: false, hover: false, inside: false, entering: false, seq: 0, home: null,
   win: null, winMat: null, frameMat: null, groundGlow: null, box: new THREE.Box3(), last: 0, lightAt: 0,
   room: null, radio: null, mods: null, cards: null, look: { yaw: 0, pitch: 0, base: null, eye: null, at: null },
   drag: null, inertia: 0, meter: 0, movedAt: 0, roomHover: null, keyDown: false, keySrc: null, ui: '', els: null, found: 0, tune: 0,
@@ -173,7 +173,7 @@ function outsidePose() {
 async function enter() {
   if (!S.ready || S.inside || S.entering || !host.inPlace() || host.tweening()) return;
   const tok = ++S.seq; S.entering = true;
-  setHover(false); S.armed = false; S.els.keys.hidden = true; S.els.hint.hidden = true;
+  setHover(false); S.els.keys.hidden = true; S.els.hint.hidden = true;
   host.closePanel();
   S.home = host.holdView();
   const ready = loadMods();
@@ -452,10 +452,7 @@ export const relay = {
   tap(ev) {
     if (S.inside || !S.ready) return;
     const on = hitHut(ev);
-    if (!on) { S.armed = false; setHover(false); return; }
-    // touch and pen: the first tap only shows what it is, the second one acts
-    if (ev.pointerType !== 'mouse' && !S.armed) { S.armed = true; setHover(true); placeTip(); return; }
-    S.armed = false;
+    if (!on) { setHover(false); return; }
     enter();
   },
   arrive() {
@@ -468,7 +465,7 @@ export const relay = {
     if (!S.ready) return;
     S.seq++;
     if (S.inside || S.entering) leaveRoom();
-    S.armed = false; setHover(false); S.home = null;
+    setHover(false); S.home = null;
     S.els.hint.hidden = true; S.els.keys.hidden = true;
   },
   resume(now) { S.last = now; },

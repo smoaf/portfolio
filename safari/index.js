@@ -429,7 +429,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     const had = pointers.delete(ev.pointerId);
     if (!had || S.over) { downAt = null; return; }
     // a short press that did not travel is the shutter; a drag only looks
-    if (pointers.size === 0 && downAt && moved < 9 && performance.now() - downAt.t < 700) shoot();
+    if (pointers.size === 0 && downAt && moved < 16 && performance.now() - downAt.t < 700) shoot();
     downAt = null;
   };
   el.addEventListener('pointerup', up, sig);

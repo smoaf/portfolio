@@ -200,7 +200,7 @@ export function openAlbum(root, manifest, { onClose } = {}) {
     if (!down) return;
     const dx = e.clientX - down.x, dy = e.clientY - down.y; down = null;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { turn(dx < 0 ? 1 : -1); return; }
-    if (Math.hypot(dx, dy) < 8) {
+    if (Math.hypot(dx, dy) < (e.pointerType === 'mouse' ? 8 : 14)) {   // fingers wobble more than a mouse
       const r = book.getBoundingClientRect(), u = (e.clientX - r.left) / r.width;
       if (u > 0.82) turn(1); else if (u < 0.18) turn(-1);
     }

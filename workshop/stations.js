@@ -1,8 +1,8 @@
 // Workshop stations: the framework every workshop station plugs into (WORKSHOP_PLAN phase W0).
-// Built from the camp's patterns: hovering a station shows a glow and its label, a click zooms the
-// camera to it (touch: the first tap shows it, a second tap on the same one acts), Back or Esc
-// returns to the workshop view. While a station is open, its own controls take over and the page
-// skips everything outside the workshop (figure, fire, turbine, projectors ...).
+// Built from the camp's patterns: hovering a station shows a glow and its label, a click (or one
+// tap) zooms the camera to it, Back or Esc returns to the workshop view. While a station is open,
+// its own controls take over and the page skips everything outside the workshop (figure, fire,
+// turbine, projectors ...).
 //
 // A station is one file in workshop/ that calls `register({...})` when it is imported; index.html
 // imports each station with one line. A station is:
@@ -45,7 +45,7 @@ const GLOW = new THREE.Color(0xffa95e);
 // their own layer that the camera then skips: about 140 draw calls fewer from the rest of the site.
 // Shadow cameras and the page's raycaster always see the layer.
 const DETAIL = 3, DETAIL_FAR = 16, DETAIL_R = 0.06, DESK = new THREE.Vector3(10.4, 4.0, -0.5);
-const S = { host: null, root: null, ready: false, focus: null, hover: null, armed: null, home: null, seq: 0, last: 0, els: null, keySig: '' };
+const S = { host: null, root: null, ready: false, focus: null, hover: null, home: null, seq: 0, last: 0, els: null, keySig: '' };
 const vT = new THREE.Vector3(), vU = new THREE.Vector3(), sph = new THREE.Sphere(), bx = new THREE.Box3();
 
 // ---- what stations get to work with
@@ -182,7 +182,7 @@ function go(id) {
   const h = S.host.holdView();                         // the camera is ours now
   if (!S.home) S.home = h;                             // the workshop view to return to (kept while flying back)
   if (S.focus) close(false);
-  S.armed = null; setHover(null);
+  setHover(null);
   S.focus = id; S.opening = true;
   document.body.classList.add('ws-sub');
   S.els.back.hidden = false; S.els.mute.hidden = !def.sound;
@@ -328,8 +328,7 @@ export const workshop = {
   tap(ev) {
     if (S.focus || S.host.tweening()) return;
     const def = pickAt(ev) || (ev.pointerType !== 'mouse' ? nearest(ev, 24) : null);   // fingers: a near miss counts
-    if (!def) { S.armed = null; setHover(null); return; }
-    if (ev.pointerType !== 'mouse' && S.armed !== def.id) { S.armed = def.id; setHover(def); return; }
+    if (!def) { setHover(null); return; }
     go(def.id);
   },
   hover(ev) {
@@ -350,7 +349,7 @@ export const workshop = {
     if (!S.ready) return;
     S.seq++;
     if (S.focus) close(false);
-    S.home = null; S.armed = null; setHover(null);
+    S.home = null; setHover(null);
     document.body.classList.remove('ws-sub');
     S.els.back.hidden = true; S.els.mute.hidden = true; S.els.hint.hidden = true;
     audio.dispose();                                   // Web Audio is released on leaving

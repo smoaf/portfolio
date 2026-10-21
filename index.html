@@ -1679,6 +1679,29 @@ function stepTween(now) {
   if (u >= 1) { tween.active = false; tween.done && tween.done(); }
 }
 
+// a tap during a flight (Smo: taps were lost while the camera moved): the flight's job (controls,
+// panel) is done at once, the tap is judged on the view the visitor sees, and a flight the tap starts
+// sets off from there. Back from it returns to where the cut flight would have ended (`cutHome`).
+// Until the camera is nearly there only a direct hit counts (the areas' near-miss rule for fingers
+// would pick neighbours while everything is still small); a tap that starts nothing lets it fly on.
+let cutHome = null;
+const viewNow = () => ({ pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance });
+function tapDuringFlight(ev, act) {
+  const mid = { pos: camera.position.clone(), quat: camera.quaternion.clone(), target: controls.target.clone(), fov: camera.fov };
+  const near = mid.pos.distanceTo(tween.p1) < 0.25 * Math.max(1e-3, tween.p0.distanceTo(tween.p1));
+  const left = tween.ms * (1 - Math.min(1, (performance.now() - tween.start) / tween.ms)), hadPanel = panel.classList.contains('open');
+  tween.ms = 0; stepTween(performance.now());
+  const end = viewNow(), en = controls.enabled, opened = !hadPanel && panel.classList.contains('open');
+  if (opened) closePanel();                           // the panel waits for the end of the move (or for a later visit)
+  camera.position.copy(mid.pos); camera.quaternion.copy(mid.quat); controls.target.copy(mid.target);
+  camera.fov = mid.fov; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+  cutHome = end;
+  try { act(near ? ev : { clientX: ev.clientX, clientY: ev.clientY, pointerType: 'mouse' }); } finally { cutHome = null; }
+  if (tween.active) return;
+  flyTo(end.pos, end.target, end.fov, () => { controls.enabled = en; if (opened && nav.place) openPanel(nav.place.id); });
+  if (tween.ms) tween.ms = Math.max(250, left);      // the rest of the way at its old pace
+}
+
 function enter(p) {
   campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset();
   nav.place = p; nav.mode = p.view.type;
@@ -1773,21 +1796,26 @@ el.addEventListener('pointermove', (ev) => {
 });
 const endPointer = (ev) => { look.pointers.delete(ev.pointerId); };
 el.addEventListener('pointercancel', endPointer);
+// a tap: a short press that stayed put (fingers wobble more than a mouse, so touch gets more room)
+const tapSlop = (ev) => (ev.pointerType === 'mouse' ? 6 : 14);
 el.addEventListener('pointerup', (ev) => {
   endPointer(ev);
-  if (!downAt || tween.active) { downAt = null; return; }
-  const tap = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) < 6 && performance.now() - downAt.t < 600;
+  if (!downAt) return;
+  const tap = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) < tapSlop(ev) && performance.now() - downAt.t < 600;
   downAt = null;
   if (!tap) return;
   if (hitTurbine(ev)) { turbine.on = !turbine.on; return; }
-  if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }
+  if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }   // also while flying home: go there instead
+  if (tween.active) tapDuringFlight(ev, tapPlace); else tapPlace(ev);
+});
+function tapPlace(ev) {
   if (nav.place.id === 'camp') { campTap(ev); return; }
   if (nav.place.id === 'workshop') { workshop.tap(ev); return; }
   if (nav.place.id === 'dish') { telescope.tap(ev); return; }
   if (nav.place.id === 'relay') { relay.tap(ev); return; }
   if (nav.place.id === 'library') { library.tap(ev); return; }
   if (nav.place.id === 'showroom') { if (robot.tap(ev)) return; if (hitRoof(ev)) setRoof(!roof.closed); }
-});
+}
 el.addEventListener('wheel', (ev) => {
   if (nav.mode !== 'inside') return;
   ev.preventDefault();
@@ -1876,12 +1904,12 @@ overviewControls();
 if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0);
 
 // --- camp interactions (Phase 1, Smo): at the camp the figure, the fire and the van can be clicked.
-// Mouse: hovering shows a glow and a label, a click acts. Touch: the first tap shows them, a second
-// tap on the same thing acts. Each one moves the camera to its own view; Back (or Esc) returns.
+// Mouse: hovering shows a glow and a label, a click acts. Touch: one tap acts (a near miss counts).
+// Each one moves the camera to its own view; Back (or Esc) returns.
 //   fire:   sit in the chair the figure never uses, a stick held towards the fire; tap the fire to poke it
 //   figure: it stops, turns to the camera and asks for a message (the form is camp/message.js)
 //   van:    step inside (camp/van.js, loaded on first use): the start screen, the album, the camera
-const camp = { view: null, seq: 0, home: null, hover: null, armed: null, fov: 50, last: 0, van: null, vanLoading: null, index: null,
+const camp = { view: null, seq: 0, home: null, hover: null, fov: 50, last: 0, van: null, vanLoading: null, index: null,
   vanMeshes: [], fireMeshes: [], fireLit: false, stick: null, jab: null, album: null, msgOpen: false, safari: null, safariStarting: false };
 const VAN = { x: 27.0, y: 4.2, heading: THREE.MathUtils.degToRad(80) };       // where vehicle.py stands the van (model coordinates)
 const vanAt = (x, y, z, out = new THREE.Vector3()) => {                      // van coordinates (x forward, y left, z up) -> viewer
@@ -1961,10 +1989,8 @@ function campHover(ev) {
 function campTap(ev) {
   if (camp.view === 'screen') { camp.van.screen.press(screenUV(ev)); return; }
   const id = campPick(ev);
-  if (!id) { camp.armed = null; setCampHover(null); return; }
-  // touch and pen: the first tap only shows what it is, the second one acts
-  if (ev.pointerType !== 'mouse' && camp.armed !== id) { camp.armed = id; setCampHover(id); return; }
-  camp.armed = null; setCampHover(null);
+  setCampHover(null);
+  if (!id) return;
   ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum })[id]();
 }
 // the same choices for the keyboard: a row of buttons that follows the view (and the screen's menu)
@@ -2003,9 +2029,9 @@ function setSub(view) {
   document.body.classList.toggle('camp-sub', !!view);
   campEls.back.hidden = !view || view === 'leaving';
   campEls.hint.hidden = true;
-  camp.armed = null; setCampHover(null);
+  setCampHover(null);
 }
-function rememberHome() { if (!camp.view) camp.home = { pos: camera.position.clone(), target: controls.target.clone(), maxD: controls.maxDistance }; }
+function rememberHome() { if (!camp.view) camp.home = cutHome || viewNow(); }
 function lookFrom(eye, at) {                           // stand at `eye` and look round freely, starting towards `at`
   const d = vB.copy(at).sub(eye).normalize();
   look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y);
@@ -2448,8 +2474,9 @@ function renderDrop(cat) {
       const b = document.createElement('button'); b.className = 'drop-item';
       b.innerHTML = `<span class="t">${it.t}</span><span class="s">${it.s}</span>`;
       b.addEventListener('click', () => { closeDrop(); go(it); });
-      b.addEventListener('mouseenter', () => { const p = it.place && PLACES.find((q) => q.id === it.place); if (p && !nav.place) showTip(p); });
-      b.addEventListener('mouseleave', () => setTip(null));
+      // mouse only: a tap's emulated mouse events must not show anything (phones then swallow the click)
+      b.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; const p = it.place && PLACES.find((q) => q.id === it.place); if (p && !nav.place) showTip(p); });
+      b.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') setTip(null); });
       dropList.appendChild(b);
     });
   });
@@ -2467,11 +2494,12 @@ function closeDrop() {
   document.getElementById('menu-toggle').setAttribute('aria-expanded', 'false');
 }
 document.querySelectorAll('#menu button').forEach((b) => {
-  b.addEventListener('mouseenter', () => { if (matchMedia('(hover: hover)').matches) openDrop(b.dataset.cat); });
+  // a mouse opens the menu by hovering; a tap only clicks (its emulated hover would open it and the click close it again)
+  b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') openDrop(b.dataset.cat); });
   b.addEventListener('click', () => (dropCat === b.dataset.cat ? closeDrop() : openDrop(b.dataset.cat)));
 });
-site.addEventListener('mouseleave', () => { dropTimer = setTimeout(closeDrop, 250); });
-site.addEventListener('mouseenter', () => clearTimeout(dropTimer));
+site.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') dropTimer = setTimeout(closeDrop, 250); });
+site.addEventListener('pointerenter', () => clearTimeout(dropTimer));
 document.getElementById('menu-toggle').addEventListener('click', () => (dropCat ? closeDrop() : openDrop('all')));
 document.getElementById('home-link').addEventListener('click', (e) => { e.preventDefault(); closeDrop(); closePanel(); setRoute(''); });
 function go(it) {
@@ -2608,7 +2636,7 @@ const wsHost = {
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'workshop',
   holdView() {                                      // a station opens: the camera stays where its flight ends
-    const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance };
+    const h = cutHome || viewNow();
     nav.mode = 'fixed'; return h;
   },
   fixedFov(f) { camp.fov = f; },                       // what a resize keeps while the camera is fixed
@@ -2634,7 +2662,7 @@ const rlHost = {
   jump(pos, target, fov) { camera.position.copy(pos); controls.target.copy(target); camera.fov = fov; camera.updateProjectionMatrix(); camera.lookAt(target); },
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'relay',
-  holdView() { const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance }; nav.mode = 'fixed'; return h; },
+  holdView() { const h = cutHome || viewNow(); nav.mode = 'fixed'; return h; },
   fixedFov(f) { camp.fov = f; },
   releaseView(h) { const v = PLACES.find((q) => q.id === 'relay').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
   night: () => skyState.d,
@@ -2647,7 +2675,7 @@ const lbHost = {
   scene, camera, el, ray, setRay, flyTo, portrait, reduceMotion, closePanel,
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'library',
-  holdView() { const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance }; nav.mode = 'fixed'; return h; },
+  holdView() { const h = cutHome || viewNow(); nav.mode = 'fixed'; return h; },
   fixedFov(f) { camp.fov = f; },
   releaseView(h) { const v = PLACES.find((q) => q.id === 'library').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
 };
@@ -2690,7 +2718,7 @@ const campScreen = (id) => {                           // tests: where on screen
   c.project(camera); const r = el.getBoundingClientRect();
   return [r.left + (c.x + 1) / 2 * r.width, r.top + (1 - c.y) / 2 * r.height];
 };
-window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => camp.armed, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
+window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => null, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
 window.__safari = () => camp.safari;
 window.__workshop = workshop;
 window.__telescope = telescope;
