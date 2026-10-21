@@ -15,6 +15,7 @@
 // piece of their own perch (stem, twig, trunk or flower) so they never hang in the air; `opts.stub =
 // false` (or `opts.perch = true` for the mantis) leaves it out when the route puts them on real wood.
 import * as THREE from 'three';
+import { FEED_REACH } from '../creature.js';
 
 export const SPECIES = {
   tarsier: { id: 'tarsier', name: 'Tarsier', points: 220, call: { hz: 5200, kind: 'trill' } },
@@ -924,7 +925,7 @@ export function buildPoodleMoth(K, home, opts = {}) {
     const d = env.dist;
     if (c.state !== 'flee' && c.state !== 'rare' && d < c.fleeAt) c.go('flee', 2.5);
     else if (c.state === 'idle' || c.state === 'wander') {
-      const p = env.pellets.find((q) => q.landed && !q.eaten && q.pos.distanceTo(c.home) < 16);
+      const p = env.pellets.find((q) => q.landed && !q.eaten && q.pos.distanceTo(c.home) < 16 * FEED_REACH);
       if (p) { p.eaten = true; p.eatenAt = env.t; c.go(Math.random() < c.rareChance ? 'rare' : 'curious', 6); }
       else if (d < c.curiousAt && c.t > 2 && Math.random() < dt * 0.15) c.go('curious', 4);
       else if (c.rareAt === env.tod && c.t > 3 && Math.random() < dt * 0.05) c.go('rare', 7);

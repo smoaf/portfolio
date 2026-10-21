@@ -2640,8 +2640,9 @@ let paused = false;
 function setPaused(on) {
   if (on === paused) return;
   paused = on;
-  renderer.setAnimationLoop(on || station.held ? null : frame);
-  media.hold(on || station.held);
+  if (station.held) return;          // the safari has the renderer: its loop stays; station.resume() reads `paused`
+  renderer.setAnimationLoop(on ? null : frame);
+  media.hold(on);
   if (!on) { quality.settle = performance.now() + 3000; }      // no quality step from the gap
 }
 // --- station pause / resume (Global rule 1, ready for the Photo Safari in Phase 2). While held the
