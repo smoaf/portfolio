@@ -421,8 +421,18 @@ export const ROUTE = {
     const wallSpot = (z, y, dd = 0) => { const d = dAtHeight(z, y) + dd; return P3(z, d); };
     spawn('markhor', wallSpot(-200, 3, 8)); spawn('markhor', wallSpot(-110, 29, -2)); spawn('markhor', wallSpot(-70, 49, 3));
     spawn('markhor', wallSpot(120, 40, -3)); spawn('markhor', wallSpot(176, 40, 0));
-    spawn('harpy-eagle', P3(-36, -116, 6), { perch: true });
-    spawn('harpy-eagle', P3(60, -118, 4), { perch: true });
+    // the eagles sit on the cap of the hoodoo behind their spot: the nearest one farther from the road
+    const onHoodoo = (z, d) => {
+      const p = at(z, d), out = road.at(p.x, p.z).d;
+      let best = null, bestD = Infinity;
+      for (const h of hoodooSpots) {
+        const dd = Math.hypot(h.p.x - p.x, h.p.z - p.z);
+        if (dd < bestD && road.at(h.p.x, h.p.z).d > out) { best = h; bestD = dd; }
+      }
+      return best.p.clone().setY(best.p.y + best.s[1] + 0.3);      // the top face of its cap
+    };
+    spawn('harpy-eagle', onHoodoo(-36, -116), { perch: true });
+    spawn('harpy-eagle', onHoodoo(60, -118), { perch: true });
     spawn('crested-caracara-perched', wallSpot(-140, 40, -2)); spawn('crested-caracara-perched', wallSpot(-60, 24, -4));
     // the birds that only fly roost after dark: against the night sky they could not be made out
     if (!night) {
