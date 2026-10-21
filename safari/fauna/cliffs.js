@@ -508,7 +508,8 @@ export function buildCaracaraFlock(K, home, opts = {}) {
   c.step = (dt, env) => {
     flockStep(dt, env);
     for (const R of rigs) {
-      const f = R.prev.distanceTo(env.camPos) > 32;
+      const d = R.prev.distanceTo(env.camPos) * (env.lens || 1);      // how large it looks: the long lens brings it near
+      const f = R.isFar ? d > 29 : d > 35;
       if (f !== R.isFar) { R.isFar = f; R.near.visible = !f; R.far.b.parent.visible = f; }
     }
   };

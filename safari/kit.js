@@ -161,7 +161,7 @@ export function makeKit({ scene, keep = (x) => x, tod = 'day', groundY = () => 0
     lod(c, near, far, at = 42) {
       c.far = false;
       c.lod = (d) => {
-        const f = d > at;
+        const f = c.far ? d > at * 0.92 : d > at * 1.08;   // a little margin, so it doesn't flicker at the line
         if (f === c.far) return;
         c.far = f; near.visible = !f; if (far) far.visible = f;
       };

@@ -261,7 +261,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   // ---- the loop. The van is placed first, then the creatures react to where it now is, then the
   // picture is drawn: that way nothing ever reads a position from the frame before.
-  const env = { camPos: new THREE.Vector3(), t: 0, tod, pellets, call: callFor, dist: 0, under: 0, u: 0 };
+  const env = { camPos: new THREE.Vector3(), t: 0, tod, pellets, call: callFor, dist: 0, under: 0, u: 0, lens: 1 };
   let poi = null;
   function frame(now) {
     const dt = S.last ? Math.min(0.08, (now - S.last) / 1000) : 0.016;
@@ -283,6 +283,10 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     // bodies are many small draws, so this is most of the saving); flocks spread wide, so they stay
     rig.camera.updateMatrixWorld();
     frustum.setFromProjectionMatrix(mView.multiplyMatrices(rig.camera.projectionMatrix, rig.camera.matrixWorldInverse));
+    // the detail level follows how large an animal looks, not only how far it is: on the long lens a
+    // far animal fills the frame, so it gets its near body as if it were that much closer
+    const lens = Math.tan(THREE.MathUtils.degToRad(rig.camera.fov) / 2) / Math.tan(THREE.MathUtils.degToRad(FOV.wide) / 2);
+    env.lens = lens;                                 // flocks that swap each bird's body themselves use it too
     for (const c of world.creatures) {
       c.photoPoint(vA);
       const d = vA.distanceTo(env.camPos);
@@ -290,7 +294,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       c.visible = d < (c.seeAt || 170);
       ball.set(vA, (c.radius || 1) * 2.5 + 1.5);
       c.root.visible = c.visible && (c.flock || d < 6 || frustum.intersectsSphere(ball));
-      if (c.lod) c.lod(d);
+      if (c.lod) c.lod(d * lens);
       if (c.visible) { env.dist = d; c.step(dt, env); stepFace(c, dt); }
       if (d < poiD && d > 7) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }
     }
