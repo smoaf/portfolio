@@ -136,6 +136,10 @@ One run works on **one card at a time, start to finish**, then decides whether t
 - If the usage can't be read in this environment, follow the fallback in the schedule prompt (for now: at most **one** card per run, S or M only).
 
 ## 1. Pick the card
+**Only real cards count:** cards whose name starts with an ID (`BUG-<n> ·` or `FEAT-<n> ·`). Cards without an ID (like the four label examples called "bug", "bugfix", "feature", "feature implemented") are never touched.
+
+**Is another run still working?** If a card has a `started` comment without a `done` comment, check the newest commit on its branch and the card's last activity. If either is less than 60 minutes old, another run is still busy: **stop right away** and change nothing. Two runs must never work at the same time.
+
 In the Portfolio list, from top to bottom:
 1. **First, unfinished work:** a card with a `started` comment and no `done` comment. A run before this one was cut off, so continue it on its branch.
 2. **Then bugs** (label `bug`), **then features** (label `feature`), in list order.
