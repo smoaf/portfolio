@@ -438,7 +438,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   };
   el.addEventListener('pointerup', up, sig);
   el.addEventListener('pointercancel', (ev) => { pointers.delete(ev.pointerId); downAt = null; }, sig);
-  el.addEventListener('wheel', (ev) => { ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); zoomed(); }, { passive: false, signal: abort.signal });
+  // the wheel zooms only while the van drives; after it, the report on top scrolls as a page does
+  el.addEventListener('wheel', (ev) => { if (S.over) return; ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); zoomed(); }, { passive: false, signal: abort.signal });
   el.addEventListener('contextmenu', (ev) => ev.preventDefault(), sig);
   window.addEventListener('keydown', (ev) => {
     if (hud.viewing) return;                          // a photo is open large in the report: its keys
