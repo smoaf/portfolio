@@ -41,7 +41,7 @@ const S = {
   ready: false, hover: false, inside: false, entering: false, seq: 0, home: null,
   win: null, winMat: null, frameMat: null, groundGlow: null, box: new THREE.Box3(), last: 0, lightAt: 0,
   room: null, radio: null, mods: null, cards: null, look: { yaw: 0, pitch: 0, base: null, eye: null, at: null },
-  drag: null, inertia: 0, meter: 0, movedAt: 0, settle: true, roomHover: null, keyDown: false, keySrc: null, ui: '', els: null, found: 0, tune: 0,
+  drag: null, inertia: 0, meter: 0, movedAt: 0, roomHover: null, keyDown: false, keySrc: null, ui: '', els: null, found: 0, tune: 0,
 };
 const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), v3 = new THREE.Vector3();
 const world = (x, y, z, out = new THREE.Vector3()) => out.set(HUT.x + x, HUT.y + y, HUT.z + z);
@@ -257,7 +257,7 @@ function openCards() {
   keyOn(false);
   S.cards = S.mods.cards.openCards(S.mods.radio.ALL, S.radio.log, { onClose: () => { S.cards = null; } });
 }
-function nudge(df, settle = true) { if (S.radio) { S.radio.set(S.radio.f + df); S.movedAt = performance.now(); S.settle = settle; } }   // keys tune precisely: no settling after them
+function nudge(df) { if (S.radio) { S.radio.set(S.radio.f + df); S.movedAt = performance.now(); } }
 function wake() { if (S.radio) { const A = S.radio.start(); if (A) paintMute(); } }
 function keyOn(down, src) {
   if (!S.radio) return;
@@ -367,7 +367,7 @@ function onKey(e) {
   if ((k === 'Enter' || k === ' ') && e.target.closest && e.target.closest('button')) return;   // a focused button acts
   if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown') {
     e.preventDefault(); e.stopImmediatePropagation(); wake();
-    nudge((k === 'ArrowRight' || k === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 0.1 : 0.01), false); S.inertia = 0; return;
+    nudge((k === 'ArrowRight' || k === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 0.1 : 0.01)); S.inertia = 0; return;
   }
   if (k === ' ') { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) keyOn(true, 'space'); return; }
   if ((k === 'm' || k === 'M') && !e.metaKey && !e.ctrlKey) { e.stopImmediatePropagation(); wake(); mute(); return; }
@@ -383,7 +383,7 @@ function stepRoom(dt, now) {
     nudge(S.inertia * dt); S.inertia *= Math.exp(-dt / 0.35);
     if (Math.abs(S.inertia) < 0.05 || R.f <= S.mods.room.BAND.lo || R.f >= S.mods.room.BAND.hi) S.inertia = 0;
   }
-  if (S.settle && !S.drag && !S.inertia && !S.tune && now - S.movedAt > 450) {   // let go near a station: it settles on it (fine tuning on a phone is hard)
+  if (!S.drag && !S.inertia && !S.tune && now - S.movedAt > 450) {   // let go near a station: it settles on it (fine tuning on a phone is hard)
     const list = moonTracked() ? S.mods.radio.ALL : S.mods.radio.STATIONS;
     const near = list.find((s) => Math.abs(R.f - s.f) < 0.08);
     if (near) R.set(R.f + (near.f - R.f) * Math.min(1, dt * 2.5));

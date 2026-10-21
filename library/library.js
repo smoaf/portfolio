@@ -133,13 +133,8 @@ function measureScreen(root) {
   if (!face) return null;
   const b = new THREE.Box3().setFromObject(face), c = b.getCenter(new THREE.Vector3());
   const z = b.min.z - 0.004;                            // just in front of the glass
-  // the glass itself: the loose box above is bigger than the turned screen, and the screen leans,
-  // so the corners come from its vertices, bottom and top edge each at its own depth
-  const g = new THREE.Box3().setFromObject(face, true), my = (g.min.y + g.max.y) / 2, front = [Infinity, Infinity];
-  const pos = face.geometry.attributes.position;
-  for (let i = 0; i < pos.count; i++) { const q = vT.fromBufferAttribute(pos, i).applyMatrix4(face.matrixWorld), k = q.y > my ? 1 : 0; front[k] = Math.min(front[k], q.z); }
   return { face, pick: [face, body].filter(Boolean), centre: c.setZ(z), w: b.max.x - b.min.x, h: b.max.y - b.min.y,
-    corners: [[g.min.x, g.min.y, 0], [g.max.x, g.min.y, 0], [g.max.x, g.max.y, 1], [g.min.x, g.max.y, 1]].map(([x, y, k]) => new THREE.Vector3(x, y, front[k] - 0.002)) };
+    corners: [[b.min.x, b.min.y], [b.max.x, b.min.y], [b.max.x, b.max.y], [b.min.x, b.max.y]].map(([x, y]) => new THREE.Vector3(x, y, z)) };
 }
 // ---- the papers list: read once, on the first visit to the screen
 function loadPapers() {
@@ -165,12 +160,9 @@ function renderPapers(list) {
 function fitScreen() {
   const el = S.els.screen, r = S.host.el.getBoundingClientRect();
   if (S.host.portrait()) { const top = S.els.back.getBoundingClientRect().bottom + 12; setRect(el, 0, top, r.width, Math.max(0, r.bottom - top)); return; }
-  // the screen's corners as seen now, in order round its edge (bottom, bottom, top, top); the list takes the
-  // largest upright rectangle that lies fully inside them, so it never sticks out past the screen's edges
-  const [a, b, c, d] = S.pc.corners.map((q) => screenOf(vT.copy(q)));
-  const x0 = Math.max(Math.min(a[0], b[0]), Math.min(c[0], d[0])), x1 = Math.min(Math.max(a[0], b[0]), Math.max(c[0], d[0]));
-  const y0 = Math.max(Math.min(a[1], d[1]), Math.min(b[1], c[1])), y1 = Math.min(Math.max(a[1], d[1]), Math.max(b[1], c[1]));
-  setRect(el, x0, y0, Math.max(0, x1 - x0), Math.max(0, y1 - y0));
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  S.pc.corners.forEach((c) => { const [x, y] = screenOf(vT.copy(c)); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  setRect(el, x0, y0, x1 - x0, y1 - y0);
 }
 function setRect(el, x, y, w, h) {                      // only when it moved: no style writes while the view stands still
   const k = `${Math.round(x)},${Math.round(y)},${Math.round(w)},${Math.round(h)}`;

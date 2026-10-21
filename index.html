@@ -2699,41 +2699,39 @@ const rbHost = {
   darken: (m) => showDarkMaterial(m),
 };
 
-// hooks used for test renders: only with ?test in the address (http://localhost:8000/?test)
-if (new URLSearchParams(location.search).has('test')) {
-  window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
-  window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days]); return out; };
-  window.__sky = (o) => { Object.assign(SKY, o || {}); applyAccents(); skyState.lastStep = -1e9; return { ...SKY, d: skyState.d, night: skyState.night }; };
-  window.__cam = (c) => { if (c.free) { controls.maxPolarAngle = Math.PI; controls.minDistance = 0.01; } camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
-  window.__go = (id) => setRoute(id || '');
-  window.__gui = { openDrop, closeDrop, openPanel, closePanel, state: () => ({ drop: dropCat, panel: panel.classList.contains('open'), paused }) };
-  window.__print = (u) => workshop.get('printer').print(u);
-  window.__lights = () => { const c = {}; scene.traverse((o) => { if (o.isLight) { const k = o.type + (o.castShadow ? '+shadow' : ''); c[k] = (c[k] || 0) + 1; } }); return JSON.stringify(c); };
-  window.__quality = (l) => { if (l !== undefined) setQuality(l); return quality.level; };
-  window.__personRun = (sec) => { let t = person.last || performance.now(); for (let k = 0; k < sec * 20; k++) { t += 50; stepPerson(t); } return { i: person.i, pos: person.root.position.toArray().map((n) => +n.toFixed(2)), boxAt: person.boxAt, carrying: person.carrying }; };
-  window.__look = (yawDeg, pitchDeg) => { look.yaw += yawDeg * Math.PI / 180; look.pitch = Math.max(-1.1, Math.min(1.1, look.pitch + (pitchDeg || 0) * Math.PI / 180)); };
-  window.__zoneScreen = (id) => { const p = PLACES.find((q) => q.id === id); const q = new THREE.Vector3(...p.zone.c).project(camera);
-    const r = renderer.domElement.getBoundingClientRect(); return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height]; };
-  window.__station = station;
-  const campScreen = (id) => {                           // tests: where on screen a camp target is
-    const c = { figure: () => vTmp.copy(person.root.position).setY(person.root.position.y + (isSeated() ? 0.75 : 1.0)), fire: () => vTmp.copy(CAMP.fire).setY(0.35),
-      poke: () => vTmp.copy(CAMP.fire).setY(0.35), van: () => vanAt(-0.6, 0, 2.0, vTmp), screen: () => camp.van.screen.centre(vTmp), album: () => camp.van.albumAt(vTmp) }[id]();
-    c.project(camera); const r = el.getBoundingClientRect();
-    return [r.left + (c.x + 1) / 2 * r.width, r.top + (1 - c.y) / 2 * r.height];
-  };
-  window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => null, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
-  window.__safari = () => camp.safari;
-  window.__workshop = workshop;
-  window.__telescope = telescope;
-  window.__relay = relay;
-  window.__library = library;
-  window.__hub = hub;
-  window.__media = media;
-  window.__robot = robot;
-  window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
-  window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
-  window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
-}
+// hooks used for test renders
+window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
+window.__moons = () => { const out = []; for (let i = 0; i < Math.round(SKY.moons); i++) out.push(skyUniforms.uMoonDir.value[i].toArray().map((n) => +n.toFixed(3))); out.push([SKY.time, skyState.days]); return out; };
+window.__sky = (o) => { Object.assign(SKY, o || {}); applyAccents(); skyState.lastStep = -1e9; return { ...SKY, d: skyState.d, night: skyState.night }; };
+window.__cam = (c) => { if (c.free) { controls.maxPolarAngle = Math.PI; controls.minDistance = 0.01; } camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
+window.__go = (id) => setRoute(id || '');
+window.__gui = { openDrop, closeDrop, openPanel, closePanel, state: () => ({ drop: dropCat, panel: panel.classList.contains('open'), paused }) };
+window.__print = (u) => workshop.get('printer').print(u);
+window.__lights = () => { const c = {}; scene.traverse((o) => { if (o.isLight) { const k = o.type + (o.castShadow ? '+shadow' : ''); c[k] = (c[k] || 0) + 1; } }); return JSON.stringify(c); };
+window.__quality = (l) => { if (l !== undefined) setQuality(l); return quality.level; };
+window.__personRun = (sec) => { let t = person.last || performance.now(); for (let k = 0; k < sec * 20; k++) { t += 50; stepPerson(t); } return { i: person.i, pos: person.root.position.toArray().map((n) => +n.toFixed(2)), boxAt: person.boxAt, carrying: person.carrying }; };
+window.__look = (yawDeg, pitchDeg) => { look.yaw += yawDeg * Math.PI / 180; look.pitch = Math.max(-1.1, Math.min(1.1, look.pitch + (pitchDeg || 0) * Math.PI / 180)); };
+window.__zoneScreen = (id) => { const p = PLACES.find((q) => q.id === id); const q = new THREE.Vector3(...p.zone.c).project(camera);
+  const r = renderer.domElement.getBoundingClientRect(); return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height]; };
+window.__station = station;
+const campScreen = (id) => {                           // tests: where on screen a camp target is
+  const c = { figure: () => vTmp.copy(person.root.position).setY(person.root.position.y + (isSeated() ? 0.75 : 1.0)), fire: () => vTmp.copy(CAMP.fire).setY(0.35),
+    poke: () => vTmp.copy(CAMP.fire).setY(0.35), van: () => vanAt(-0.6, 0, 2.0, vTmp), screen: () => camp.van.screen.centre(vTmp), album: () => camp.van.albumAt(vTmp) }[id]();
+  c.project(camera); const r = el.getBoundingClientRect();
+  return [r.left + (c.x + 1) / 2 * r.width, r.top + (1 - c.y) / 2 * r.height];
+};
+window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => null, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
+window.__safari = () => camp.safari;
+window.__workshop = workshop;
+window.__telescope = telescope;
+window.__relay = relay;
+window.__library = library;
+window.__hub = hub;
+window.__media = media;
+window.__robot = robot;
+window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
+window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
+window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 </script>
 
 </body></html>
