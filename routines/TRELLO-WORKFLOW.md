@@ -72,6 +72,9 @@ How bad
 Evidence
   <screenshots or a screen recording attached; what is visible in them>
 
+Estimate (required)
+  <share of one five-hour usage window this card will take, e.g. 15%>
+
 Where in the code (filled in by Claude if found)
   <file, function, line>
 
@@ -108,8 +111,8 @@ Not part of this
 Assets
   <files Smo supplies, and which ones may be copied into the public repo>
 
-Size (required)
-  <S: under 1 hour / M: 1–2 hours / L: more → split into several cards>
+Estimate (required)
+  <share of one five-hour usage window this card will take, e.g. 25%>
 
 Depends on
   <other card IDs that must be live first>
@@ -121,7 +124,15 @@ Done when (required)
   <what Smo will try on the live site>
 ```
 
-**Size rule:** a card must be doable well inside one five-hour usage window. Anything bigger is split into several cards, each of which leaves the site working on its own (for example FEAT-012a, FEAT-012b).
+**Estimate rule:** every card says how much of one five-hour usage window it will take, in percent. Claude proposes the number when the card is written; Smo can change it. Rough guide until there is real data:
+- text or style fix in one place: 5–10%
+- a bug in one module: 10–20%
+- a feature in one station or area: 25–40%
+- a feature across several areas: 40–70%
+
+**No card may be estimated above 70%.** Anything bigger is split into several cards that each leave the site working on its own (for example FEAT-012a, FEAT-012b).
+
+**Calibrate:** before estimating, look at recently finished cards. Their `done` comments give the estimate and the real working time. Adjust new estimates to match.
 
 ---
 
@@ -129,21 +140,25 @@ Done when (required)
 
 One run works on **one card at a time, start to finish**, then decides whether to take the next one.
 
-## 0. Budget check: the very first thing, before cloning, reading or anything else
-- Read the plan usage: the five-hour window and the weekly limit, percent used.
-- **Stop (do nothing) if the weekly limit is at 90% or more.**
-- **Start a new card only if the five-hour window has enough room for it**: at most 40% used for an S card, at most 20% for an M card. Otherwise stop. Never start a card that might be cut off halfway.
-- If the usage can't be read in this environment, follow the fallback in the schedule prompt (for now: at most **one** card per run, S or M only).
+## 0. Plan the run: the very first thing
+A cloud run can't read the plan usage (tested 21 Oct 2026), so the run plans its work from the cards' **estimates** instead:
+- Make the ordered list of cards (see step 1 for which cards count and the order).
+- Take cards from the top of the list while the **sum of their estimates stays at or below 70%**. That is this run's plan.
+- An unfinished card (step 1) counts with its full estimate.
+- A card estimated above 70%, or a card without an estimate, is not started. Comment `not started: estimate missing or above 70%` and skip it.
+- **Stick to the plan.** Don't add more cards later, even if there is time left; the next run takes them.
+- If no card fits or there is nothing to do, stop without changing anything.
 
 ## 1. Pick the card
 **Only real cards count:** cards whose name starts with an ID (`BUG-<n> ·` or `FEAT-<n> ·`). Cards without an ID (like the four label examples called "bug", "bugfix", "feature", "feature implemented") are never touched.
 
 **Is another run still working?** If a card has a `started` comment without a `done` comment, check the newest commit on its branch and the card's last activity. If either is less than 60 minutes old, another run is still busy: **stop right away** and change nothing. Two runs must never work at the same time.
 
-In the Portfolio list, from top to bottom:
+**Order:**
 1. **First, unfinished work:** a card with a `started` comment and no `done` comment. A run before this one was cut off, so continue it on its branch.
-2. **Then bugs** (label `bug`), **then features** (label `feature`), in list order.
-3. Skip cards whose **Depends on** cards aren't live yet.
+2. **Then bugs** (label `bug`) **by number**: BUG-001, BUG-002, …
+3. **Then features** (label `feature`) **by number**: FEAT-001, FEAT-002, …
+4. Skip cards whose **Depends on** cards aren't live yet; they come back once those are done.
 
 ## 2. Mark it as started
 Comment on the card: `started <date time, Vienna> · branch <name>`.
@@ -187,14 +202,13 @@ Comment on the card: `started <date time, Vienna> · branch <name>`.
   - what changed (short),
   - what to try on the live site,
   - the pull request link,
-  - **usage spent** (five-hour and weekly percent before → after the card).
+  - **time:** started → finished (Vienna time), working minutes, and the card's estimate, so later estimates can be calibrated.
 - **If it couldn't be finished:** leave the label. Comment what is done, what is left, and the branch name, so the next run can continue.
 
 ## 7. Next card or stop
-Go back to step 0. Stop when:
-- the budget says so, or
-- there are no more cards labelled `bug` or `feature` (other than ones waiting on **Depends on**), or
-- it is past **06:00 Vienna** (the site is never left mid-change in the morning).
+Take the next card **from the plan** (step 0) and go back to step 2. Stop when:
+- the plan is done, or
+- it is past **07:00 Vienna**: finish the card in hand, but don't start a new one after 07:00.
 
 Before ending, make sure nothing is left unpushed.
 
