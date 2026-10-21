@@ -259,14 +259,17 @@ function placeTip() {
   t.tip.style.left = ((p.x + 1) / 2 * host.el.clientWidth) + 'px';
   t.tip.style.top = ((1 - p.y) / 2 * host.el.clientHeight) + 'px';
 }
-function hover(ev) {
-  if (host.tweening()) return setHover(false);
-  setHover(hit(ev));
+function hover(ev) {                                   // true while the telescope is under the pointer
+  if (host.tweening()) { setHover(false); return false; }
+  const on = !!hit(ev);
+  setHover(on);
+  return on;
 }
-function tap(ev) {
-  const on = hit(ev);
+function tap(ev) {                                     // true if the tap was on the telescope
+  const on = !!hit(ev);
   setHover(false);
   if (on) toggle();
+  return on;
 }
 function key(ev) {
   if ((ev.key === 't' || ev.key === 'T') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { toggle(); return true; }

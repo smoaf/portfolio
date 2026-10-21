@@ -445,15 +445,19 @@ export const relay = {
     const want = host.inPlace() && !host.tweening() && !S.entering;
     if (S.els.keys.hidden === want) S.els.keys.hidden = !want;
   },
-  hover(ev) {
-    if (S.inside || host.tweening()) return setHover(false);
-    setHover(hitHut(ev));
+  hover(ev) {                                          // true while the hut is under the pointer (or the radio room is open)
+    if (S.inside || S.entering || host.tweening()) { setHover(false); return S.inside || S.entering; }
+    const on = !!hitHut(ev);
+    setHover(on);
+    return on;
   },
-  tap(ev) {
-    if (S.inside || !S.ready) return;
+  tap(ev) {                                            // true if the tap was the relay's (the radio room keeps every tap)
+    if (S.inside || S.entering) return true;
+    if (!S.ready) return false;
     const on = hitHut(ev);
-    if (!on) { setHover(false); return; }
+    if (!on) { setHover(false); return false; }
     enter();
+    return true;
   },
   arrive() {
     if (!S.ready) { S.early = true; return; }
