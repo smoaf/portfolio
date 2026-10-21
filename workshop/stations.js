@@ -324,16 +324,19 @@ export const workshop = {
     stepKeys();
     stepDetail(inside);
   },
-  // a tap on the canvas while the visitor is in the workshop
+  // a tap on the canvas while the visitor is in the workshop; true if it was the workshop's (an open station keeps every tap)
   tap(ev) {
-    if (S.focus || S.host.tweening()) return;
+    if (S.focus || S.host.tweening()) return true;
     const def = pickAt(ev) || (ev.pointerType !== 'mouse' ? nearest(ev, 24) : null);   // fingers: a near miss counts
-    if (!def) { setHover(null); return; }
+    if (!def) { setHover(null); return false; }
     go(def.id);
+    return true;
   },
   hover(ev) {
-    if (S.focus || S.host.tweening()) return setHover(null);
-    setHover(pickAt(ev));
+    if (S.focus || S.host.tweening()) { setHover(null); return true; }
+    const def = pickAt(ev);
+    setHover(def);
+    return !!def;
   },
   // arriving in the workshop (place onEnter)
   arrive() {
