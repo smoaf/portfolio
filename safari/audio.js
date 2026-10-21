@@ -22,7 +22,7 @@ function noiseBuffer(ctx) {
 
 export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
   let ctx = null, master = null, muffler = null, noise = null, parts = null, closed = false, muffled = 0;
-  const state = { muted, speed: 0, started: false };
+  const state = { muted, speed: 0, started: false, parked: false };
 
   function build() {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -94,7 +94,7 @@ export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
 
     // speed 0..1 of the van, bump 0..1 from the road: the hum rises in pitch, the tyres get louder
     drive(speed, bump = 0) {
-      if (!ctx || closed) return;
+      if (!ctx || closed || state.parked) return;
       if (bump <= 0.01 && Math.abs(speed - state.speed) < 0.004) return;   // called every frame: only real changes queue automation
       state.speed = speed;
       const t = ctx.currentTime;
@@ -105,6 +105,14 @@ export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
       parts.tyre.gain.setTargetAtTime(speed * 0.05, t, 0.2);
       parts.tyreBp.frequency.setTargetAtTime(500 + speed * 1500, t, 0.3);
       if (bump > 0.01) api.bump(bump);
+    },
+    // the run is over: engine and tyres fade out within about a second; the bed and the one-shot sounds go on
+    park() {
+      state.parked = true;
+      if (!ctx || closed) return;
+      const t = ctx.currentTime;
+      parts.eng.gain.setTargetAtTime(0, t, 0.2);
+      parts.tyre.gain.setTargetAtTime(0, t, 0.2);
     },
     // 0 = air, 1 = below the surface
     muffle(k) {

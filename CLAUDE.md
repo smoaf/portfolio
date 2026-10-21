@@ -36,4 +36,4 @@ Simon Winkler's ("Smo") portfolio site, live at https://smoaf.github.io/portfoli
 - Static site on GitHub Pages: plain HTML/CSS/JS ES modules, no build step, no backend. three.js 0.160 from jsDelivr via the import map in `index.html`.
 - Model coordinates are z-up; the viewer is y-up (`W2T`). In the default view +x is to the left. glTF drops the `/` from node names (`library/shell` becomes `libraryshell`); code finds parts by these names.
 - `localStorage` only for per-visitor data (sky settings, field log, leaderboard), every access in try/catch.
-- Preview: `python3 -m http.server 8000` in the repository, then http://localhost:8000. Test hooks: `window.__go('workshop')` flies to a place, `window.__explore('canyon', 'day')` starts a safari route, `window.__set({ mode: 'night' })`.
+- Preview: `python3 -m http.server 8000` in the repository, then http://localhost:8000 (add `?test`, http://localhost:8000/?test, to get the test hooks; without it no `window.__*` command exists). Test hooks: `window.__go('workshop')` flies to a place, `window.__explore('canyon', 'day')` starts a safari route, `window.__set({ mode: 'night' })`.
