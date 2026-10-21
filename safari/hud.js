@@ -138,8 +138,9 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     // ---- the field report: every shot on its own card, the total, and the board for this route and
     // time. The total counts the best frame of each species (the cards say which one counts).
     async report({ shots, route: r, tod: t, store, fresh = 0, onDone, onAgain }) {
-      if (report) return;
-      report = el('div', 'sf-report');
+      if (report && report.isConnected) return;
+      if (viewer) { viewer.remove(); viewer = null; }
+      report = el('div', 'sf-report');      // a report that failed half-built is simply built again
       report.setAttribute('role', 'dialog');
       report.setAttribute('aria-label', 'Field report');
       const best = new Map();
@@ -171,7 +172,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         const card = el('button', 'sf-card' + (counted.has(s) ? ' counts' : ''));
         card.type = 'button';
         card.setAttribute('aria-label', `Photo ${i + 1}: ${name(s)}, ${s.points} points${counted.has(s) ? ', counts' : ''}. Open large`);
-        card.appendChild(copyThumb(s.thumb));
+        try { card.appendChild(copyThumb(s.thumb)); } catch (err) { console.error('Safari photo failed', err); }   // one bad print doesn't stop the report
         card.appendChild(el('div', 'sf-name', esc(name(s))));
         card.appendChild(el('div', 'sf-meta', `<span>${counted.has(s) ? 'Counts' : s.best ? verdict(s) : '–'}</span><b>${s.points}</b>`));
         card.addEventListener('click', () => open(i));
@@ -237,9 +238,12 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       }, { capture: true, signal: keys.signal });
       if (!shots.length) grid.innerHTML = '<p class="sf-empty">No photos this time. The animals come closer when you feed them, and the lens zooms in for the shy ones.</p>';
       else if (!species) grid.insertAdjacentHTML('beforebegin', '<p class="sf-empty">No species in frame this time. The animals come closer when you feed them, and the lens zooms in for the shy ones.</p>');
+      report.querySelector('#sf-back').addEventListener('click', () => onDone && onDone());
+      report.querySelector('#sf-again').addEventListener('click', () => onAgain && onAgain());
       root.appendChild(report);
       root.classList.add('reporting');                 // the viewfinder and the tools step aside
-      requestAnimationFrame(() => report.classList.add('on'));
+      const shown = report;
+      requestAnimationFrame(() => shown.classList.add('on'));
 
       const listEl = report.querySelector('#sf-list');
       const draw = (rows, mine) => {
@@ -264,12 +268,11 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         report.querySelector('#sf-save').textContent = 'Saved';
         report.querySelector('#sf-note').textContent = 'Saved in this browser.';
       });
-      report.querySelector('#sf-back').addEventListener('click', () => onDone && onDone());
-      report.querySelector('#sf-again').addEventListener('click', () => onAgain && onAgain());
       setTimeout(() => { const b = report && report.querySelector('#sf-back'); if (b) b.focus({ preventScroll: true }); }, 450);
       return { total: total(), species };
     },
     get reporting() { return !!report; },
+    get reportShown() { return !!report && report.isConnected; },
     get viewing() { return !!viewer; },
     dispose() { keys.abort(); clearTimeout(sayTimer); clearTimeout(titleTimer); clearTimeout(hatchTimer); root.remove(); },
   };
