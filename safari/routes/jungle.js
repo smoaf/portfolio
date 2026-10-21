@@ -494,12 +494,12 @@ export const ROUTE = {
     spawn('treehopper', perch(uA(0.2), 6.5, 2.9), {}, small);
     spawn('giant-panda', beside(uNear(-24, -392), -12));
     spawn('giant-panda', beside(uNear(-24, -392) + 0.012, -17));
-    spawn('flower-mantis', beside(uA(0.33), 6.5, 0.9), { perch: true }, small);
+    spawn('flower-mantis', beside(uA(0.33), 6.5), { perch: true }, small);
     spawn('bongo-antelope', beside(uA(0.48), 13)); spawn('bongo-antelope', beside(uA(0.52), 16));
     spawn('giant-anteater', beside(uA(0.6), -11));
     spawn('eyespot-moth', onTrunk(uA(0.7), -6, 3.2), { stub: false }, small);
     spawn('tarsier', perch(uA(0.8), 6.5, 3.6), {}, small);
-    spawn('flower-mantis', beside(uA(0.9), -6.5, 0.9), { perch: true }, small);
+    spawn('flower-mantis', beside(uA(0.9), -6.5), { perch: true }, small);
     if (night) { spawn('poodle-moth', beside(uA(0.4), -5, 3), {}, small); spawn('poodle-moth', beside(uA(0.75), 6, 3.4), {}, small); }
     // the night secret on the forest floor: fluorescent mushrooms on fallen wood and at a tree's foot
     if (night) { spawn('glow-mushroom', beside(uA(0.26), -6.5), {}, small); spawn('glow-mushroom', onTrunk(uA(0.56), 7, 0), { log: false }, small); }
@@ -533,7 +533,7 @@ export const ROUTE = {
     spawn('treehopper', perch(uC(0.35), -6, 3), {}, small);
     spawn('bongo-antelope', beside(uC(0.5), -14));
     spawn('giant-panda', beside(uNear(62, 300), 13));
-    spawn('flower-mantis', beside(uC(0.7), 6.5, 0.9), { perch: true }, small);
+    spawn('flower-mantis', beside(uC(0.7), 6.5), { perch: true }, small);
     spawn('giant-anteater', beside(uC(0.85), -13));
     if (night) spawn('poodle-moth', beside(uC(0.6), 5, 3.2), {}, small);
     if (night) spawn('glow-mushroom', beside(uC(0.42), -6.5), {}, small);
