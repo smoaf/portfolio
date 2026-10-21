@@ -27,7 +27,7 @@ How bugs and features for Smo's portfolio site (https://smoaf.github.io/portfoli
 - The ID also names the branch (`bug/BUG-004-radio-dial`, `feat/FEAT-007-...`) and starts the pull request title, so card, branch and pull request can always be found from each other.
 
 ## Creating a card together with Claude
-When Smo describes a bug or feature, Claude fills in the matching template below and **asks about every required field that is missing or vague** before creating the card. Ask all missing points in one go, in plain language, at most about five questions. Suggest an answer where one is obvious ("Phone and computer, or only phone?").
+When Smo describes a bug or feature, Claude fills in the matching template below and **asks about every required field that is missing or vague** before creating the card. Ask all missing points in one go, in plain language, at most about five questions. Suggest an answer where one is obvious ("Phone and computer, or only phone?"). **Always ask how it must not be**, even when everything else is clear: it is the easiest thing for a night run to get wrong.
 
 Claude also checks what it can itself before asking: look at the live site, find the code involved, and add **Where in the code** (file and function) to the card. A night run then starts faster and guesses less.
 
@@ -45,6 +45,9 @@ What happens (required)
 
 What should happen instead (required)
   <the expected behaviour>
+
+How it must NOT be (required)
+  <what the fix must not do or look like, e.g. "don't just hide the button", "no new popup", "desktop must stay as it is">
 
 Steps to see it (required)
   1. Open https://smoaf.github.io/portfolio/ on <device>
@@ -96,8 +99,11 @@ Look
 Devices (required)
   <computer and phone (default) / only one, and what differs>
 
+How it must NOT be (required)
+  <how it must not look or behave: styles, motions, sounds, wordings to avoid; what must stay unchanged>
+
 Not part of this
-  <what must not be added or changed>
+  <things that might seem related but are left for later>
 
 Assets
   <files Smo supplies, and which ones may be copied into the public repo>
@@ -123,7 +129,7 @@ Done when (required)
 
 One run works on **one card at a time, start to finish**, then decides whether to take the next one.
 
-## 0. Before starting anything: budget
+## 0. Budget check: the very first thing, before cloning, reading or anything else
 - Read the plan usage: the five-hour window and the weekly limit, percent used.
 - **Stop (do nothing) if the weekly limit is at 90% or more.**
 - **Start a new card only if the five-hour window has enough room for it**: at most 40% used for an S card, at most 20% for an M card. Otherwise stop. Never start a card that might be cut off halfway.
@@ -158,7 +164,7 @@ Comment on the card: `started <date time, Vienna> · branch <name>`.
   - **day and night**;
   - **no console errors.**
 - For loading or timing behaviour, test **both** a normal fast load with no cache and a slowed download.
-- **Check the card's "Done when"** exactly as Smo will do it.
+- **Check the card's "Done when"** exactly as Smo will do it. Then go through **"How it must NOT be"** point by point and confirm none of it happens.
 - **Bugs:** first reproduce the bug on `main` and record that; then show it's gone on the branch.
 - **Check that nothing else broke:** open every area once and look at the things the change touches.
 - Keep screenshots few and small.
