@@ -1,5 +1,5 @@
 // Radio telescope (RELAY_PLAN phase R1): the big steerable dish on the hill tracks the sun or a moon.
-// In its place, a click (touch: two taps) on the telescope turns it to whatever stands above the
+// In its place, a click (or one tap) on the telescope turns it to whatever stands above the
 // horizon, nearest to where it points now; it keeps following that target as the sky moves. A
 // second click parks it again. With nothing in the sky it sweeps once, searching, and says so.
 //
@@ -39,7 +39,7 @@ const t = {
   meshes: [], mats: [], plinth: null,
   mode: 'park',                                        // park | slew | track | search | parking
   target: null, queue: [], move: null, last: 0,
-  hover: false, armed: false, label: null, tip: null, keys: null, keyBtn: null, labelUntil: 0, rings: [], ringT: 0,
+  hover: false, label: null, tip: null, keys: null, keyBtn: null, labelUntil: 0, rings: [], ringT: 0,
 };
 const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), q1 = new THREE.Quaternion();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -265,11 +265,8 @@ function hover(ev) {
 }
 function tap(ev) {
   const on = hit(ev);
-  if (!on) { t.armed = false; setHover(false); return; }
-  // touch and pen: the first tap only shows what it is, the second one acts
-  if (ev.pointerType !== 'mouse' && !t.armed) { t.armed = true; setHover(true); return; }
-  t.armed = false; setHover(false);
-  toggle();
+  setHover(false);
+  if (on) toggle();
 }
 function key(ev) {
   if ((ev.key === 't' || ev.key === 'T') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { toggle(); return true; }
@@ -281,7 +278,6 @@ function arrive() {
 }
 // leaving the place: labels go; the telescope keeps tracking (it can be seen from everywhere)
 function reset() {
-  t.armed = false;
   if (t.hover) setHover(false);
   if (t.label) { t.label.hidden = true; t.labelUntil = 0; }
   if (t.keys) t.keys.hidden = true;

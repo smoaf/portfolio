@@ -8,7 +8,7 @@
 // (metres from the middle of the river, negative is the left bank where the cliff path is).
 import * as THREE from 'three';
 import { makeKit } from '../kit.js';
-import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, roadBand, instanced, addCaustics, addSway, shaftMaterial, motes } from '../terrain.js';
+import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, roadBand, instanced, addCaustics, addSway, shaftMaterial, motes, pacing } from '../terrain.js';
 import * as FLOOR from '../fauna/floor.js';
 import * as CLIFFS from '../fauna/cliffs.js';
 import * as DEEP from '../fauna/deep.js';
@@ -95,7 +95,7 @@ const ROAD = [
 export const ROUTE = {
   id: 'canyon',
   name: 'Canyon',
-  seconds: 92,
+  seconds: 125,                                           // the cruising pace; the stretches in PACE slow it down and speed it up
   // the animals that only come out at one time of day (the van's field log hints at them)
   secrets: [
     { id: 'goblin-shark', name: 'Goblin shark', when: 'NIGHT' },
@@ -350,8 +350,7 @@ export const ROUTE = {
     let dive0 = 1, dive1 = 0;
     ts.forEach((p, i) => { if (p.y < WATER + 0.8) { dive0 = Math.min(dive0, i / 1600); } if (p.y < WATER - 2.1) dive1 = Math.max(dive1, i / 1600); });
     const uClimb = ts.findIndex((p) => p.y > 3) / 1600;
-    const uRim = ts.findIndex((p) => p.y > RIM - 1) / 1600;
-    let uDown = uRim; ts.forEach((p, i) => { if (p.y > RIM - 1) uDown = i / 1600; });
+    let uDown = 0; ts.forEach((p, i) => { if (p.y > RIM - 1) uDown = i / 1600; });
     const uLook = (() => { let best = 0, bd = Infinity; ts.forEach((p, i) => { const d = Math.abs(p.x - (XC(p.z) - 95.5)) + Math.abs(p.z + 16) * 0.5; if (d < bd && p.y > RIM - 2) { bd = d; best = i / 1600; } }); return best; })();
     const uHairpin = (() => { let best = 0, bd = Infinity; ts.forEach((p, i) => { const d = Math.abs(p.z + 31) + Math.abs(p.y - 33) * 2; if (d < bd) { bd = d; best = i / 1600; } }); return best; })();
     const sections = [
@@ -362,11 +361,28 @@ export const ROUTE = {
       { u: dive0 - 0.03, title: 'The deep pool', line: 'dive · the van goes under' },
       { u: dive1 + 0.005, title: 'Back on the floor', line: 'last stretch' },
     ];
-    const SETS = [
-      { u: 0.06, k: 0.6, w: 0.03 }, { u: 0.15, k: 0.55, w: 0.03 },
-      { u: uHairpin, k: 0.55, w: 0.02 }, { u: uLook, k: 0.85, w: 0.035 },
-      { u: (dive0 + dive1) / 2 - 0.05, k: 0.55, w: 0.04 }, { u: (dive0 + dive1) / 2 + 0.06, k: 0.5, w: 0.03 },
+    // the pace: slow where an animal is worth the time or needs the long lens, quicker where the
+    // view is the point. u is progress along the road (the stretches above, the dive from 0.80 to 0.96)
+    const PACE = [
+      { u: 0.04, w: 0.035, k: 0.6 },                         // the saiga herd on the bank, lizards and spiders on the boulders
+      { u: 0.097, w: 0.03, k: 0.5 },                         // the cape buffalo by the river, a giant tortoise
+      { u: 0.14, w: 0.02, k: 0.75 },                         // a tortoise, beetles and a spider close to the road
+      { u: 0.185, w: 0.03, k: 0.6, zoom: true },             // the second herd below the foot of the cliff path: long lens
+      { u: 0.25, w: 0.02, k: 0.6 },                          // a markhor on the ledge right above the road
+      { u: uHairpin, w: 0.02, k: 0.5 },                      // the hairpin, a caracara strutting on the ledge
+      { u: 0.346, w: 0.018, k: 0.65 },                       // a markhor on the upper leg
+      { u: 0.415, w: 0.03, k: 1.3 },                         // the top of the climb: the drop is the point
+      { u: 0.525, w: 0.03, k: 0.75, zoom: true },            // fallow deer grazing far out on the plateau
+      { u: uLook, w: 0.04, k: 0.4, zoom: true },             // the lookout: the giant bird far out (by day), a harpy eagle, the deer
+      { u: 0.65, w: 0.02, k: 0.6 },                          // a harpy eagle on the rim where the road drops off it
+      { u: 0.735, w: 0.025, k: 0.6 },                        // two markhor on the wall beside the road
+      { u: 0.775, w: 0.015, k: 1.25 },                       // the last of the wall down to the pool: nothing close
+      { u: 0.855, w: 0.025, k: 0.55 },                       // the pool: octopus, nautilus, seadragon, anemones, axolotls
+      { u: 0.878, w: 0.01, k: 1.2 },                         // straight through the jellyfish swarm
+      { u: 0.92, w: 0.025, k: 0.55 },                        // the far half of the pool: isopods, sea pens, seadragon
+      { u: 0.985, w: 0.02, k: 0.65 },                        // back on the floor: tortoise, fox, beetle by the road
     ];
+    if (night) PACE.push({ u: 0.9, w: 0.02, k: 0.6 });       // the goblin shark comes up at night
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 404 });
@@ -385,11 +401,11 @@ export const ROUTE = {
     const small = { seeAt: 90 };
 
     // the floor: herds by the river, lizards and spiders on the boulders, beetles in the scrub
-    for (let i = 0; i < 5; i++) spawn('saiga-antelope', P3(-405 + jit(14), -9 + jit(4)));
-    for (let i = 0; i < 3; i++) spawn('saiga-antelope', P3(-150 + jit(10), 18 + jit(4)));
+    for (let i = 0; i < 5; i++) spawn('saiga-antelope', P3(-405 + jit(14), -15 + jit(3)));          // on the bank, not standing in the river
+    for (let i = 0; i < 3; i++) spawn('saiga-antelope', P3(-225 + jit(10), -16 + jit(4)));          // below the foot of the cliff path (further on they were out of reach)
     spawn('cape-buffalo', P3(-338, -13)); spawn('cape-buffalo', P3(-326, -9)); spawn('cape-buffalo', P3(-316, 16));
     spawn('giant-tortoise', P3(-372, -33)); spawn('giant-tortoise', P3(-262, -15)); spawn('giant-tortoise', P3(512, 34));
-    spawn('frilled-lizard', P3(-446, -33)); spawn('frilled-lizard', P3(-358, -15)); spawn('frilled-lizard', P3(-282, -35));
+    spawn('frilled-lizard', P3(-425, -14)); spawn('frilled-lizard', P3(-358, -15)); spawn('frilled-lizard', P3(-282, -35));
     spawn('fennec-fox', P3(-424, -36)); spawn('fennec-fox', P3(-300, -16)); spawn('fennec-fox', P3(522, 30));
     spawn('peacock-spider', P3(-392, -33, 0.2), {}, small); spawn('peacock-spider', P3(-268, -19, 0.2), {}, small);
     spawn('stag-beetle', P3(-348, -31), {}, small); spawn('stag-beetle', P3(-236, -34), {}, small); spawn('stag-beetle', P3(500, 31), {}, small);
@@ -403,14 +419,17 @@ export const ROUTE = {
 
     // the cliff path: goats on the wall, raptors on the spires, flocks below and above the van
     const wallSpot = (z, y, dd = 0) => { const d = dAtHeight(z, y) + dd; return P3(z, d); };
-    spawn('markhor', wallSpot(-176, 16, -3)); spawn('markhor', wallSpot(-110, 29, -2)); spawn('markhor', wallSpot(-70, 49, 3));
-    spawn('markhor', wallSpot(120, 40, -3)); spawn('markhor', wallSpot(170, 24, 4));
+    spawn('markhor', wallSpot(-200, 3, 8)); spawn('markhor', wallSpot(-110, 29, -2)); spawn('markhor', wallSpot(-70, 49, 3));
+    spawn('markhor', wallSpot(120, 40, -3)); spawn('markhor', wallSpot(176, 40, 0));
     spawn('harpy-eagle', P3(-36, -116, 6), { perch: true });
-    spawn('harpy-eagle', P3(150, -112, 4), { perch: true });
+    spawn('harpy-eagle', P3(60, -118, 4), { perch: true });
     spawn('crested-caracara-perched', wallSpot(-140, 40, -2)); spawn('crested-caracara-perched', wallSpot(-60, 24, -4));
-    spawn('crested-caracara', new THREE.Vector3(XC(-120) - 10, 38, -120), {}, { seeAt: 260 });
-    spawn('crested-caracara', new THREE.Vector3(XC(60) + 6, 104, 60), {}, { seeAt: 260 });
-    spawn('argentavis-giant-bird', new THREE.Vector3(XC(-18) + 10, 92, -18), { radius: 70 }, { seeAt: 420 });
+    // the birds that only fly roost after dark: against the night sky they could not be made out
+    if (!night) {
+      spawn('crested-caracara', new THREE.Vector3(XC(-120) - 10, 38, -120), {}, { seeAt: 260 });
+      spawn('crested-caracara', new THREE.Vector3(XC(60) + 6, 94, 60), {}, { seeAt: 260 });
+      spawn('argentavis-giant-bird', new THREE.Vector3(XC(-18) + 10, 92, -18), { radius: 70 }, { seeAt: 420 });
+    }
     spawn('fallow-deer', P3(-176, -150)); spawn('fallow-deer', P3(-120, -146)); spawn('fallow-deer', P3(-30, -128)); spawn('fallow-deer', P3(20, -132));
 
     // the deep pool: the floor dwellers on the bottom, the drifters in the open water
@@ -421,13 +440,15 @@ export const ROUTE = {
     spawn('leafy-seadragon', PD(zs(0.3), -12, 3)); spawn('leafy-seadragon', PD(zs(0.82), 14, 3.5));
     spawn('jellyfish-swarm', PD(zs(0.42), 8, 8)); spawn('jellyfish', PD(zs(0.1), 6, 9)); spawn('jellyfish', PD(zs(0.9), -4, 9));
     spawn('giant-isopod', PD(zs(0.25), -8, 0)); spawn('giant-isopod', PD(zs(0.74), 16, 0));
-    spawn('sea-slug-nudibranch', PD(zs(0.16), 8, 0), {}, small); spawn('sea-slug-nudibranch', PD(zs(0.52), -12, 0), {}, small); spawn('sea-slug-nudibranch', PD(zs(0.86), 2, 0), {}, small);
+    spawn('sea-slug-nudibranch', PD(zs(0.16), -4, 0), {}, small); spawn('sea-slug-nudibranch', PD(zs(0.52), -12, 0), {}, small); spawn('sea-slug-nudibranch', PD(zs(0.86), 2, 0), {}, small);
     spawn('feather-duster-worm', PD(zs(0.05), -10, 0)); spawn('feather-duster-worm', PD(zs(0.45), 13, 0)); spawn('feather-duster-worm', PD(zs(0.78), -9, 0));
     spawn('sea-pen', PD(zs(0.34), 10, 0)); spawn('sea-pen', PD(zs(0.58), -16, 0)); spawn('sea-pen', PD(zs(0.95), 9, 0));
     spawn('deep-sea-cucumber', PD(zs(0.38), -4, 6)); spawn('deep-sea-cucumber', PD(zs(0.66), 4, 4));
     // the salamanders of the pool (walking its floor, gills glowing) and shoals of tetras above them
-    spawn('axolotl', PD(zs(0.08), 3, 0), {}, small); spawn('axolotl', PD(zs(0.47), -5, 0), {}, small); spawn('axolotl', PD(zs(0.8), 6, 0), {}, small);
+    spawn('axolotl', PD(zs(0.1), -4, 0), {}, small); spawn('axolotl', PD(zs(0.47), -5, 0), {}, small); spawn('axolotl', PD(zs(0.8), 6, 0), {}, small);
     spawn('lantern-tetra', PD(zs(0.18), -2, 4.5)); spawn('lantern-tetra', PD(zs(0.5), 4, 5.5), { count: 36 }); spawn('lantern-tetra', PD(zs(0.88), -4, 4));
+    // gardens of sea anemones on the floor beside them, at every time of day (their tips glow after dark)
+    spawn('sea-anemone', PD(zs(0.12), 7, 0), {}, small); spawn('sea-anemone', PD(zs(0.44), -9, 0), { count: 8 }, small); spawn('sea-anemone', PD(zs(0.76), 10, 0), {}, small);
     // the secret: the goblin shark only comes up from the deep at night
     if (night) spawn('goblin-shark', PD(zs(0.55), 0, 5));
 
@@ -449,14 +470,8 @@ export const ROUTE = {
         if (u > uClimb && u < uDown + 0.05) return t === 'night' ? AMB.cliff.night : AMB.cliff.day;
         return null;
       },
-      speedAt(u) {
-        let k = 1;
-        for (const s of SETS) k = Math.min(k, 1 - s.k * Math.exp(-((u - s.u) * (u - s.u)) / (s.w * s.w)));
-        if (u > uClimb && u < uRim) k *= 0.9;                         // the ledges are taken carefully
-        else if (u > uRim + 0.02 && u < uDown) k *= 1.25;               // the rim is open and quick
-        if (u > dive0 && u < dive1) k *= 0.85;                          // and the pool is worth the time
-        return Math.max(0.16, k);
-      },
+      speedAt: pacing(PACE),
+      zoomHint: (() => { const z = PACE.find((p) => p.zoom); return [z.u - z.w * 0.9, z.u + z.w * 1.1]; })(),
       poi(u) {
         if (Math.abs(u - uLook) < 0.05) return new THREE.Vector3(XC(40), 20, 40);   // down into the canyon
         return null;

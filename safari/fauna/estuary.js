@@ -1,8 +1,9 @@
 // The estuary: a wide brackish jungle river near its mouth, mangroves with their feet in the water,
-// mudflats and sandbanks. Seven species that live on the water, in it and above it. Swimmers keep to
+// mudflats and sandbanks. Eight species that live on the water, in it and above it. Swimmers keep to
 // the water surface (K.waterY, or y = 0 when the route has none); feed pellets float there and the
 // swimmers come up to take them.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const SPECIES = {
   heron: { id: 'heron', name: 'Grey-blue heron', points: 150, call: { hz: 320, kind: 'noise' } },
@@ -12,6 +13,7 @@ export const SPECIES = {
   crocodile: { id: 'crocodile', name: 'Estuarine crocodile', points: 210, call: { hz: 85, kind: 'hoot' } },
   'river-dolphin': { id: 'river-dolphin', name: 'Pink river dolphin', points: 230, call: { hz: 1900, kind: 'trill' } },
   archerfish: { id: 'archerfish', name: 'Archerfish', points: 170, call: { hz: 1300, kind: 'noise' } },
+  'moon-jelly': { id: 'moon-jelly', name: 'Moon jellyfish', points: 180, call: { hz: 640, kind: 'hoot' } },
 };
 
 // ---- small shared helpers (scratch vectors are reused, never allocated per frame)
@@ -1049,6 +1051,159 @@ export function buildArcherfish(K, home, opts = {}) {
   return K.lod(c, near, far, 40);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Moon jellyfish: a drifting swarm of flat glassy bells, each with the four pale rings of its gonads
+// showing through, a fringe of short tentacles round the rim and four frilly oral arms. They live in
+// the river at every time of day: by day and at dawn they drift deep, a blur under the brown water;
+// at dusk they rise to just under the surface, and at night the domes break the surface and glow
+// (the bells, the rings and the rim light up). The van coming close makes them sink a little; floating feed brings them up to it
+// at any time, and the rare show (after feed, or by themselves at night) is every bell pulsing in
+// step with a flash of light. Instanced: one draw per part for the whole swarm.
+// opts: { count = 8, spread = 3.2 }
+export function buildMoonJellies(K, home, opts = {}) {
+  const N = Math.max(3, Math.min(12, opts.count ?? 8)), spread = opts.spread ?? 3.2;
+  const tod = K.tod, up = tod === 'dusk' || tod === 'night';
+  const ease = (cur, to, k) => cur + (to - cur) * Math.min(1, k);
+  // the glow per time of day: off by day, a hint at dusk, bright at night
+  const GLOWS = { day: 0.04, dawn: 0.08, dusk: 0.45, night: 3.2 };
+  const bellM = K.fin(0xd8e6f4, 0.42, 0, { roughness: 0.2, emissive: 0x7fd8ff, emissiveIntensity: tod === 'night' ? 1.3 : tod === 'dusk' ? 0.08 : 0 });
+  const armM = K.fin(0xe8eef8, 0.55, 0, { roughness: 0.3 });
+  const ringM = K.mat(0xb8a6ff, { emissive: 0xc0a8ff, emissiveIntensity: GLOWS[tod] ?? 0.04, roughness: 0.4, transparent: true, opacity: 0.9, name: 'moonRing' + ++uid });
+  const rimM = K.mat(0xe4f2ff, { emissive: 0x9ff4ff, emissiveIntensity: GLOWS[tod] ?? 0.04, roughness: 0.4, transparent: true, opacity: 0.75, name: 'moonRim' + ++uid });
+  ringM.userData.base = ringM.emissiveIntensity; rimM.userData.base = rimM.emissiveIntensity;
+  const bellG = K.lathe('moonBell', [[0.5, -0.01], [0.49, 0.05], [0.44, 0.12], [0.33, 0.19], [0.18, 0.235], [0, 0.25]], 18);
+  const ringG = K.geo('moonRings', () => mergeGeometries([0, 1, 2, 3].map((k) => {
+    const g = new THREE.TorusGeometry(0.075, 0.018, 4, 12);
+    g.rotateX(PI / 2); g.translate(Math.cos(k * PI / 2 + PI / 4) * 0.12, 0.1, Math.sin(k * PI / 2 + PI / 4) * 0.12);
+    g.deleteAttribute('uv');
+    return g;
+  }), false));
+  const rimG = K.geo('moonRim', () => {
+    const parts = [new THREE.TorusGeometry(0.49, 0.012, 3, 36).rotateX(PI / 2)];
+    for (let k = 0; k < 40; k++) {
+      const a = (k / 40) * PI * 2, g = new THREE.CylinderGeometry(0.004, 0.002, 0.16, 3);
+      g.translate(0, -0.08, 0); g.rotateZ(0.25); g.rotateY(-a); g.translate(Math.cos(a) * 0.49, -0.005, Math.sin(a) * 0.49);
+      parts.push(g);
+    }
+    parts.forEach((g) => g.deleteAttribute('uv'));
+    return mergeGeometries(parts, false);
+  });
+  const armG = K.geo('moonArms', () => {
+    const parts = [];
+    for (let k = 0; k < 4; k++) {
+      const a = k * PI / 2, pts = [];
+      for (let i = 0; i <= 6; i++) { const t = i / 6; pts.push(new THREE.Vector3(Math.cos(a) * (0.04 + t * 0.09) + Math.sin(t * 7 + k) * 0.03, -t * 0.62, Math.sin(a) * (0.04 + t * 0.09) + Math.cos(t * 6 + k) * 0.03)); }
+      const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 12, 0.026, 4, false);
+      g.deleteAttribute('uv');
+      parts.push(g);
+    }
+    return mergeGeometries(parts, false);
+  });
+  const root = K.group(), near = K.group(null, root), far = K.group(null, root);
+  const inst = (g, m) => {
+    const im = new THREE.InstancedMesh(g, m, N);
+    im.frustumCulled = false;
+    im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    near.add(im);
+    return im;
+  };
+  const bells = inst(bellG, bellM), rings = inst(ringG, ringM), rims = inst(rimG, rimM), arms = inst(armG, armM);
+  const PARTS = [bells, rings, rims, arms];
+  // far: a few pale discs with the glow in the middle
+  for (let i = 0; i < 4; i++) {
+    const a = i * 1.9, r = i ? spread * 0.6 : 0;
+    K.mesh(K.sphere(1, 8, 4), bellM, [Math.cos(a) * r, 0, Math.sin(a) * r], far, null, [0.5, 0.18, 0.5]);
+    K.mesh(K.sphere(1, 6, 3), ringM, [Math.cos(a) * r, 0.04, Math.sin(a) * r], far, null, [0.22, 0.06, 0.22]);
+  }
+  K.place(root, home);
+
+  // each jelly keeps its own slot in the swarm, its own size, beat and drift
+  const J = [];
+  for (let i = 0; i < N; i++) {
+    const a = i * 2.4 + K.rand(), r = i ? spread * Math.sqrt((i + K.rand() * 0.5) / N) : 0;
+    J.push({ o: new THREE.Vector3(Math.cos(a) * r, -K.rand() * 0.9, Math.sin(a) * r), s: 1.1 + K.rand() * 0.6, f: 1 + K.rand() * 0.5, w: K.rand() * PI * 2, pos: new THREE.Vector3() });
+  }
+  const surf = surfAt(K, home.x, home.z);
+  const depthFor = (rise) => surf - (rise ? (K.night ? 0.12 : 0.32) : 2.6);
+  const C = new THREE.Vector3(0, depthFor(up) - home.y, 0), local = new THREE.Vector3(), toCam = new THREE.Vector3(0, 0, 1);
+  const sc = new THREE.Vector3(), q0 = new THREE.Quaternion(), e0 = new THREE.Euler(), m0 = new THREE.Matrix4(), m1 = new THREE.Matrix4();
+  let around = K.rand() * PI * 2, show = 0, sink = 0, drop = 0;
+  const c = {
+    species: SPECIES['moon-jelly'], root, home: home.clone(), radius: 1.1, state: 'idle', t: 0, hold: 4,
+    visible: true, near: 99, bob: K.rand() * 6, pellet: null, lead: null,
+  };
+  c.go = (st, hold = 5) => { if (c.state === st) return; c.state = st; c.t = 0; c.hold = hold; if (st === 'rare' && c._env && c._env.call) c._env.call(c, 'rare'); };
+  c.photoPoint = (out) => out.copy(c.lead ? c.lead.pos : C).applyMatrix4(c.root.matrixWorld);
+  c.forward = (out) => out.copy(toCam);                  // a bell has no front
+  K.lod(c, near, far, 40);
+  c.step = (dt, env) => {
+    c.t += dt; c._env = env;
+    const camL = local.copy(env.camPos).sub(c.root.position);
+    toCam.copy(camL).setY(0).normalize();
+    const camD = camL.distanceTo(C);
+    // the mood: the van close makes them sink, floating feed brings them up, the night sets off the show
+    if (c.state !== 'flee' && c.state !== 'rare' && camD < 4) c.go('flee', 4);
+    else if (c.state === 'idle' || c.state === 'wander') {
+      const pellet = env.pellets.find((p) => !p.eaten && p.landed && p.pos.distanceTo(vA.copy(C).add(c.root.position)) < spread + 6);
+      if (pellet) { c.pellet = pellet; c.go('eat', 8); }
+      else if (env.tod === 'night' && Math.random() < dt * 0.05) c.go('rare', 6);
+      else if (c.t > c.hold) c.go(c.state === 'idle' ? 'wander' : 'idle', 5 + Math.random() * 4);
+    } else if (c.state === 'eat') {
+      const p = c.pellet;
+      if (!p || p.eaten || c.t > c.hold) c.go('idle', 2);
+      else if (vA.copy(p.pos).sub(c.root.position).sub(C).setY(0).length() < 1.2 && C.y + c.root.position.y > surf - 0.8) {
+        p.eaten = true; p.eatenAt = env.t;
+        if (env.call) env.call(c, 'eat');
+        c.go(Math.random() < 0.8 ? 'rare' : 'idle', 6);
+      }
+    } else if (c.t > c.hold) c.go('idle', 3);
+
+    // where the swarm drifts: slowly round its home, to the feed, and up or down with the time of day
+    let ty = depthFor(up || c.state === 'eat' || c.state === 'rare') - c.root.position.y, tx, tz, k = 0.12;
+    if (c.state === 'eat' && c.pellet) { tx = c.pellet.pos.x - c.root.position.x; tz = c.pellet.pos.z - c.root.position.z; k = 0.35; }
+    else { around += dt * 0.05; tx = Math.cos(around) * 2.5; tz = Math.sin(around * 0.8) * 2.5; }
+    sink = ease(sink, c.state === 'flee' ? 1 : 0, dt * (c.state === 'flee' ? 1.5 : 0.3));
+    ty -= sink * 1.1;
+    const lo = K.groundY(c.root.position.x + C.x, c.root.position.z + C.z) + 1.1 - c.root.position.y;
+    C.x = ease(C.x, tx, dt * k); C.z = ease(C.z, tz, dt * k);
+    C.y = ease(C.y, Math.max(lo, ty), dt * (c.state === 'eat' ? 0.6 : 0.25));
+
+    show = ease(show, c.state === 'rare' ? 1 : 0, dt * 2.5);
+    let best = null, bestD = Infinity, sync = 0;
+    for (let i = 0; i < N; i++) {
+      const j = J[i];
+      // the beat: each bell its own rhythm, all in step during the show
+      const ph = show > 0.5 ? env.t * 3 : env.t * 1.7 * j.f + j.w;
+      const s = Math.sin(ph), squeeze = Math.max(0, s);
+      sync += squeeze;
+      j.pos.set(C.x + j.o.x * (1 + sink * 0.4) + Math.sin(env.t * 0.21 + j.w) * 0.4,
+        C.y + j.o.y * (up ? 0.35 : 1) + Math.sin(ph - 1.2) * 0.06 + Math.sin(env.t * 0.17 + j.w) * 0.12,
+        C.z + j.o.z * (1 + sink * 0.4) + Math.cos(env.t * 0.19 + j.w) * 0.4);
+      // keep every bell under the surface (at night the domes just break it)
+      j.pos.y = Math.min(j.pos.y, surf - c.root.position.y - (K.night && sink < 0.5 ? 0.14 : 0.26) * j.s);
+      q0.setFromEuler(e0.set(Math.sin(env.t * 0.3 + j.w) * 0.14, j.w, Math.cos(env.t * 0.27 + j.w) * 0.14));
+      m0.compose(j.pos, q0, sc.set(j.s * (1 + 0.08 * s), j.s * (1 - 0.13 * s), j.s * (1 + 0.08 * s)));
+      bells.setMatrixAt(i, m0); rings.setMatrixAt(i, m0); rims.setMatrixAt(i, m0);
+      // the oral arms trail and sway a little behind the bell
+      m1.makeRotationFromEuler(e0.set(Math.sin(env.t * 0.8 + j.w) * 0.12, Math.sin(env.t * 0.4 + j.w) * 0.3, Math.cos(env.t * 0.7 + j.w) * 0.12));
+      m1.premultiply(m0.compose(j.pos, q0, sc.setScalar(j.s)));
+      arms.setMatrixAt(i, m1);
+      const dd = j.pos.distanceToSquared(camL);
+      if (dd < bestD) { bestD = dd; best = j; }
+    }
+    for (const im of PARTS) im.instanceMatrix.needsUpdate = true;
+    sync /= N;
+    // the light: the time of day's own glow, and in the show a flash with every beat
+    drop = ease(drop, c.state === 'flee' ? 1 : 0, dt * 3);
+    const flash = show * (0.4 + sync * 2.6) * (K.night ? 1.4 : 1);
+    ringM.emissiveIntensity = ringM.userData.base * (1 - drop * 0.5) + flash;
+    rimM.emissiveIntensity = rimM.userData.base * (0.6 + sync * 0.4) * (1 - drop * 0.5) + flash * 0.8;
+    c.lead = best;
+    c.root.updateMatrixWorld();
+  };
+  return c;
+}
+
 export const BUILDERS = {
   heron: buildHeron,
   frigatebird: buildFrigatebird,
@@ -1057,6 +1212,7 @@ export const BUILDERS = {
   crocodile: buildCrocodile,
   'river-dolphin': buildRiverDolphin,
   archerfish: buildArcherfish,
+  'moon-jelly': buildMoonJellies,
 };
 // group builders (flocks) that are not one-per-species
 export const GROUPS = { frigatebird: buildFrigatebirdGroup };

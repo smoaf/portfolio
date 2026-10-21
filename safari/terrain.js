@@ -8,6 +8,18 @@ export const seeded = (seed) => () => (seed = (seed * 1103515245 + 12345) % 2147
 export const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
 export const lerp = THREE.MathUtils.lerp;
 
+// The van's pace along a route from a list of stretches: each { u, w, k } eases the cruising speed
+// towards k (below 1 slower, above 1 faster) around progress u, over a soft bell of width w, so
+// every change is gradual. `zoom: true` marks a stretch where the long lens is needed; the engine
+// shows the zoom hint on the first one. Never below `min`: the van never stops.
+export function pacing(zones, { min = 0.3, max = 1.45 } = {}) {
+  return (u) => {
+    let k = 1;
+    for (const z of zones) k += (z.k - 1) * Math.exp(-((u - z.u) * (u - z.u)) / (z.w * z.w));
+    return Math.min(max, Math.max(min, k));
+  };
+}
+
 // value noise, cheap and smooth enough for rock and sand
 export function noise2(seed = 1) {
   const h = (i, j) => { const s = Math.sin(i * 127.1 + j * 311.7 + seed * 74.7) * 43758.5453; return s - Math.floor(s); };

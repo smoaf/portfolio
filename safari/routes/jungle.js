@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { makeKit } from '../kit.js';
-import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, instanced, addSway, shaftMaterial, motes } from '../terrain.js';
+import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, instanced, addSway, shaftMaterial, motes, pacing } from '../terrain.js';
 import * as FOREST from '../fauna/forest.js';
 import * as ESTUARY from '../fauna/estuary.js';
 
@@ -48,9 +48,12 @@ const ROAD = [
 export const ROUTE = {
   id: 'jungle',
   name: 'Jungle',
-  seconds: 96,
-  // the animal that only comes out at one time of day (the van's field log hints at it)
-  secrets: [{ id: 'poodle-moth', name: 'Poodle moth', when: 'NIGHT' }],
+  seconds: 125,                                           // the cruising pace; the stretches in PACE slow it down and speed it up
+  // the ones that only come out at one time of day (the van's field log hints at them)
+  secrets: [
+    { id: 'poodle-moth', name: 'Poodle moth', when: 'NIGHT' },
+    { id: 'glow-mushroom', name: 'Fluorescent mushrooms', when: 'NIGHT' },
+  ],
   eyeHeight: 2.05,
   yawLimit: 2.7,
   palette: {
@@ -393,11 +396,22 @@ export const ROUTE = {
       { u: uIn - 0.025, title: 'The brackish river', line: 'mangroves · mudflats · the sea downstream' },
       { u: uOut + 0.01, title: 'The far bank', line: 'back under the canopy' },
     ];
-    const SETS = [
-      { u: uNear(-24, -392), k: 0.62, w: 0.03 },            // the panda's bamboo clearing
-      { u: uNear(110, -104), k: 0.55, w: 0.035 },           // the mudflat and the herons
-      { u: uNear(178, 2), k: 0.6, w: 0.04 },                // mid river: dolphins, the sea in view
-      { u: uNear(56, 236), k: 0.55, w: 0.03 },              // the giant tree with its night shift
+    // the pace: slow where an animal is worth the time or needs the long lens, quicker where the
+    // view is the point. u is progress along the road (afloat from uIn 0.43 to uOut 0.68)
+    const PACE = [
+      { u: 0.085, w: 0.03, k: 0.65 },                        // a tarsier and a treehopper on branches over the road
+      { u: uNear(-24, -392), w: 0.03, k: 0.45 },             // the giant pandas in the bamboo clearing
+      { u: 0.2, w: 0.02, k: 0.65 },                          // the bongo pair
+      { u: 0.3, w: 0.03, k: 0.7 },                           // an eyespot moth and a tarsier on the trunks
+      { u: uIn - 0.04, w: 0.022, k: 1.35 },                  // down through the mangroves to the water: the view opens
+      { u: uNear(110, -104), w: 0.03, k: 0.5, zoom: true },  // the mudflat: herons, mudskippers, fiddler crabs, long lens
+      { u: 0.51, w: 0.02, k: 0.75 },                         // a crocodile, archerfish
+      { u: uNear(178, 2), w: 0.035, k: 0.5 },                // mid river: dolphins, jellyfish, frigatebirds, the sea in view
+      { u: 0.64, w: 0.025, k: 0.6 },                         // the crocodile basking on the sandbank, a heron
+      { u: uOut + 0.035, w: 0.015, k: 1.3 },                 // up the far bank: nothing close
+      { u: uNear(56, 236), w: 0.03, k: 0.5 },                // the giant tree with its night shift: tarsier, eyespot moth
+      { u: 0.845, w: 0.025, k: 0.55 },                       // a giant panda and a bongo
+      { u: 0.92, w: 0.03, k: 0.75 },                         // a flower mantis, an anteater
     ];
 
     // ---- the animals
@@ -487,20 +501,29 @@ export const ROUTE = {
     spawn('tarsier', perch(uA(0.8), 6.5, 3.6), {}, small);
     spawn('flower-mantis', beside(uA(0.9), -6.5, 0.9), { perch: true }, small);
     if (night) { spawn('poodle-moth', beside(uA(0.4), -5, 3), {}, small); spawn('poodle-moth', beside(uA(0.75), 6, 3.4), {}, small); }
+    // the night secret on the forest floor: fluorescent mushrooms on fallen wood and at a tree's foot
+    if (night) { spawn('glow-mushroom', beside(uA(0.26), -6.5), {}, small); spawn('glow-mushroom', onTrunk(uA(0.56), 7, 0), { log: false }, small); }
 
     // the river: the mudflat by the south bank, the open water, the islands, the north bank
     const uR = (k) => lerp(uIn, uOut, k);
     wade(spawn('heron', shore(uR(0.08), 14, -0.4, 0.3))); wade(spawn('heron', shore(uR(0.14), 22, -0.4, 0.3))); wade(spawn('heron', shore(uR(0.86), -16, -0.4, 0.3)));
-    wade(spawn('mudskipper', shore(uR(0.1), -15, 0.02, 0.6)), -0.05); wade(spawn('mudskipper', shore(uR(0.9), 14, 0.02, 0.6)), -0.05);
+    wade(spawn('mudskipper', shore(uR(0.1), -15, 0.02, 0.6)), -0.05); wade(spawn('mudskipper', shore(uR(0.95), 9, 0.02, 0.6)), -0.05);
     wade(spawn('fiddler-crab', shore(uR(0.05), 11, 0.05, 0.7)), 0); wade(spawn('fiddler-crab', shore(uR(0.95), -12, 0.05, 0.7)), 0);
     spawn('crocodile', onWater(uR(0.22), -16)); wade(spawn('crocodile', shore(uR(0.62), -30, 0.1, 0.8), { bask: true }), -1.2);
-    spawn('crocodile', onWater(uR(0.74), 20));
+    spawn('crocodile', onWater(uR(0.78), -12));
     spawn('river-dolphin', onWater(uR(0.38), 12, -1.2)); spawn('river-dolphin', onWater(uR(0.5), -14, -1.2)); spawn('river-dolphin', onWater(uR(0.56), 18, -1.2));
     spawn('archerfish', onWater(uR(0.3), 9, -0.3)); spawn('archerfish', onWater(uR(0.8), -9, -0.3));
-    spawn('frigatebird', onWater(uR(0.45), 30, 22), {}, { seeAt: 320 });
-    spawn('frigatebird', onWater(uR(0.6), -40, 28), {}, { seeAt: 320 });
-    // sea birds coming in from the coast: a few riding one thermal over the mouth
-    { const g = ESTUARY.GROUPS.frigatebird(K, new THREE.Vector3(300, 0, 10), { n: 5, r: 40, alt: 34 }); g.seeAt = 420; creatures.push(g); }
+    // moon jellyfish swarms out in the channel: deep by day, up under the surface at dusk, glowing at night
+    spawn('moon-jelly', onWater(uR(0.34), -13)); spawn('moon-jelly', onWater(uR(0.47), 15), { count: 10 }); spawn('moon-jelly', onWater(uR(0.66), -12));
+    // frigatebirds roost after dark: up in the black sky they could not be made out even in the torch,
+    // so they are only out from dawn to dusk
+    if (!night) {
+      spawn('frigatebird', onWater(uR(0.45), 30, 22), {}, { seeAt: 320 });
+      spawn('frigatebird', onWater(uR(0.6), -40, 28), {}, { seeAt: 320 });
+      // sea birds coming in from the coast: a few riding one thermal towards the mouth (nearer the
+      // crossing than it was, so the long lens reaches them)
+      const g = ESTUARY.GROUPS.frigatebird(K, new THREE.Vector3(250, 0, 10), { n: 5, r: 34, alt: 30 }); g.seeAt = 420; creatures.push(g);
+    }
 
     // the north forest
     const uC = (k) => lerp(uOut + 0.04, 0.98, k);
@@ -513,6 +536,7 @@ export const ROUTE = {
     spawn('flower-mantis', beside(uC(0.7), 6.5, 0.9), { perch: true }, small);
     spawn('giant-anteater', beside(uC(0.85), -13));
     if (night) spawn('poodle-moth', beside(uC(0.6), 5, 3.2), {}, small);
+    if (night) spawn('glow-mushroom', beside(uC(0.42), -6.5), {}, small);
 
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);
@@ -568,12 +592,8 @@ export const ROUTE = {
       ambience: ROUTE.ambience[tod] || ROUTE.ambience.day,
       ambient(u, t) { return openness(u) > 0.5 ? AMB.river : AMB.forest[t] || AMB.forest.day; },
       swayAt(u) { return smooth(uIn - 0.012, uIn + 0.01, u) * (1 - smooth(uOut - 0.01, uOut + 0.012, u)); },
-      speedAt(u) {
-        let k = 1;
-        for (const s of SETS) k = Math.min(k, 1 - s.k * Math.exp(-((u - s.u) * (u - s.u)) / (s.w * s.w)));
-        if (u > uIn && u < uOut) k *= 0.85;                            // afloat the van paddles along
-        return Math.max(0.18, k);
-      },
+      speedAt: pacing(PACE),
+      zoomHint: (() => { const z = PACE.find((p) => p.zoom); return [z.u - z.w * 0.9, z.u + z.w * 1.1]; })(),
       poi(u) {
         // out on the river the lens drifts downstream, to the mouth and the sea
         if (openness(u) > 0.5) return new THREE.Vector3(560, 4, 0);

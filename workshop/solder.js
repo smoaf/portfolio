@@ -365,7 +365,7 @@ function pointer(type, ev, ws) {
     return false;
   }
   if (type === 'up') {
-    const still = F.tap && Math.hypot(ev.clientX - F.tap.x, ev.clientY - F.tap.y) < 8;
+    const still = F.tap && Math.hypot(ev.clientX - F.tap.x, ev.clientY - F.tap.y) < (ev.pointerType === 'mouse' ? 8 : 14);   // fingers wobble more
     if (F.active) {
       const P = F.active; F.active = null;
       if (still && P.drag && P.drag.c === F.dial) F.dial.set(((F.mode + 1) % 4) / 3);   // a tap on the dial turns it one step

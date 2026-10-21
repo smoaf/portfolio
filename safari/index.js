@@ -5,8 +5,9 @@
 //   startSafari({ renderer, route, tod, onExit })  ->  { dispose(), state() }
 //
 // The run: the van drives itself along the route's spline for about two minutes, the visitor turns
-// the lens (drag, pinch or wheel), a click or tap takes a photo, the feed button throws pellets, and
-// at the end a field report shows the best shot per species, the score and the board.
+// the lens (the mouse aims; on a phone drag and pinch), a click, tap or Enter takes a photo, the
+// space bar or the feed button throws pellets, and at the end a field report shows every shot, the
+// score (the best frame per species) and the board.
 //
 // A route module (safari/routes/*.js) brings the terrain, the creatures and the palette; the engine
 // brings the camera, the scoring, the sound and the HUD. A route with water (`under`, `dive`) also
@@ -20,8 +21,9 @@ import { localStore } from './leaderboard.js';
 import { survey, record } from './fieldlog.js';
 import { chunkScenery } from './terrain.js';
 
-const FILM = 30, PELLETS = 8;
+const FILM = 20, PELLETS = 8;
 const vA = new THREE.Vector3(), vB = new THREE.Vector3();
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const frustum = new THREE.Frustum(), mView = new THREE.Matrix4(), ball = new THREE.Sphere();
 const srgb = (hex) => new THREE.Color(hex).convertSRGBToLinear();
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -100,7 +102,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       l.position.set(x, 1.1, -2.1); l.target.position.set(x * 1.6, -0.2, -40);
       rig.rig.add(l, l.target);
     });
-    const torch = new THREE.SpotLight(0xdfe6f2, tod === 'night' ? 30 : 14, 110, 0.32, 0.7, 1.3);
+    // a torch, not a floodlight: a little wider than a beam and long enough to find eyes far out
+    const torch = new THREE.SpotLight(0xdfe6f2, tod === 'night' ? 40 : 18, 165, 0.42, 0.7, 1.3);
     torch.position.set(0, 0, 0); torch.target.position.set(0, 0, -30);
     rig.camera.add(torch, torch.target);
   }
@@ -128,8 +131,9 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   // ---- state
   const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false,
-    under: 0, diving: false, section: -1, fresh: 0 };
+    under: 0, diving: false, section: -1, fresh: 0, zoomed: false, hinted: false };
   const pellets = [];
+  const bigs = [];                                       // object URLs of the large frames, freed on exit
   const pelletGeo = keep(new THREE.SphereGeometry(0.16, 8, 6));
   const pelletMat = keep(new THREE.MeshStandardMaterial({ color: 0xd9b36a, emissive: dark ? 0x3a2a10 : 0x000000, roughness: 0.8 }));
 
@@ -177,6 +181,34 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     pellets.push({ mesh: m, pos: m.position, vel: v, landed: false, eaten: false, born: S.t });
     audio.throwPellet();
     hud.say('Feed', 'thrown');
+    lookRound();
+  }
+
+  // feed thrown: every animal that shows the van its back turns round to look, wherever the feed
+  // lands. One rule for all: only bodies that face the way their root points (not birds in the air,
+  // shoals or swarms), and a stroller stands still while it looks, so it doesn't walk sideways. The
+  // turn holds for a few seconds; running off or going for the feed ends it.
+  function lookRound() {
+    for (const c of world.creatures) {
+      if (!c.visible || c.flock || c.flyer || c.air || !c.forward || !c.root) continue;
+      const ry = c.root.rotation.y;
+      c.forward(vA);
+      if (Math.abs(vA.x - Math.sin(ry)) + Math.abs(vA.z - Math.cos(ry)) > 0.05) continue;   // its front is not its root's
+      const dx = env.camPos.x - c.root.position.x, dz = env.camPos.z - c.root.position.z;
+      if (vA.x * dx + vA.z * dz >= 0) continue;          // already facing the van: unchanged
+      c.face = 3.6; c.faceYaw = ry;
+    }
+  }
+  function stepFace(c, dt) {
+    if (!(c.face > 0)) return;
+    if (c.state === 'flee' || c.state === 'eat') { c.face = 0; return; }
+    if (c.state === 'wander' && c.go) c.go('idle', c.face);
+    c.face -= dt;
+    const want = Math.atan2(env.camPos.x - c.root.position.x, env.camPos.z - c.root.position.z);
+    c.faceYaw += THREE.MathUtils.clamp(wrap(want - c.faceYaw), -2.2 * dt, 2.2 * dt);
+    c.root.rotation.y = c.faceYaw;
+    if (c.face <= 0 && c._y0 !== undefined) c._y0 = c.faceYaw;   // a percher keeps its new heading
+    c.root.updateMatrixWorld();
   }
 
   function stepPellets(dt) {
@@ -214,6 +246,9 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     S.pending = false;
     const shot = judge({ camera: rig.camera, creatures: world.creatures, colliders: world.colliders, aspect: rig.camera.aspect });
     shot.thumb = grab(renderer.domElement);
+    // the same frame larger, for the report's big view; kept as a small JPEG, not a canvas
+    const w = Math.round(THREE.MathUtils.clamp(renderer.domElement.width, 480, 1024) / 4) * 4;
+    grab(renderer.domElement, { w, h: w * 3 / 4 }).toBlob((b) => { if (b && !S.dead) { shot.big = URL.createObjectURL(b); bigs.push(shot.big); } }, 'image/jpeg', 0.86);
     S.film--; hud.setFilm(S.film, FILM);
     hud.flash(); audio.shutter();
     S.shots.push(shot);
@@ -256,7 +291,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       ball.set(vA, (c.radius || 1) * 2.5 + 1.5);
       c.root.visible = c.visible && (c.flock || d < 6 || frustum.intersectsSphere(ball));
       if (c.lod) c.lod(d);
-      if (c.visible) { env.dist = d; c.step(dt, env); }
+      if (c.visible) { env.dist = d; c.step(dt, env); stepFace(c, dt); }
       if (d < poiD && d > 7) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }
     }
     if (!poi && world.poi) poi = world.poi(rig.progress);
@@ -266,6 +301,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     if (rig.state.bump > lastBump + 0.18) audio.bump(Math.min(1, rig.state.bump));   // only the new jolts make a sound
     lastBump = rig.state.bump;
     hud.progress(rig.progress);
+    hud.setClock(S.t);
 
     renderer.render(scene, rig.camera);
     if (S.pending) takeShot();
@@ -323,6 +359,13 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       hud.under(k);
       audio.muffle(k);
     }
+    // the zoom hint: once, on the first stretch where the lens needs the zoom, unless the visitor has
+    // already zoomed; it goes at the first zoom, or when the stretch is behind the van
+    if (world.zoomHint && !S.zoomed) {
+      const [z0, z1] = world.zoomHint;
+      if (!S.hinted && u >= z0 && u < z1) { S.hinted = true; hud.zoomHint(true); }
+      else if (S.hinted && u >= z1) { S.zoomed = true; hud.zoomHint(false); }
+    }
     if (world.sections) {
       let i = -1;
       world.sections.forEach((s, k) => { if (u >= s.u) i = k; });
@@ -348,24 +391,28 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   // Exit and Esc: with photos in the bag the run ends in the report, otherwise straight back to the van
   const quit = () => (!S.over && S.shots.length ? finish() : leave());
 
+  const zoomed = () => { if (!S.zoomed) { S.zoomed = true; if (S.hinted) hud.zoomHint(false); } };
+
   // ---- input: the HUD element is on top of everything, so the station never sees any of it
   const abort = new AbortController(), sig = { signal: abort.signal };
   const el = hud.root;
   const pointers = new Map();
   let downAt = null, pinch = 0, fov0 = 0, moved = 0;
+  // with a mouse the aim follows the cursor, no button needed, and a click is the shutter; touch and
+  // pen keep drag to look, tap to shoot, pinch to zoom
+  const aim = (ev) => rig.aim((ev.clientX / Math.max(1, el.clientWidth)) * 2 - 1, (ev.clientY / Math.max(1, el.clientHeight)) * 2 - 1);
   el.addEventListener('pointerdown', (ev) => {
     if (S.over) return;
     audio.start();
+    if (ev.pointerType === 'mouse') { aim(ev); if (ev.button === 0) shoot(); return; }
     pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     el.setPointerCapture(ev.pointerId);
     if (pointers.size === 1) { downAt = { x: ev.clientX, y: ev.clientY, t: performance.now() }; moved = 0; }
     if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); fov0 = rig.state.fov; }
   }, sig);
   el.addEventListener('pointermove', (ev) => {
-    if (!pointers.has(ev.pointerId)) {                 // desktop: the view follows the mouse near the edges
-      if (ev.pointerType === 'mouse' && !S.over) edge(ev);
-      return;
-    }
+    if (ev.pointerType === 'mouse') { if (!S.over) aim(ev); return; }
+    if (!pointers.has(ev.pointerId)) return;
     const prev = pointers.get(ev.pointerId);
     if (pointers.size === 1) {
       rig.drag(ev.clientX - prev.x, ev.clientY - prev.y, el.clientHeight);
@@ -375,40 +422,39 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       hud.setZoom(rig.setZoom(fov0 * pinch / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))), FOV.wide);
+      if (Math.abs(rig.state.fov - fov0) > 1) zoomed();
     }
   }, sig);
   const up = (ev) => {
     const had = pointers.delete(ev.pointerId);
     if (!had || S.over) { downAt = null; return; }
     // a short press that did not travel is the shutter; a drag only looks
-    if (pointers.size === 0 && downAt && moved < 9 && performance.now() - downAt.t < 700) shoot();
+    if (pointers.size === 0 && downAt && moved < 16 && performance.now() - downAt.t < 700) shoot();
     downAt = null;
   };
   el.addEventListener('pointerup', up, sig);
   el.addEventListener('pointercancel', (ev) => { pointers.delete(ev.pointerId); downAt = null; }, sig);
-  el.addEventListener('wheel', (ev) => { ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); }, { passive: false, signal: abort.signal });
+  el.addEventListener('wheel', (ev) => { ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); zoomed(); }, { passive: false, signal: abort.signal });
   el.addEventListener('contextmenu', (ev) => ev.preventDefault(), sig);
-  function edge(ev) {
-    const w = el.clientWidth, h = el.clientHeight, mx = ev.clientX / w, my = ev.clientY / h;
-    const k = (v, a, b) => (v < a ? (v - a) / a : v > b ? (v - b) / (1 - b) : 0);
-    const dx = k(mx, 0.12, 0.88), dy = k(my, 0.14, 0.86);
-    if (dx || dy) rig.nudge(dx * 0.035, -dy * 0.025);
-  }
   window.addEventListener('keydown', (ev) => {
+    if (hud.viewing) return;                          // a photo is open large in the report: its keys
     const t = ev.target;
     if (t && t.closest && t.closest('input, textarea, .sf-report')) return;      // the report has its own keys
     const k = ev.key;
     if ((k === ' ' || k === 'Enter') && t && t.closest && t.closest('button')) return;   // a focused button acts
     if (k === 'Escape') { ev.stopImmediatePropagation(); ev.preventDefault(); quit(); return; }
     if (S.over) return;
-    if (k === ' ' || k === 'Spacebar') { ev.preventDefault(); ev.stopImmediatePropagation(); audio.start(); shoot(); }
-    else if (k === 'f' || k === 'F') { ev.stopImmediatePropagation(); audio.start(); throwFeed(); }
+    if (k === 'Enter') { ev.preventDefault(); ev.stopImmediatePropagation(); audio.start(); shoot(); }
+    else if (k === ' ' || k === 'Spacebar' || k === 'f' || k === 'F') {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      if (!ev.repeat) { audio.start(); throwFeed(); }   // holding the bar down doesn't empty the bag
+    }
     else if (k === 'm' || k === 'M') { ev.stopImmediatePropagation(); hud.setMuted(audio.mute(!audio.muted)); }
     else if (k.startsWith('Arrow')) {
       ev.preventDefault(); ev.stopImmediatePropagation();
       rig.nudge(k === 'ArrowLeft' ? -0.12 : k === 'ArrowRight' ? 0.12 : 0, k === 'ArrowUp' ? 0.09 : k === 'ArrowDown' ? -0.09 : 0);
-    } else if (k === '+' || k === '=') { hud.setZoom(rig.zoom(0.85), FOV.wide); }
-    else if (k === '-' || k === '_') { hud.setZoom(rig.zoom(1.18), FOV.wide); }
+    } else if (k === '+' || k === '=') { hud.setZoom(rig.zoom(0.85), FOV.wide); zoomed(); }
+    else if (k === '-' || k === '_') { hud.setZoom(rig.zoom(1.18), FOV.wide); zoomed(); }
   }, { capture: true, signal: abort.signal });
 
   // the safari rests with the tab (Global rule 1)
@@ -452,6 +498,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       renderer.setAnimationLoop(null);
       hud.dispose();
       audio.dispose();
+      bigs.forEach((u) => URL.revokeObjectURL(u));
       css.remove();
       // give every geometry, material and texture back (Global rule 1)
       scene.traverse((o) => {

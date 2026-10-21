@@ -4,7 +4,7 @@
 //     colours of the page's accents stay as they are)
 //   - a monstera in a terracotta pot and a woven basket by the window, its leaves swaying
 //   - the cat waves its raised paw while the library is open or in view; otherwise nothing runs
-//   - click the cat (touch: a first tap shows it, a second zooms): the camera flies close to it;
+//   - click or tap the cat: the camera flies close to it;
 //     Back or Esc returns
 //   - the all-in-one computer is turned square on the desk, facing the chair
 // Phase L2: click the computer and the camera comes so close that the screen fills the view; the
@@ -29,7 +29,7 @@ const WAVE = { period: 1.5, swing: 0.32 };                     // seconds per be
 const SEE_FAR = 26;                                            // further than this the cat is a few pixels: it rests
 const ROOM = new THREE.Vector3(-11.6, 4.4, 1.2);               // the room's middle, for the view test
 
-const S = { host: null, ready: false, cat: null, monstera: null, zoomed: false, opening: false, hover: null, armed: null, what: null,
+const S = { host: null, ready: false, cat: null, monstera: null, zoomed: false, opening: false, hover: null, what: null,
   pc: null, papers: null,
   home: null, seq: 0, t: 0, last: 0, waving: false, els: null, kbd: false, keySig: '' };
 const vT = new THREE.Vector3(), sph = new THREE.Sphere(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4();
@@ -236,7 +236,7 @@ function zoom(what = 'cat') {
   const tok = ++S.seq;
   S.host.closePanel();
   S.home = S.host.holdView();
-  S.zoomed = true; S.opening = true; S.armed = null; S.what = what; setHover(null);
+  S.zoomed = true; S.opening = true; S.what = what; setHover(null);
   document.body.classList.add('lib-sub');
   S.els.back.hidden = false;
   if (S.kbd) S.els.back.focus({ preventScroll: true });   // the key row it came from goes away
@@ -345,8 +345,7 @@ export const library = {
   tap(ev) {
     if (S.zoomed || S.host.tweening()) return;
     const id = hitThing(ev) || (ev.pointerType !== 'mouse' ? nearThing(ev, 28) : null);
-    if (!id) { S.armed = null; setHover(null); return; }
-    if (ev.pointerType !== 'mouse' && S.armed !== id) { S.armed = id; setHover(id); return; }
+    if (!id) { setHover(null); return; }
     zoom(id);
   },
   hover(ev) {
@@ -357,7 +356,7 @@ export const library = {
   reset() {
     if (!S.ready) return;
     S.seq++;
-    S.zoomed = false; S.opening = false; S.home = null; S.armed = null; S.what = null; setHover(null); hideScreen();
+    S.zoomed = false; S.opening = false; S.home = null; S.what = null; setHover(null); hideScreen();
     document.body.classList.remove('lib-sub');
     S.els.back.hidden = true;
   },
@@ -365,6 +364,6 @@ export const library = {
   get zoomed() { return S.zoomed; },
   zoom, back,
   // tests
-  state: () => ({ zoomed: S.zoomed, what: S.what, opening: S.opening, screenOn: !!S.els && !S.els.screen.hidden, waving: S.waving, paw: S.cat ? +S.cat.arm.rotation.x.toFixed(3) : null, booksRemoved: S.booksRemoved, computerTurn: S.computerTurn, hover: S.hover, armed: S.armed }),
+  state: () => ({ zoomed: S.zoomed, what: S.what, opening: S.opening, screenOn: !!S.els && !S.els.screen.hidden, waving: S.waving, paw: S.cat ? +S.cat.arm.rotation.x.toFixed(3) : null, booksRemoved: S.booksRemoved, computerTurn: S.computerTurn, hover: S.hover, armed: null }),
   screen: (id = 'cat') => screenOf(THINGS[id].near(vT)),
 };

@@ -6,9 +6,11 @@
 //     on big screens the book stops growing instead
 //   - only the visible spread and the next one are loaded
 //   - turning: arrows (buttons or keys), or drag / swipe across the book; a light page-turn animation
+//   - handwritten notes: a page may carry `notes` ([{ text, photo?, corner? }]) in the manifest; each is
+//     a slip of paper taped on beside a photo, over its corner at most, never over its middle
 const PAGE_H = 1.3;                          // page height in page widths (portrait pages)
 const FRAME = 0.016;                         // white print border, in page widths
-const TAPES = ['rgba(222, 204, 158, 0.9)', 'rgba(170, 205, 194, 0.88)', 'rgba(232, 172, 150, 0.88)', 'rgba(196, 180, 222, 0.88)', 'rgba(236, 214, 120, 0.88)'];
+const TAPES = ['rgba(255, 255, 250, 0.2)', 'rgba(248, 252, 255, 0.18)', 'rgba(255, 253, 244, 0.24)', 'rgba(250, 250, 250, 0.16)'];   // clear tape, a hint of tint
 
 function rng(seed) {                         // small deterministic generator (mulberry32)
   return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -41,9 +43,47 @@ export function layoutPage(page, index) {
   });
 }
 
+// layout of a page's notes: each sits on a corner of one of the photos, pushed outwards so that it
+// covers that corner and no more. The data may name the photo (index) and the corner ('tl', 'tr',
+// 'bl', 'br'); otherwise the corner that hides the least of any photo is taken.
+const NOTE_W = 0.34, NOTE_H = 0.17;          // a note's box, in page widths
+export function layoutNotes(page, index, photos) {
+  const r = rng(index * 4421 + 5);
+  const taken = [];
+  return (page.notes || []).filter((n) => n && n.text).map((n) => {
+    const cands = [];
+    photos.forEach((ph, pi) => {
+      if (n.photo !== undefined && n.photo !== pi) return;
+      for (const [k, sx, sy] of [['tl', -1, -1], ['tr', 1, -1], ['bl', -1, 1], ['br', 1, 1]]) {
+        if (n.corner && n.corner !== k) continue;
+        let cx = ph.cx + sx * (ph.w / 2 + NOTE_W * 0.26), cy = ph.cy + sy * (ph.h / 2 + NOTE_H * 0.22);
+        cx = Math.min(1 - NOTE_W / 2 - 0.02, Math.max(NOTE_W / 2 + 0.02, cx));
+        cy = Math.min(PAGE_H - NOTE_H / 2 - 0.05, Math.max(NOTE_H / 2 + 0.03, cy));
+        cands.push({ cx, cy });
+      }
+    });
+    // how much of the photos (and of earlier notes) a note there would hide: the middle of a photo counts
+    // many times over, so a note only ever lands on a corner or the margin
+    const cost = (c) => {
+      let k = 0;
+      const ov = (ax, ay, aw, ah) => Math.max(0, Math.min(c.cx + NOTE_W / 2, ax + aw / 2) - Math.max(c.cx - NOTE_W / 2, ax - aw / 2))
+        * Math.max(0, Math.min(c.cy + NOTE_H / 2, ay + ah / 2) - Math.max(c.cy - NOTE_H / 2, ay - ah / 2));
+      photos.forEach((ph) => { k += ov(ph.cx, ph.cy, ph.w, ph.h) / (ph.w * ph.h) + 20 * ov(ph.cx, ph.cy, ph.w * 0.6, ph.h * 0.6); });
+      taken.forEach((t) => { k += 10 * ov(t.cx, t.cy, NOTE_W, NOTE_H); });
+      return k;
+    };
+    cands.forEach((c) => { c.k = cost(c) + r() * 0.01; });
+    cands.sort((a, b) => a.k - b.k);
+    const at = cands[0] || { cx: 0.5, cy: PAGE_H - NOTE_H };
+    taken.push(at);
+    return { text: n.text, cx: at.cx, cy: at.cy, rot: (r() - 0.5) * 10, tape: { rot: (r() - 0.5) * 12, col: TAPES[Math.floor(r() * TAPES.length)] } };
+  });
+}
+
 export function openAlbum(root, manifest, { onClose } = {}) {
   const pages = (manifest && manifest.pages) || [];
   const layouts = pages.map(layoutPage);
+  const notes = pages.map((p, i) => layoutNotes(p, i, layouts[i]));
   // the largest page width (CSS px) at which no photo is upscaled on this screen
   const dpr = window.devicePixelRatio || 1;
   let pwMax = Infinity;
@@ -79,6 +119,17 @@ export function openAlbum(root, manifest, { onClose } = {}) {
         f.appendChild(tp);
       });
       el.appendChild(f);
+    });
+    notes[i].forEach((n) => {
+      const d = document.createElement('div');
+      d.className = 'album-note';
+      d.style.cssText = `left:${(n.cx - NOTE_W / 2) * 100}%;top:${((n.cy - NOTE_H / 2) / PAGE_H) * 100}%;width:${NOTE_W * 100}%;min-height:${(NOTE_H / PAGE_H) * 100}%;transform:rotate(${n.rot.toFixed(2)}deg)`;
+      const t = document.createElement('p'); t.textContent = n.text;
+      const tp = document.createElement('span');
+      tp.className = 'album-tape';
+      tp.style.cssText = `left:50%;top:0;width:${(0.15 / NOTE_W) * 100}%;background-color:${n.tape.col};transform:translate(-50%,-50%) rotate(${n.tape.rot.toFixed(1)}deg)`;
+      d.append(t, tp);
+      el.appendChild(d);
     });
     const no = document.createElement('span'); no.className = 'album-no'; no.textContent = i + 1;
     el.appendChild(no);
@@ -149,7 +200,7 @@ export function openAlbum(root, manifest, { onClose } = {}) {
     if (!down) return;
     const dx = e.clientX - down.x, dy = e.clientY - down.y; down = null;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { turn(dx < 0 ? 1 : -1); return; }
-    if (Math.hypot(dx, dy) < 8) {
+    if (Math.hypot(dx, dy) < (e.pointerType === 'mouse' ? 8 : 14)) {   // fingers wobble more than a mouse
       const r = book.getBoundingClientRect(), u = (e.clientX - r.left) / r.width;
       if (u > 0.82) turn(1); else if (u < 0.18) turn(-1);
     }

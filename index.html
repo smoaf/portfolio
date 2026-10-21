@@ -12,6 +12,7 @@
     --accent: #b3602d;         /* warm lamp amber, used for the active state */
     --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
     --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --font-hand: "Caveat", "Segoe Print", "Bradley Hand", "Chalkboard SE", cursive;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -108,7 +109,7 @@
           color: var(--glass-ink); display: grid; place-items: center; }
   .gear svg { width: 20px; height: 20px; }
   .controls { top: auto !important; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); z-index: 21; flex-direction: column; align-items: flex-end; }
-  .skypanel { top: calc(96px + env(safe-area-inset-top, 0px)) !important; z-index: 21; }
+  .skypanel { top: calc(96px + env(safe-area-inset-top, 0px)) !important; z-index: 21; max-height: calc(100vh - 391px); }   /* ends above the controls (Sky and the gear stay clickable) */
   .nav { z-index: 19; background: var(--glass) !important; border-color: var(--glass-line) !important; color: var(--glass-ink); -webkit-backdrop-filter: var(--blur); }
   .nav button { color: inherit; }
   .tip, .marker { background: var(--glass-strong); border-color: var(--glass-line); color: var(--glass-ink); }
@@ -146,7 +147,9 @@
     .panel-close { top: 14px; right: 10px; }
     .panel h2 { font-size: 28px; }
     .gear { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
-    .skypanel { top: auto !important; }
+    /* the controls stand above the gear and the sky panel above them, so the gear and Sky can be tapped to close them */
+    .controls { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
+    .skypanel { top: auto !important; bottom: calc(342px + env(safe-area-inset-bottom, 0px)); max-height: calc(100vh - 378px - var(--hh, 70px)); }
   }
 
   /* ---- every GUI element in the site style (Smo): glass, Archivo, spaced capitals ---- */
@@ -182,22 +185,24 @@
      One 5.1 s loop: two laps round the triangle (six eased corner-to-corner moves), out onto a larger circle,
      two fast turns, back in to the corners. Keyframes generated once; colour from the glass token (day and night). */
   .loading { display: flex; flex-direction: column; align-items: center; gap: 16px; color: var(--glass-soft); }
-  .dots { position: relative; width: 64px; height: 64px; }
+  .dots { position: relative; width: 72px; height: 72px; }
   .dots i { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%;
     background: currentColor; will-change: transform; animation: 5.1s infinite both; }
-  .dots i:nth-child(1) { animation-name: dot-0; transform: translate(0px, -14px); }
-  .dots i:nth-child(2) { animation-name: dot-1; transform: translate(12.12px, 7px); }
-  .dots i:nth-child(3) { animation-name: dot-2; transform: translate(-12.12px, 7px); }
+  .dots i:nth-child(1) { animation-name: dot-0; transform: translate(0px, -16px); }
+  .dots i:nth-child(2) { animation-name: dot-1; transform: translate(13.86px, 8px); }
+  .dots i:nth-child(3) { animation-name: dot-2; transform: translate(-13.86px, 8px); }
   .loading span { font-size: 10px; opacity: 0.8; }
+  .status { transition: opacity 0.3s ease-out; }
+  .status.out { opacity: 0; }   /* fades out once the station is on screen, then hidden */
   @media (prefers-reduced-motion: reduce) {   /* calm version: the dots stay on the triangle and pulse in turn */
     .dots i:nth-child(n) { animation: dot-pulse 1.8s ease-in-out infinite; }   /* nth-child(n) outranks the dot-0..2 names above */
     .dots i:nth-child(2) { animation-delay: 0.6s; }
     .dots i:nth-child(3) { animation-delay: 1.2s; }
   }
   @keyframes dot-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
-  @keyframes dot-0{0.0%{transform:translate(0.00px,-14.00px);animation-timing-function:ease-in-out}7.451%{transform:translate(12.12px,7.00px);animation-timing-function:linear}8.824%{transform:translate(12.12px,7.00px);animation-timing-function:ease-in-out}16.275%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}17.647%{transform:translate(-12.12px,7.00px);animation-timing-function:ease-in-out}25.098%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}26.471%{transform:translate(-0.00px,-14.00px);animation-timing-function:ease-in-out}33.922%{transform:translate(12.12px,7.00px);animation-timing-function:linear}35.294%{transform:translate(12.12px,7.00px);animation-timing-function:ease-in-out}42.745%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}44.118%{transform:translate(-12.12px,7.00px);animation-timing-function:ease-in-out}51.569%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}52.941%{transform:translate(-0.00px,-14.00px);animation-timing-function:ease-in-out}59.804%{transform:translate(-0.00px,-21.00px);animation-timing-function:linear}60.458%{transform:translate(0.34px,-21.00px);animation-timing-function:linear}61.111%{transform:translate(1.34px,-20.96px);animation-timing-function:linear}61.765%{transform:translate(2.95px,-20.79px);animation-timing-function:linear}62.418%{transform:translate(5.14px,-20.36px);animation-timing-function:linear}63.072%{transform:translate(7.80px,-19.50px);animation-timing-function:linear}63.725%{transform:translate(10.80px,-18.01px);animation-timing-function:linear}64.379%{transform:translate(13.91px,-15.74px);animation-timing-function:linear}65.033%{transform:translate(16.84px,-12.54px);animation-timing-function:linear}65.686%{transform:translate(19.25px,-8.39px);animation-timing-function:linear}66.34%{transform:translate(20.73px,-3.38px);animation-timing-function:linear}66.993%{transform:translate(20.88px,2.23px);animation-timing-function:linear}67.647%{transform:translate(19.40px,8.04px);animation-timing-function:linear}68.301%{transform:translate(16.13px,13.45px);animation-timing-function:linear}68.954%{transform:translate(11.12px,17.81px);animation-timing-function:linear}69.608%{transform:translate(4.73px,20.46px);animation-timing-function:linear}70.261%{transform:translate(-2.44px,20.86px);animation-timing-function:linear}70.915%{transform:translate(-9.52px,18.72px);animation-timing-function:linear}71.569%{transform:translate(-15.56px,14.10px);animation-timing-function:linear}72.222%{transform:translate(-19.62px,7.48px);animation-timing-function:linear}72.876%{transform:translate(-21.00px,-0.31px);animation-timing-function:linear}73.529%{transform:translate(-19.35px,-8.16px);animation-timing-function:linear}74.183%{transform:translate(-14.82px,-14.88px);animation-timing-function:linear}74.837%{transform:translate(-8.03px,-19.40px);animation-timing-function:linear}75.49%{transform:translate(-0.00px,-21.00px);animation-timing-function:linear}76.144%{transform:translate(8.03px,-19.40px);animation-timing-function:linear}76.797%{transform:translate(14.82px,-14.88px);animation-timing-function:linear}77.451%{transform:translate(19.35px,-8.16px);animation-timing-function:linear}78.105%{transform:translate(21.00px,-0.31px);animation-timing-function:linear}78.758%{transform:translate(19.62px,7.48px);animation-timing-function:linear}79.412%{transform:translate(15.56px,14.10px);animation-timing-function:linear}80.065%{transform:translate(9.52px,18.72px);animation-timing-function:linear}80.719%{transform:translate(2.44px,20.86px);animation-timing-function:linear}81.373%{transform:translate(-4.73px,20.46px);animation-timing-function:linear}82.026%{transform:translate(-11.12px,17.81px);animation-timing-function:linear}82.68%{transform:translate(-16.13px,13.45px);animation-timing-function:linear}83.333%{transform:translate(-19.40px,8.04px);animation-timing-function:linear}83.987%{transform:translate(-20.88px,2.23px);animation-timing-function:linear}84.641%{transform:translate(-20.73px,-3.38px);animation-timing-function:linear}85.294%{transform:translate(-19.25px,-8.39px);animation-timing-function:linear}85.948%{transform:translate(-16.84px,-12.54px);animation-timing-function:linear}86.601%{transform:translate(-13.91px,-15.74px);animation-timing-function:linear}87.255%{transform:translate(-10.80px,-18.01px);animation-timing-function:linear}87.908%{transform:translate(-7.80px,-19.50px);animation-timing-function:linear}88.562%{transform:translate(-5.14px,-20.36px);animation-timing-function:linear}89.216%{transform:translate(-2.95px,-20.79px);animation-timing-function:linear}89.869%{transform:translate(-1.34px,-20.96px);animation-timing-function:linear}90.523%{transform:translate(-0.34px,-21.00px);animation-timing-function:linear}91.176%{transform:translate(-0.00px,-21.00px);animation-timing-function:ease-in-out}98.039%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}100.0%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}}
-  @keyframes dot-1{0.0%{transform:translate(12.12px,7.00px);animation-timing-function:ease-in-out}7.451%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}8.824%{transform:translate(-12.12px,7.00px);animation-timing-function:ease-in-out}16.275%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}17.647%{transform:translate(-0.00px,-14.00px);animation-timing-function:ease-in-out}25.098%{transform:translate(12.12px,7.00px);animation-timing-function:linear}26.471%{transform:translate(12.12px,7.00px);animation-timing-function:ease-in-out}33.922%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}35.294%{transform:translate(-12.12px,7.00px);animation-timing-function:ease-in-out}42.745%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}44.118%{transform:translate(-0.00px,-14.00px);animation-timing-function:ease-in-out}51.569%{transform:translate(12.12px,7.00px);animation-timing-function:linear}52.941%{transform:translate(12.12px,7.00px);animation-timing-function:ease-in-out}59.804%{transform:translate(18.19px,10.50px);animation-timing-function:linear}60.458%{transform:translate(18.01px,10.79px);animation-timing-function:linear}61.111%{transform:translate(17.48px,11.64px);animation-timing-function:linear}61.765%{transform:translate(16.53px,12.95px);animation-timing-function:linear}62.418%{transform:translate(15.06px,14.63px);animation-timing-function:linear}63.072%{transform:translate(12.98px,16.51px);animation-timing-function:linear}63.725%{transform:translate(10.20px,18.36px);animation-timing-function:linear}64.379%{transform:translate(6.67px,19.91px);animation-timing-function:linear}65.033%{transform:translate(2.44px,20.86px);animation-timing-function:linear}65.686%{transform:translate(-2.36px,20.87px);animation-timing-function:linear}66.34%{transform:translate(-7.43px,19.64px);animation-timing-function:linear}66.993%{transform:translate(-12.38px,16.97px);animation-timing-function:linear}67.647%{transform:translate(-16.66px,12.78px);animation-timing-function:linear}68.301%{transform:translate(-19.71px,7.24px);animation-timing-function:linear}68.954%{transform:translate(-20.99px,0.73px);animation-timing-function:linear}69.608%{transform:translate(-20.08px,-6.14px);animation-timing-function:linear}70.261%{transform:translate(-16.84px,-12.54px);animation-timing-function:linear}70.915%{transform:translate(-11.45px,-17.61px);animation-timing-function:linear}71.569%{transform:translate(-4.43px,-20.53px);animation-timing-function:linear}72.222%{transform:translate(3.33px,-20.73px);animation-timing-function:linear}72.876%{transform:translate(10.76px,-18.03px);animation-timing-function:linear}73.529%{transform:translate(16.74px,-12.68px);animation-timing-function:linear}74.183%{transform:translate(20.29px,-5.40px);animation-timing-function:linear}74.837%{transform:translate(20.82px,2.75px);animation-timing-function:linear}75.49%{transform:translate(18.19px,10.50px);animation-timing-function:linear}76.144%{transform:translate(12.79px,16.66px);animation-timing-function:linear}76.797%{transform:translate(5.47px,20.27px);animation-timing-function:linear}77.451%{transform:translate(-2.61px,20.84px);animation-timing-function:linear}78.105%{transform:translate(-10.23px,18.34px);animation-timing-function:linear}78.758%{transform:translate(-16.29px,13.25px);animation-timing-function:linear}79.412%{transform:translate(-19.99px,6.42px);animation-timing-function:linear}80.065%{transform:translate(-20.97px,-1.11px);animation-timing-function:linear}80.719%{transform:translate(-19.28px,-8.32px);animation-timing-function:linear}81.373%{transform:translate(-15.36px,-14.32px);animation-timing-function:linear}82.026%{transform:translate(-9.87px,-18.54px);animation-timing-function:linear}82.68%{transform:translate(-3.59px,-20.69px);animation-timing-function:linear}83.333%{transform:translate(2.74px,-20.82px);animation-timing-function:linear}83.987%{transform:translate(8.51px,-19.20px);animation-timing-function:linear}84.641%{transform:translate(13.29px,-16.26px);animation-timing-function:linear}85.294%{transform:translate(16.89px,-12.48px);animation-timing-function:linear}85.948%{transform:translate(19.28px,-8.32px);animation-timing-function:linear}86.601%{transform:translate(20.58px,-4.18px);animation-timing-function:linear}87.255%{transform:translate(21.00px,-0.34px);animation-timing-function:linear}87.908%{transform:translate(20.79px,2.99px);animation-timing-function:linear}88.562%{transform:translate(20.20px,5.73px);animation-timing-function:linear}89.216%{transform:translate(19.48px,7.84px);animation-timing-function:linear}89.869%{transform:translate(18.82px,9.32px);animation-timing-function:linear}90.523%{transform:translate(18.35px,10.21px);animation-timing-function:linear}91.176%{transform:translate(18.19px,10.50px);animation-timing-function:ease-in-out}98.039%{transform:translate(12.12px,7.00px);animation-timing-function:linear}100.0%{transform:translate(12.12px,7.00px);animation-timing-function:linear}}
-  @keyframes dot-2{0.0%{transform:translate(-12.12px,7.00px);animation-timing-function:ease-in-out}7.451%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}8.824%{transform:translate(-0.00px,-14.00px);animation-timing-function:ease-in-out}16.275%{transform:translate(12.12px,7.00px);animation-timing-function:linear}17.647%{transform:translate(12.12px,7.00px);animation-timing-function:ease-in-out}25.098%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}26.471%{transform:translate(-12.12px,7.00px);animation-timing-function:ease-in-out}33.922%{transform:translate(-0.00px,-14.00px);animation-timing-function:linear}35.294%{transform:translate(-0.00px,-14.00px);animation-timing-function:ease-in-out}42.745%{transform:translate(12.12px,7.00px);animation-timing-function:linear}44.118%{transform:translate(12.12px,7.00px);animation-timing-function:ease-in-out}51.569%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}52.941%{transform:translate(-12.12px,7.00px);animation-timing-function:ease-in-out}59.804%{transform:translate(-18.19px,10.50px);animation-timing-function:linear}60.458%{transform:translate(-18.35px,10.21px);animation-timing-function:linear}61.111%{transform:translate(-18.82px,9.32px);animation-timing-function:linear}61.765%{transform:translate(-19.48px,7.84px);animation-timing-function:linear}62.418%{transform:translate(-20.20px,5.73px);animation-timing-function:linear}63.072%{transform:translate(-20.79px,2.99px);animation-timing-function:linear}63.725%{transform:translate(-21.00px,-0.34px);animation-timing-function:linear}64.379%{transform:translate(-20.58px,-4.18px);animation-timing-function:linear}65.033%{transform:translate(-19.28px,-8.32px);animation-timing-function:linear}65.686%{transform:translate(-16.89px,-12.48px);animation-timing-function:linear}66.34%{transform:translate(-13.29px,-16.26px);animation-timing-function:linear}66.993%{transform:translate(-8.51px,-19.20px);animation-timing-function:linear}67.647%{transform:translate(-2.74px,-20.82px);animation-timing-function:linear}68.301%{transform:translate(3.59px,-20.69px);animation-timing-function:linear}68.954%{transform:translate(9.87px,-18.54px);animation-timing-function:linear}69.608%{transform:translate(15.36px,-14.32px);animation-timing-function:linear}70.261%{transform:translate(19.28px,-8.32px);animation-timing-function:linear}70.915%{transform:translate(20.97px,-1.11px);animation-timing-function:linear}71.569%{transform:translate(19.99px,6.42px);animation-timing-function:linear}72.222%{transform:translate(16.29px,13.25px);animation-timing-function:linear}72.876%{transform:translate(10.23px,18.34px);animation-timing-function:linear}73.529%{transform:translate(2.61px,20.84px);animation-timing-function:linear}74.183%{transform:translate(-5.47px,20.27px);animation-timing-function:linear}74.837%{transform:translate(-12.79px,16.66px);animation-timing-function:linear}75.49%{transform:translate(-18.19px,10.50px);animation-timing-function:linear}76.144%{transform:translate(-20.82px,2.75px);animation-timing-function:linear}76.797%{transform:translate(-20.29px,-5.40px);animation-timing-function:linear}77.451%{transform:translate(-16.74px,-12.68px);animation-timing-function:linear}78.105%{transform:translate(-10.76px,-18.03px);animation-timing-function:linear}78.758%{transform:translate(-3.33px,-20.73px);animation-timing-function:linear}79.412%{transform:translate(4.43px,-20.53px);animation-timing-function:linear}80.065%{transform:translate(11.45px,-17.61px);animation-timing-function:linear}80.719%{transform:translate(16.84px,-12.54px);animation-timing-function:linear}81.373%{transform:translate(20.08px,-6.14px);animation-timing-function:linear}82.026%{transform:translate(20.99px,0.73px);animation-timing-function:linear}82.68%{transform:translate(19.71px,7.24px);animation-timing-function:linear}83.333%{transform:translate(16.66px,12.78px);animation-timing-function:linear}83.987%{transform:translate(12.38px,16.97px);animation-timing-function:linear}84.641%{transform:translate(7.43px,19.64px);animation-timing-function:linear}85.294%{transform:translate(2.36px,20.87px);animation-timing-function:linear}85.948%{transform:translate(-2.44px,20.86px);animation-timing-function:linear}86.601%{transform:translate(-6.67px,19.91px);animation-timing-function:linear}87.255%{transform:translate(-10.20px,18.36px);animation-timing-function:linear}87.908%{transform:translate(-12.98px,16.51px);animation-timing-function:linear}88.562%{transform:translate(-15.06px,14.63px);animation-timing-function:linear}89.216%{transform:translate(-16.53px,12.95px);animation-timing-function:linear}89.869%{transform:translate(-17.48px,11.64px);animation-timing-function:linear}90.523%{transform:translate(-18.01px,10.79px);animation-timing-function:linear}91.176%{transform:translate(-18.19px,10.50px);animation-timing-function:ease-in-out}98.039%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}100.0%{transform:translate(-12.12px,7.00px);animation-timing-function:linear}}
+  @keyframes dot-0{0.0%{transform:translate(0.00px,-16.00px);animation-timing-function:ease-in-out}7.451%{transform:translate(13.86px,8.00px);animation-timing-function:linear}8.824%{transform:translate(13.86px,8.00px);animation-timing-function:ease-in-out}16.275%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}17.647%{transform:translate(-13.86px,8.00px);animation-timing-function:ease-in-out}25.098%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}26.471%{transform:translate(0.00px,-16.00px);animation-timing-function:ease-in-out}33.922%{transform:translate(13.86px,8.00px);animation-timing-function:linear}35.294%{transform:translate(13.86px,8.00px);animation-timing-function:ease-in-out}42.745%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}44.118%{transform:translate(-13.86px,8.00px);animation-timing-function:ease-in-out}51.569%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}52.941%{transform:translate(0.00px,-16.00px);animation-timing-function:ease-in-out}59.804%{transform:translate(0.00px,-24.00px);animation-timing-function:linear}60.458%{transform:translate(0.32px,-24.00px);animation-timing-function:linear}61.111%{transform:translate(1.29px,-23.97px);animation-timing-function:linear}61.765%{transform:translate(2.89px,-23.83px);animation-timing-function:linear}62.418%{transform:translate(5.10px,-23.45px);animation-timing-function:linear}63.072%{transform:translate(7.86px,-22.68px);animation-timing-function:linear}63.725%{transform:translate(11.05px,-21.31px);animation-timing-function:linear}64.379%{transform:translate(14.49px,-19.14px);animation-timing-function:linear}65.033%{transform:translate(17.90px,-15.99px);animation-timing-function:linear}65.686%{transform:translate(20.92px,-11.76px);animation-timing-function:linear}66.34%{transform:translate(23.12px,-6.46px);animation-timing-function:linear}66.993%{transform:translate(24.00px,-0.28px);animation-timing-function:linear}67.647%{transform:translate(23.13px,6.39px);animation-timing-function:linear}68.301%{transform:translate(20.21px,12.94px);animation-timing-function:linear}68.954%{transform:translate(15.15px,18.61px);animation-timing-function:linear}69.608%{transform:translate(8.21px,22.55px);animation-timing-function:linear}70.261%{transform:translate(0.00px,24.00px);animation-timing-function:linear}70.915%{transform:translate(-8.51px,22.44px);animation-timing-function:linear}71.569%{transform:translate(-16.13px,17.77px);animation-timing-function:linear}72.222%{transform:translate(-21.62px,10.41px);animation-timing-function:linear}72.876%{transform:translate(-23.96px,1.33px);animation-timing-function:linear}73.529%{transform:translate(-22.59px,-8.12px);animation-timing-function:linear}74.183%{transform:translate(-17.55px,-16.37px);animation-timing-function:linear}74.837%{transform:translate(-9.59px,-22.00px);animation-timing-function:linear}75.49%{transform:translate(0.00px,-24.00px);animation-timing-function:linear}76.144%{transform:translate(9.59px,-22.00px);animation-timing-function:linear}76.797%{transform:translate(17.55px,-16.37px);animation-timing-function:linear}77.451%{transform:translate(22.59px,-8.12px);animation-timing-function:linear}78.105%{transform:translate(23.96px,1.33px);animation-timing-function:linear}78.758%{transform:translate(21.62px,10.41px);animation-timing-function:linear}79.412%{transform:translate(16.13px,17.77px);animation-timing-function:linear}80.065%{transform:translate(8.51px,22.44px);animation-timing-function:linear}80.719%{transform:translate(0.00px,24.00px);animation-timing-function:linear}81.373%{transform:translate(-8.21px,22.55px);animation-timing-function:linear}82.026%{transform:translate(-15.15px,18.61px);animation-timing-function:linear}82.68%{transform:translate(-20.21px,12.94px);animation-timing-function:linear}83.333%{transform:translate(-23.13px,6.39px);animation-timing-function:linear}83.987%{transform:translate(-24.00px,-0.28px);animation-timing-function:linear}84.641%{transform:translate(-23.12px,-6.46px);animation-timing-function:linear}85.294%{transform:translate(-20.92px,-11.76px);animation-timing-function:linear}85.948%{transform:translate(-17.90px,-15.99px);animation-timing-function:linear}86.601%{transform:translate(-14.49px,-19.14px);animation-timing-function:linear}87.255%{transform:translate(-11.05px,-21.31px);animation-timing-function:linear}87.908%{transform:translate(-7.86px,-22.68px);animation-timing-function:linear}88.562%{transform:translate(-5.10px,-23.45px);animation-timing-function:linear}89.216%{transform:translate(-2.89px,-23.83px);animation-timing-function:linear}89.869%{transform:translate(-1.29px,-23.97px);animation-timing-function:linear}90.523%{transform:translate(-0.32px,-24.00px);animation-timing-function:linear}91.176%{transform:translate(0.00px,-24.00px);animation-timing-function:ease-in-out}98.039%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}100.0%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}}
+  @keyframes dot-1{0.0%{transform:translate(13.86px,8.00px);animation-timing-function:ease-in-out}7.451%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}8.824%{transform:translate(-13.86px,8.00px);animation-timing-function:ease-in-out}16.275%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}17.647%{transform:translate(0.00px,-16.00px);animation-timing-function:ease-in-out}25.098%{transform:translate(13.86px,8.00px);animation-timing-function:linear}26.471%{transform:translate(13.86px,8.00px);animation-timing-function:ease-in-out}33.922%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}35.294%{transform:translate(-13.86px,8.00px);animation-timing-function:ease-in-out}42.745%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}44.118%{transform:translate(0.00px,-16.00px);animation-timing-function:ease-in-out}51.569%{transform:translate(13.86px,8.00px);animation-timing-function:linear}52.941%{transform:translate(13.86px,8.00px);animation-timing-function:ease-in-out}59.804%{transform:translate(20.78px,12.00px);animation-timing-function:linear}60.458%{transform:translate(20.62px,12.28px);animation-timing-function:linear}61.111%{transform:translate(20.11px,13.10px);animation-timing-function:linear}61.765%{transform:translate(19.19px,14.42px);animation-timing-function:linear}62.418%{transform:translate(17.76px,16.14px);animation-timing-function:linear}63.072%{transform:translate(15.71px,18.14px);animation-timing-function:linear}63.725%{transform:translate(12.93px,20.22px);animation-timing-function:linear}64.379%{transform:translate(9.33px,22.11px);animation-timing-function:linear}65.033%{transform:translate(4.90px,23.50px);animation-timing-function:linear}65.686%{transform:translate(-0.28px,24.00px);animation-timing-function:linear}66.34%{transform:translate(-5.97px,23.25px);animation-timing-function:linear}66.993%{transform:translate(-11.76px,20.92px);animation-timing-function:linear}67.647%{transform:translate(-17.10px,16.84px);animation-timing-function:linear}68.301%{transform:translate(-21.31px,11.03px);animation-timing-function:linear}68.954%{transform:translate(-23.69px,3.82px);animation-timing-function:linear}69.608%{transform:translate(-23.64px,-4.17px);animation-timing-function:linear}70.261%{transform:translate(-20.78px,-12.00px);animation-timing-function:linear}70.915%{transform:translate(-15.18px,-18.59px);animation-timing-function:linear}71.569%{transform:translate(-7.32px,-22.86px);animation-timing-function:linear}72.222%{transform:translate(1.79px,-23.93px);animation-timing-function:linear}72.876%{transform:translate(10.83px,-21.42px);animation-timing-function:linear}73.529%{transform:translate(18.32px,-15.50px);animation-timing-function:linear}74.183%{transform:translate(22.95px,-7.01px);animation-timing-function:linear}74.837%{transform:translate(23.85px,2.70px);animation-timing-function:linear}75.49%{transform:translate(20.78px,12.00px);animation-timing-function:linear}76.144%{transform:translate(14.26px,19.30px);animation-timing-function:linear}76.797%{transform:translate(5.40px,23.38px);animation-timing-function:linear}77.451%{transform:translate(-4.26px,23.62px);animation-timing-function:linear}78.105%{transform:translate(-13.13px,20.09px);animation-timing-function:linear}78.758%{transform:translate(-19.83px,13.52px);animation-timing-function:linear}79.412%{transform:translate(-23.45px,5.09px);animation-timing-function:linear}80.065%{transform:translate(-23.69px,-3.85px);animation-timing-function:linear}80.719%{transform:translate(-20.78px,-12.00px);animation-timing-function:linear}81.373%{transform:translate(-15.43px,-18.39px);animation-timing-function:linear}82.026%{transform:translate(-8.54px,-22.43px);animation-timing-function:linear}82.68%{transform:translate(-1.10px,-23.97px);animation-timing-function:linear}83.333%{transform:translate(6.03px,-23.23px);animation-timing-function:linear}83.987%{transform:translate(12.24px,-20.64px);animation-timing-function:linear}84.641%{transform:translate(17.15px,-16.79px);animation-timing-function:linear}85.294%{transform:translate(20.64px,-12.24px);animation-timing-function:linear}85.948%{transform:translate(22.80px,-7.51px);animation-timing-function:linear}86.601%{transform:translate(23.81px,-2.98px);animation-timing-function:linear}87.255%{transform:translate(23.98px,1.09px);animation-timing-function:linear}87.908%{transform:translate(23.57px,4.54px);animation-timing-function:linear}88.562%{transform:translate(22.86px,7.31px);animation-timing-function:linear}89.216%{transform:translate(22.08px,9.41px);animation-timing-function:linear}89.869%{transform:translate(21.40px,10.87px);animation-timing-function:linear}90.523%{transform:translate(20.94px,11.72px);animation-timing-function:linear}91.176%{transform:translate(20.78px,12.00px);animation-timing-function:ease-in-out}98.039%{transform:translate(13.86px,8.00px);animation-timing-function:linear}100.0%{transform:translate(13.86px,8.00px);animation-timing-function:linear}}
+  @keyframes dot-2{0.0%{transform:translate(-13.86px,8.00px);animation-timing-function:ease-in-out}7.451%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}8.824%{transform:translate(0.00px,-16.00px);animation-timing-function:ease-in-out}16.275%{transform:translate(13.86px,8.00px);animation-timing-function:linear}17.647%{transform:translate(13.86px,8.00px);animation-timing-function:ease-in-out}25.098%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}26.471%{transform:translate(-13.86px,8.00px);animation-timing-function:ease-in-out}33.922%{transform:translate(0.00px,-16.00px);animation-timing-function:linear}35.294%{transform:translate(0.00px,-16.00px);animation-timing-function:ease-in-out}42.745%{transform:translate(13.86px,8.00px);animation-timing-function:linear}44.118%{transform:translate(13.86px,8.00px);animation-timing-function:ease-in-out}51.569%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}52.941%{transform:translate(-13.86px,8.00px);animation-timing-function:ease-in-out}59.804%{transform:translate(-20.78px,12.00px);animation-timing-function:linear}60.458%{transform:translate(-20.94px,11.72px);animation-timing-function:linear}61.111%{transform:translate(-21.40px,10.87px);animation-timing-function:linear}61.765%{transform:translate(-22.08px,9.41px);animation-timing-function:linear}62.418%{transform:translate(-22.86px,7.31px);animation-timing-function:linear}63.072%{transform:translate(-23.57px,4.54px);animation-timing-function:linear}63.725%{transform:translate(-23.98px,1.09px);animation-timing-function:linear}64.379%{transform:translate(-23.81px,-2.98px);animation-timing-function:linear}65.033%{transform:translate(-22.80px,-7.51px);animation-timing-function:linear}65.686%{transform:translate(-20.64px,-12.24px);animation-timing-function:linear}66.34%{transform:translate(-17.15px,-16.79px);animation-timing-function:linear}66.993%{transform:translate(-12.24px,-20.64px);animation-timing-function:linear}67.647%{transform:translate(-6.03px,-23.23px);animation-timing-function:linear}68.301%{transform:translate(1.10px,-23.97px);animation-timing-function:linear}68.954%{transform:translate(8.54px,-22.43px);animation-timing-function:linear}69.608%{transform:translate(15.43px,-18.39px);animation-timing-function:linear}70.261%{transform:translate(20.78px,-12.00px);animation-timing-function:linear}70.915%{transform:translate(23.69px,-3.85px);animation-timing-function:linear}71.569%{transform:translate(23.45px,5.09px);animation-timing-function:linear}72.222%{transform:translate(19.83px,13.52px);animation-timing-function:linear}72.876%{transform:translate(13.13px,20.09px);animation-timing-function:linear}73.529%{transform:translate(4.26px,23.62px);animation-timing-function:linear}74.183%{transform:translate(-5.40px,23.38px);animation-timing-function:linear}74.837%{transform:translate(-14.26px,19.30px);animation-timing-function:linear}75.49%{transform:translate(-20.78px,12.00px);animation-timing-function:linear}76.144%{transform:translate(-23.85px,2.70px);animation-timing-function:linear}76.797%{transform:translate(-22.95px,-7.01px);animation-timing-function:linear}77.451%{transform:translate(-18.32px,-15.50px);animation-timing-function:linear}78.105%{transform:translate(-10.83px,-21.42px);animation-timing-function:linear}78.758%{transform:translate(-1.79px,-23.93px);animation-timing-function:linear}79.412%{transform:translate(7.32px,-22.86px);animation-timing-function:linear}80.065%{transform:translate(15.18px,-18.59px);animation-timing-function:linear}80.719%{transform:translate(20.78px,-12.00px);animation-timing-function:linear}81.373%{transform:translate(23.64px,-4.17px);animation-timing-function:linear}82.026%{transform:translate(23.69px,3.82px);animation-timing-function:linear}82.68%{transform:translate(21.31px,11.03px);animation-timing-function:linear}83.333%{transform:translate(17.10px,16.84px);animation-timing-function:linear}83.987%{transform:translate(11.76px,20.92px);animation-timing-function:linear}84.641%{transform:translate(5.97px,23.25px);animation-timing-function:linear}85.294%{transform:translate(0.28px,24.00px);animation-timing-function:linear}85.948%{transform:translate(-4.90px,23.50px);animation-timing-function:linear}86.601%{transform:translate(-9.33px,22.11px);animation-timing-function:linear}87.255%{transform:translate(-12.93px,20.22px);animation-timing-function:linear}87.908%{transform:translate(-15.71px,18.14px);animation-timing-function:linear}88.562%{transform:translate(-17.76px,16.14px);animation-timing-function:linear}89.216%{transform:translate(-19.19px,14.42px);animation-timing-function:linear}89.869%{transform:translate(-20.11px,13.10px);animation-timing-function:linear}90.523%{transform:translate(-20.62px,12.28px);animation-timing-function:linear}91.176%{transform:translate(-20.78px,12.00px);animation-timing-function:ease-in-out}98.039%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}100.0%{transform:translate(-13.86px,8.00px);animation-timing-function:linear}}
   @media (max-width: 720px) { .panel { height: 62% !important; } }
 
   /* ---- camp interactions (Phase 1): back control, hint, speech bubble, message form, album, fade */
@@ -259,9 +264,15 @@
   .album-sheet .album-page:nth-child(2) { box-shadow: inset calc(var(--pw) * 0.06) 0 calc(var(--pw) * 0.05) calc(var(--pw) * -0.04) rgba(60, 40, 20, 0.35); }
   .album-photo { position: absolute; margin: 0; box-sizing: border-box; padding: calc(var(--pw) * 0.016); background: #fbf9f4; box-shadow: 0 1px 3px rgba(40, 30, 20, 0.28), 0 4px 10px rgba(40, 30, 20, 0.12); }
   .album-photo img { display: block; width: 100%; height: auto; max-width: none; background: #d8d0c0; }
-  .album-tape { position: absolute; height: calc(var(--pw) * 0.042); box-shadow: 0 1px 1px rgba(60, 40, 20, 0.12);
-                background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 3px, transparent 3px 7px);
-                clip-path: polygon(2% 0, 98% 4%, 100% 50%, 97% 100%, 1% 96%, 0 50%); }
+  /* clear tape: see-through, a faint sheen across it, its long edges just visible, torn ends */
+  .album-tape { position: absolute; height: calc(var(--pw) * 0.042);
+                background-image: linear-gradient(172deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.2) 100%);
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(120, 115, 100, 0.22), 0 0.5px 1px rgba(60, 50, 30, 0.1);
+                clip-path: polygon(1% 0, 99% 0, 98% 22%, 100% 48%, 98.5% 76%, 99% 100%, 1% 100%, 0 78%, 1.5% 52%, 0 26%); }
+  .album-note { position: absolute; box-sizing: border-box; padding: calc(var(--pw) * 0.03) calc(var(--pw) * 0.03) calc(var(--pw) * 0.022); display: flex; align-items: center;
+                background: repeating-linear-gradient(180deg, transparent 0 calc(var(--pw) * 0.036), rgba(90, 120, 160, 0.16) calc(var(--pw) * 0.036) calc(var(--pw) * 0.038)), #fdf8e6;
+                box-shadow: 0 1px 2px rgba(40, 30, 20, 0.22), 0 3px 8px rgba(40, 30, 20, 0.1); }
+  .album-note p { margin: 0; font: 500 calc(var(--pw) * 0.043)/1.15 var(--font-hand); color: #2c3a5a; }
   .album-no { position: absolute; bottom: calc(var(--pw) * 0.03); right: calc(var(--pw) * 0.05); font: 400 11px/1 var(--font-display); letter-spacing: 0.12em; color: rgba(60, 50, 40, 0.5); }
   .album-sheet .album-page:nth-child(1):not(:last-child) .album-no { right: auto; left: calc(var(--pw) * 0.05); }
   .album-page.blank .album-no { display: none; }
@@ -281,7 +292,7 @@
   .album-count { display: grid; place-items: center; min-width: 110px; padding: 0 12px; border-left: 1px solid var(--glass-line); border-right: 1px solid var(--glass-line);
                  font: 400 11px/1 var(--font-display); letter-spacing: 0.16em; font-variant-numeric: tabular-nums; }
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@500&display=swap">
 
 <div id="stage"></div>
 <header class="site" id="site">
@@ -377,6 +388,7 @@ import { relay } from './relay/house.js';
 import { library } from './library/library.js';
 import { hub } from './hub/screens.js';
 import { media } from './media/media.js';
+import { robot } from './showroom/robot.js';
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -478,6 +490,7 @@ composer.addPass(new OutputPass());
 
 // --- model
 const status = document.getElementById('status');
+let warming = false;                     // set while the station's shaders are compiled: no draw, the loading dots stay up
 const lightstrips = [];
 // a click on the turbine (from any view it is in) eases the rotor to a stop, the next one back up to speed
 const turbine = { rotor: null, q0: null, angle: 0, last: 0, on: true, ramp: 1, meshes: [], block: [] };
@@ -1462,6 +1475,7 @@ const onModel = (gltf) => {
   library.setup(lbHost, gltf.scene);                                // shelf things, monstera, the waving cat (library/library.js)
   hub.setup(hubHost, gltf.scene);                                   // the hanging screens and their slideshows (hub/screens.js)
   media.setup(mdHost, gltf.scene, hub);                             // the showroom's panorama and the hub's films (media/media.js)
+  robot.setup(rbHost);                                              // the six-legged robot on the showroom floor (showroom/robot.js)
   setupCamp(gltf.scene);
   collectEnvMats(); markShadows();
   placeNightLights(gltf.scene);
@@ -1470,7 +1484,16 @@ const onModel = (gltf) => {
   setupProjectors(gltf.scene);
   setProjectors(mode === 'night', false);
   setupRoof(gltf.scene);
-  requestAnimationFrame(() => requestAnimationFrame(() => { status.hidden = true; }));   // after the first drawn frame, so the screen never sits empty
+  // the first draw would compile every shader in one blocking go with the dots already gone: compile first, draw, then fade the dots
+  warming = true;
+  const ready = renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve();
+  Promise.race([ready, new Promise((r) => setTimeout(r, 10000))]).catch(() => {}).then(() => {   // never wait more than 10 s
+    warming = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => {   // after the first drawn frame, so the screen never sits empty
+      status.classList.add('out');
+      setTimeout(() => { status.hidden = true; }, 300);
+    }));
+  });
 };
 const onFail = () => { status.textContent = 'The model could not be loaded.'; };
 const loader = new GLTFLoader();
@@ -1548,7 +1571,7 @@ const PLACES = [
     view: { type: 'inside', eye: [-27.7, 4.65, 0.0], look: [-21.0, 4.75, -0.4], fov: 72, fovPortrait: 84 } },   // from the top of the stairs, facing the screens
   { id: 'showroom', name: 'Showroom', zone: { c: [-14.7, 5.5, 14.1], r: 9.5 },
     view: { type: 'inside', eye: [-14.6, 4.65, 9.6], look: [-14.5, 4.4, 14.3], fov: 72 },
-    onEnter: () => { if (roof.closed) setRoof(false); } },
+    onEnter: () => { if (roof.closed) setRoof(false); robot.arrive(); } },
   { id: 'new-module', name: 'New module', zone: { c: [-7.6, 3.5, 28.7], r: 8.5 },
     view: { type: 'object', pos: [8.0, 11.0, 14.0], target: [-7.6, 3.5, 28.7], az: 60, polar: [40, 85], dist: [10, 35], fit: 18 } },
   { id: 'dish', name: 'Radio telescope', zone: { c: [15.0, 33.0, 154.0], r: 26 },
@@ -1658,8 +1681,31 @@ function stepTween(now) {
   if (u >= 1) { tween.active = false; tween.done && tween.done(); }
 }
 
+// a tap during a flight (Smo: taps were lost while the camera moved): the flight's job (controls,
+// panel) is done at once, the tap is judged on the view the visitor sees, and a flight the tap starts
+// sets off from there. Back from it returns to where the cut flight would have ended (`cutHome`).
+// Until the camera is nearly there only a direct hit counts (the areas' near-miss rule for fingers
+// would pick neighbours while everything is still small); a tap that starts nothing lets it fly on.
+let cutHome = null;
+const viewNow = () => ({ pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance });
+function tapDuringFlight(ev, act) {
+  const mid = { pos: camera.position.clone(), quat: camera.quaternion.clone(), target: controls.target.clone(), fov: camera.fov };
+  const near = mid.pos.distanceTo(tween.p1) < 0.25 * Math.max(1e-3, tween.p0.distanceTo(tween.p1));
+  const left = tween.ms * (1 - Math.min(1, (performance.now() - tween.start) / tween.ms)), hadPanel = panel.classList.contains('open');
+  tween.ms = 0; stepTween(performance.now());
+  const end = viewNow(), en = controls.enabled, opened = !hadPanel && panel.classList.contains('open');
+  if (opened) closePanel();                           // the panel waits for the end of the move (or for a later visit)
+  camera.position.copy(mid.pos); camera.quaternion.copy(mid.quat); controls.target.copy(mid.target);
+  camera.fov = mid.fov; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+  cutHome = end;
+  try { act(near ? ev : { clientX: ev.clientX, clientY: ev.clientY, pointerType: 'mouse' }); } finally { cutHome = null; }
+  if (tween.active) return;
+  flyTo(end.pos, end.target, end.fov, () => { controls.enabled = en; if (opened && nav.place) openPanel(nav.place.id); });
+  if (tween.ms) tween.ms = Math.max(250, left);      // the rest of the way at its old pace
+}
+
 function enter(p) {
-  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset();
   nav.place = p; nav.mode = p.view.type;
   closePanel();
   document.body.classList.add('in-place');
@@ -1678,7 +1724,7 @@ function enter(p) {
   }
 }
 function leave() {
-  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
   document.body.classList.remove('in-place');
@@ -1752,21 +1798,26 @@ el.addEventListener('pointermove', (ev) => {
 });
 const endPointer = (ev) => { look.pointers.delete(ev.pointerId); };
 el.addEventListener('pointercancel', endPointer);
+// a tap: a short press that stayed put (fingers wobble more than a mouse, so touch gets more room)
+const tapSlop = (ev) => (ev.pointerType === 'mouse' ? 6 : 14);
 el.addEventListener('pointerup', (ev) => {
   endPointer(ev);
-  if (!downAt || tween.active) { downAt = null; return; }
-  const tap = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) < 6 && performance.now() - downAt.t < 600;
+  if (!downAt) return;
+  const tap = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y) < tapSlop(ev) && performance.now() - downAt.t < 600;
   downAt = null;
   if (!tap) return;
   if (hitTurbine(ev)) { turbine.on = !turbine.on; return; }
-  if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }
+  if (!nav.place) { const p = zoneAt(ev); if (p) setRoute(p.id); return; }   // also while flying home: go there instead
+  if (tween.active) tapDuringFlight(ev, tapPlace); else tapPlace(ev);
+});
+function tapPlace(ev) {
   if (nav.place.id === 'camp') { campTap(ev); return; }
   if (nav.place.id === 'workshop') { workshop.tap(ev); return; }
   if (nav.place.id === 'dish') { telescope.tap(ev); return; }
   if (nav.place.id === 'relay') { relay.tap(ev); return; }
   if (nav.place.id === 'library') { library.tap(ev); return; }
-  if (nav.place.id === 'showroom' && hitRoof(ev)) setRoof(!roof.closed);
-});
+  if (nav.place.id === 'showroom') { if (robot.tap(ev)) return; if (hitRoof(ev)) setRoof(!roof.closed); }
+}
 el.addEventListener('wheel', (ev) => {
   if (nav.mode !== 'inside') return;
   ev.preventDefault();
@@ -1795,7 +1846,7 @@ function hover(ev) {
     if (tween.active) return setTip(null);
     if (hitTurbine(ev)) { setTip(null); el.style.cursor = 'pointer'; return; }   // no label, only the pointer
     if (!nav.place) return setTip(zoneAt(ev));
-    if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = hitRoof(ev) ? 'pointer' : ''; return; }
+    if (nav.place.id === 'showroom') { tip.hidden = true; el.style.cursor = robot.hover(ev) || hitRoof(ev) ? 'pointer' : ''; return; }
     if (nav.place.id === 'camp') { tip.hidden = true; campHover(ev); return; }
     if (nav.place.id === 'workshop') { tip.hidden = true; workshop.hover(ev); return; }
     if (nav.place.id === 'dish') { tip.hidden = true; telescope.hover(ev); return; }
@@ -1804,7 +1855,7 @@ function hover(ev) {
     setTip(null);
   });
 }
-el.addEventListener('pointerleave', () => setTip(null));
+el.addEventListener('pointerleave', () => { setTip(null); robot.hover(null); });
 const markers = document.getElementById('markers');
 const markerEls = PLACES.map((p) => {
   const m = document.createElement('button');
@@ -1855,12 +1906,12 @@ overviewControls();
 if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0);
 
 // --- camp interactions (Phase 1, Smo): at the camp the figure, the fire and the van can be clicked.
-// Mouse: hovering shows a glow and a label, a click acts. Touch: the first tap shows them, a second
-// tap on the same thing acts. Each one moves the camera to its own view; Back (or Esc) returns.
+// Mouse: hovering shows a glow and a label, a click acts. Touch: one tap acts (a near miss counts).
+// Each one moves the camera to its own view; Back (or Esc) returns.
 //   fire:   sit in the chair the figure never uses, a stick held towards the fire; tap the fire to poke it
 //   figure: it stops, turns to the camera and asks for a message (the form is camp/message.js)
 //   van:    step inside (camp/van.js, loaded on first use): the start screen, the album, the camera
-const camp = { view: null, seq: 0, home: null, hover: null, armed: null, fov: 50, last: 0, van: null, vanLoading: null, index: null,
+const camp = { view: null, seq: 0, home: null, hover: null, fov: 50, last: 0, van: null, vanLoading: null, index: null,
   vanMeshes: [], fireMeshes: [], fireLit: false, stick: null, jab: null, album: null, msgOpen: false, safari: null, safariStarting: false };
 const VAN = { x: 27.0, y: 4.2, heading: THREE.MathUtils.degToRad(80) };       // where vehicle.py stands the van (model coordinates)
 const vanAt = (x, y, z, out = new THREE.Vector3()) => {                      // van coordinates (x forward, y left, z up) -> viewer
@@ -1940,10 +1991,8 @@ function campHover(ev) {
 function campTap(ev) {
   if (camp.view === 'screen') { camp.van.screen.press(screenUV(ev)); return; }
   const id = campPick(ev);
-  if (!id) { camp.armed = null; setCampHover(null); return; }
-  // touch and pen: the first tap only shows what it is, the second one acts
-  if (ev.pointerType !== 'mouse' && camp.armed !== id) { camp.armed = id; setCampHover(id); return; }
-  camp.armed = null; setCampHover(null);
+  setCampHover(null);
+  if (!id) return;
   ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum })[id]();
 }
 // the same choices for the keyboard: a row of buttons that follows the view (and the screen's menu)
@@ -1982,9 +2031,9 @@ function setSub(view) {
   document.body.classList.toggle('camp-sub', !!view);
   campEls.back.hidden = !view || view === 'leaving';
   campEls.hint.hidden = true;
-  camp.armed = null; setCampHover(null);
+  setCampHover(null);
 }
-function rememberHome() { if (!camp.view) camp.home = { pos: camera.position.clone(), target: controls.target.clone(), maxD: controls.maxDistance }; }
+function rememberHome() { if (!camp.view) camp.home = cutHome || viewNow(); }
 function lookFrom(eye, at) {                           // stand at `eye` and look round freely, starting towards `at`
   const d = vB.copy(at).sub(eye).normalize();
   look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y);
@@ -2427,8 +2476,9 @@ function renderDrop(cat) {
       const b = document.createElement('button'); b.className = 'drop-item';
       b.innerHTML = `<span class="t">${it.t}</span><span class="s">${it.s}</span>`;
       b.addEventListener('click', () => { closeDrop(); go(it); });
-      b.addEventListener('mouseenter', () => { const p = it.place && PLACES.find((q) => q.id === it.place); if (p && !nav.place) showTip(p); });
-      b.addEventListener('mouseleave', () => setTip(null));
+      // mouse only: a tap's emulated mouse events must not show anything (phones then swallow the click)
+      b.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; const p = it.place && PLACES.find((q) => q.id === it.place); if (p && !nav.place) showTip(p); });
+      b.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') setTip(null); });
       dropList.appendChild(b);
     });
   });
@@ -2446,11 +2496,12 @@ function closeDrop() {
   document.getElementById('menu-toggle').setAttribute('aria-expanded', 'false');
 }
 document.querySelectorAll('#menu button').forEach((b) => {
-  b.addEventListener('mouseenter', () => { if (matchMedia('(hover: hover)').matches) openDrop(b.dataset.cat); });
+  // a mouse opens the menu by hovering; a tap only clicks (its emulated hover would open it and the click close it again)
+  b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') openDrop(b.dataset.cat); });
   b.addEventListener('click', () => (dropCat === b.dataset.cat ? closeDrop() : openDrop(b.dataset.cat)));
 });
-site.addEventListener('mouseleave', () => { dropTimer = setTimeout(closeDrop, 250); });
-site.addEventListener('mouseenter', () => clearTimeout(dropTimer));
+site.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') dropTimer = setTimeout(closeDrop, 250); });
+site.addEventListener('pointerenter', () => clearTimeout(dropTimer));
 document.getElementById('menu-toggle').addEventListener('click', () => (dropCat ? closeDrop() : openDrop('all')));
 document.getElementById('home-link').addEventListener('click', (e) => { e.preventDefault(); closeDrop(); closePanel(); setRoute(''); });
 function go(it) {
@@ -2525,10 +2576,11 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 function frame(now) {
+  if (warming) return;                                              // the station's shaders are still compiling
   const away = !!workshop.focused || relay.inside || library.zoomed;  // a workshop station, the radio room or the cat close up: nothing else runs
   if (!away) { stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); }
   stepPlaces(now); stepSky(now);
-  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); }
+  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); robot.step(now); }
   if (!away || relay.inside) telescope.step(now);  // the radio room's moon bounce needs it to keep tracking
   workshop.step(now); relay.step(now); library.step(now); hub.step(now); media.step(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
@@ -2569,7 +2621,7 @@ const station = {
     station.held = false;
     const now = performance.now();
     skyState.last = person.last = turbine.last = showDark.last = camp.last = now;
-    workshop.resume(now); telescope.resume(now); relay.resume(now); library.resume(now); hub.resume(now);
+    workshop.resume(now); telescope.resume(now); relay.resume(now); library.resume(now); hub.resume(now); robot.resume(now);
     if (fire.last) fire.last = now;
     quality.settle = now + 3000;
     if (camp.van && camp.van.outer.visible) camp.van.start();
@@ -2586,7 +2638,7 @@ const wsHost = {
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'workshop',
   holdView() {                                      // a station opens: the camera stays where its flight ends
-    const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance };
+    const h = cutHome || viewNow();
     nav.mode = 'fixed'; return h;
   },
   fixedFov(f) { camp.fov = f; },                       // what a resize keeps while the camera is fixed
@@ -2612,7 +2664,7 @@ const rlHost = {
   jump(pos, target, fov) { camera.position.copy(pos); controls.target.copy(target); camera.fov = fov; camera.updateProjectionMatrix(); camera.lookAt(target); },
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'relay',
-  holdView() { const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance }; nav.mode = 'fixed'; return h; },
+  holdView() { const h = cutHome || viewNow(); nav.mode = 'fixed'; return h; },
   fixedFov(f) { camp.fov = f; },
   releaseView(h) { const v = PLACES.find((q) => q.id === 'relay').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
   night: () => skyState.d,
@@ -2625,7 +2677,7 @@ const lbHost = {
   scene, camera, el, ray, setRay, flyTo, portrait, reduceMotion, closePanel,
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'library',
-  holdView() { const h = { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov, maxD: controls.maxDistance }; nav.mode = 'fixed'; return h; },
+  holdView() { const h = cutHome || viewNow(); nav.mode = 'fixed'; return h; },
   fixedFov(f) { camp.fov = f; },
   releaseView(h) { const v = PLACES.find((q) => q.id === 'library').view; nav.mode = v.type; placeControls(v); controls.maxDistance = h.maxD; },
 };
@@ -2639,6 +2691,13 @@ const hubHost = {
 
 // --- media (media/media.js): the showroom's panorama and the hub's films play while their place is open
 const mdHost = { scene, place: () => (nav.place ? nav.place.id : null) };
+
+// --- the showroom robot (showroom/robot.js): runs while the showroom is open, darkens with its roof
+const rbHost = {
+  scene, camera, ray, setRay, reduceMotion, timeOfDay,
+  inPlace: () => !!nav.place && nav.place.id === 'showroom',
+  darken: (m) => showDarkMaterial(m),
+};
 
 // hooks used for test renders: only with ?test in the address (http://localhost:8000/?test)
 if (new URLSearchParams(location.search).has('test')) {
@@ -2662,7 +2721,7 @@ if (new URLSearchParams(location.search).has('test')) {
     c.project(camera); const r = el.getBoundingClientRect();
     return [r.left + (c.x + 1) / 2 * r.width, r.top + (1 - c.y) / 2 * r.height];
   };
-  window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => camp.armed, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
+  window.__camp = { camp, person, sparks, fire, screen: campScreen, hover: () => camp.hover, armed: () => null, go: (id) => ({ figure: goFigure, fire: goFire, poke: pokeFire, van: goVan, screen: goScreen, album: goAlbum, back: campBack })[id](), timeOfDay };
   window.__safari = () => camp.safari;
   window.__workshop = workshop;
   window.__telescope = telescope;
@@ -2670,6 +2729,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__library = library;
   window.__hub = hub;
   window.__media = media;
+  window.__robot = robot;
   window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
   window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
   window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });

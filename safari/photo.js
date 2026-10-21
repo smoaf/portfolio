@@ -92,13 +92,14 @@ export function verdict(shot) {
 }
 
 // Grab the frame that was just drawn. Called from inside the render loop, right after render().
-export function grab(canvas) {
+// `size` is the thumbnail by default; the report's large view asks for a bigger copy of the same frame.
+export function grab(canvas, size = THUMB) {
   const t = document.createElement('canvas');
-  t.width = THUMB.w; t.height = THUMB.h;
+  t.width = size.w; t.height = size.h;
   const g = t.getContext('2d');
-  const sw = canvas.width, sh = canvas.height, want = THUMB.w / THUMB.h;
+  const sw = canvas.width, sh = canvas.height, want = size.w / size.h;
   let cw = sw, ch = Math.round(sw / want);
   if (ch > sh) { ch = sh; cw = Math.round(sh * want); }
-  g.drawImage(canvas, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, THUMB.w, THUMB.h);
+  g.drawImage(canvas, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, size.w, size.h);
   return t;
 }
