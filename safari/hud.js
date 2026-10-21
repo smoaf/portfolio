@@ -30,6 +30,9 @@ function dust() {
 const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 
 export function createHud({ host = document.body, route, tod, film, pellets, on = {} }) {
+  const touch = !matchMedia('(hover: hover)').matches;
+  // the feed button names its key where there is a keyboard
+  const feedLabel = (n) => `Feed <b>${n}</b>${touch ? '' : ' <span class="sf-key">(Space)</span>'}`;
   const root = el('div', 'safari');
   root.setAttribute('role', 'application');
   root.setAttribute('aria-label', `Photo safari: ${route.name}`);
@@ -45,7 +48,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       <button id="sf-mute" aria-pressed="false" title="Sound">Sound</button>
       <button id="sf-exit">Exit</button>
     </div>
-    <div class="sf-tools"><button id="sf-feed">Feed <b>${pellets}</b></button></div>
+    <div class="sf-tools"><button id="sf-feed">${feedLabel(pellets)}</button></div>
     <div class="sf-feed" id="sf-shots" aria-live="polite"></div>
     <div class="sf-sea"></div>
     <div class="sf-hatch" id="sf-hatch"><i></i><i></i><span id="sf-hatch-say"></span></div>
@@ -73,7 +76,6 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
   feedEl.addEventListener('click', () => on.feed && on.feed());
   muteEl.addEventListener('click', () => on.mute && on.mute());
 
-  const touch = !matchMedia('(hover: hover)').matches;
   helpEl.textContent = touch ? 'Drag to look · tap to shoot · pinch to zoom' : 'Mouse to aim · click or Enter to shoot · wheel to zoom · space or F to feed';
   setTimeout(() => helpEl.classList.add('gone'), 7000);
 
@@ -88,7 +90,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       filmEl.classList.toggle('low', left <= Math.max(3, Math.round(total * 0.2)));
     },
     setClock(sec) { const t = clock(sec); if (clockEl.textContent !== t) clockEl.textContent = t; },
-    setPellets(n) { feedEl.innerHTML = `Feed <b>${n}</b>`; feedEl.disabled = n <= 0; },
+    setPellets(n) { feedEl.innerHTML = feedLabel(n); feedEl.disabled = n <= 0; },
     setZoom(fov, wide) { zoomEl.textContent = (wide / fov).toFixed(1) + '×'; },
     setMuted(on_) { muteEl.setAttribute('aria-pressed', String(on_)); muteEl.textContent = on_ ? 'Muted' : 'Sound'; },
     progress(u) { railEl.style.width = Math.round(u * 100) + '%'; },

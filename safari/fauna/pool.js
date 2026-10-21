@@ -9,6 +9,7 @@
 // side to side as they walk, the legs swing in diagonal pairs, the gills flutter.
 import * as THREE from 'three';
 import { Rig, xf, merge, tubeGeo, rigEye, flash, lit, turn } from './deep.js';
+import { FEED_REACH } from '../creature.js';
 
 export const SPECIES = {
   axolotl: { id: 'axolotl', name: 'Axolotl', points: 220, call: { hz: 1900, kind: 'chirp' } },
@@ -288,7 +289,7 @@ export function buildLanternTetras(K, home, opts = {}) {
       goal.copy(C).addScaledVector(vA, 9);
       if (env.call) env.call(c, 'flee');
     } else if (c.state === 'idle' || c.state === 'wander' || c.state === 'curious') {
-      const pellet = env.pellets.find((p) => !p.eaten && p.sunk && p.pos.distanceTo(c.root.position) < 16);
+      const pellet = env.pellets.find((p) => !p.eaten && p.sunk && p.pos.distanceTo(c.root.position) < 16 * FEED_REACH);
       if (pellet) { c.pellet = pellet; c.go('eat', 9); }
       else if (env.tod === 'dusk' && Math.random() < dt * 0.05) { c.go('rare', 7); if (env.call) env.call(c, 'rare'); }
       else if (camD < 14 && c.state !== 'curious' && Math.random() < dt * 0.4) c.go('curious', 3);
@@ -447,7 +448,7 @@ export function buildSeaAnemones(K, home, opts = {}) {
     // the mood: shut when the van is close, open again slowly; feed and the night set off the show
     if (c.state !== 'flee' && c.state !== 'rare' && camD < 3.6) c.go('flee', 4);
     else if (c.state === 'idle') {
-      const pellet = env.pellets.find((p) => !p.eaten && (p.sunk || p.landed) && p.pos.distanceTo(c.root.position) < spread + 2.5);
+      const pellet = env.pellets.find((p) => !p.eaten && (p.sunk || p.landed) && p.pos.distanceTo(c.root.position) < (spread + 2.5) * FEED_REACH);
       if (pellet) { c.pellet = pellet; c.go('eat', 2.5); }
       else if (env.tod === 'night' && Math.random() < dt * 0.05) c.go('rare', 6);
     } else if (c.state === 'eat') {

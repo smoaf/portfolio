@@ -13,6 +13,10 @@
 // are in metres.
 import * as THREE from 'three';
 
+// how far feed carries: every distance at which an animal notices a pellet is multiplied by this
+// (1.3: feed reaches 30% farther than the 14 m the animals first had)
+export const FEED_REACH = 1.3;
+
 const vA = new THREE.Vector3(), vB = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -82,11 +86,14 @@ export function makeCreature(def) {
       c.target = c.root.position.clone().addScaledVector(vA, 7 + Math.random() * 6);
       go('flee', 2.5 + Math.random());
       if (env.call && Math.random() < 0.5) env.call(c, 'flee');
-    } else if (c.state === 'idle' || c.state === 'wander') {
-      const pellet = env.pellets.find((p) => p.landed && !p.eaten && p.pos.distanceTo(c.root.position) < 14);
-      if (pellet) { c.pellet = pellet; go('eat', 6); }
-      else if (dist < c.curiousAt && dist > c.fleeAt && c.t > 0.6 && Math.random() < dt * (1.2 - c.shy)) go('curious', 2.5 + Math.random() * 2);
-      else if (c.rareAt && c.rareAt === env.tod && Math.random() < dt * 0.06) go('rare', 5);
+    } else if (c.state === 'idle' || c.state === 'wander' || c.state === 'curious') {
+      // feed wins over everything but fleeing, also while the animal is looking the van over
+      const pellet = env.pellets.find((p) => p.landed && !p.eaten && p.pos.distanceTo(c.root.position) < 14 * FEED_REACH);
+      if (pellet) { c.pellet = pellet; go('eat', 6 * FEED_REACH); }   // more time for the longer walk
+      else if (c.state !== 'curious') {
+        if (dist < c.curiousAt && dist > c.fleeAt && c.t > 0.6 && Math.random() < dt * (1.2 - c.shy)) go('curious', 2.5 + Math.random() * 2);
+        else if (c.rareAt && c.rareAt === env.tod && Math.random() < dt * 0.06) go('rare', 5);
+      }
     }
 
     switch (c.state) {
@@ -142,7 +149,7 @@ export function makeFlock({ species, root, bodies, centre, radius = 26, height =
   c.step = (dt, env) => {
     c.t += dt;
     // one shared circle; a dive is the rare behaviour, and feed on the ground starts it
-    const feeding = env.pellets.some((p) => p.landed && !p.eaten && p.pos.distanceTo(centre) < 40);
+    const feeding = env.pellets.some((p) => p.landed && !p.eaten && p.pos.distanceTo(centre) < 40 * FEED_REACH);
     if (feeding && c.state !== 'rare') { c.state = 'rare'; c.t = 0; if (env.call) env.call(c, 'rare'); }
     if (c.state === 'rare' && c.t > 7) c.state = 'idle';
     const dip = c.state === 'rare' ? (0.5 - 0.5 * Math.cos(Math.min(1, c.t / 7) * Math.PI * 2)) : 0;

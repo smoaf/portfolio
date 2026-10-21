@@ -21,7 +21,7 @@ import { localStore } from './leaderboard.js';
 import { survey, record } from './fieldlog.js';
 import { chunkScenery } from './terrain.js';
 
-const FILM = 20, PELLETS = 8;
+const FILM = 20, PELLETS = 20;
 const vA = new THREE.Vector3(), vB = new THREE.Vector3();
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const frustum = new THREE.Frustum(), mView = new THREE.Matrix4(), ball = new THREE.Sphere();
