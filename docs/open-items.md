@@ -3,13 +3,13 @@
 Collected 16 Oct 2026 from the progress logs of all build runs (Photo Safari, workshop, relay, library, hub, media) and a structure review. What each feature does is described in its pull request: #1 camp & Photo Safari, #2 workshop, #3 relay & telescope, #4 library, #5 hub, #6 media (all live via #1, #2 and #7).
 
 ## Everywhere
-- Real-phone check: every feature was tested only in a headless cloud browser. Frame rate, touch targets and sound are unverified on phones.
+- Real-phone check: every feature was tested only in a headless cloud browser. Frame rate, touch targets and sound are unverified on phones. One tap now acts everywhere (run 09), checked with emulated touch only.
 - Placeholders: texts, captions, rack remarks, the tape card (draft translation), demo audio (guitar loop, tape demo; Smo's own audio file is still to come).
 - Model size: `arrangement_v7.glb` is 14 MB. Compress (Draco or meshopt) before sharing the site widely.
 - Loading (run 08): the shader precompile and the fade were measured only with software GL. Check on a real phone that the dots keep moving until the station shows. Seen while testing, old and new build alike: a second long stall (13–18 s with software GL) some seconds after the station appears, probably the robot model (loaded 1.5 s later) or other late materials compiling; not part of the loading screen.
 
 ## Per area
-- **Workshop:** synth knobs (~20 px) and tape head buttons (~12 px) small on phones; desk small in the overview on phones; the station layout is applied at load time (`workshop/layout.js`) instead of in `3d/scripts/build_station_v4.py`; old bench-device cables still on the bench; partition hidden while the rack is open (Smo to judge); printer head traces concave layers roughly.
+- **Workshop:** on a phone the tape delay's label point lies over the synth, so a tap just above the tape deck opens the synth (a tap on the deck itself opens the tape delay; seen in run 09); inside an open station, its controls take taps only once the station's own fly-in has ended (a tap during it is not passed on); synth knobs (~20 px) and tape head buttons (~12 px) small on phones; desk small in the overview on phones; the station layout is applied at load time (`workshop/layout.js`) instead of in `3d/scripts/build_station_v4.py`; old bench-device cables still on the bench; partition hidden while the rack is open (Smo to judge); printer head traces concave layers roughly.
 - **Relay & telescope:** elevation limit 14° (maybe lower); tracking label wraps on phones; arrow-key tuning snaps back to a nearby station after a pause.
 - **Library:** prop sizes are guesses; monstera leaf slits thin from afar; the papers list overlay uses the screen's bounding rectangle (the screen leans back a little).
 - **Hub:** no extra glow light at night; the intro panel is still in the model (only hidden at load).

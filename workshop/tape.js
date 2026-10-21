@@ -325,7 +325,7 @@ function pointer(type, ev, ws) {
     return false;
   }
   if (type === 'up') {
-    const still = F.tap && Math.hypot(ev.clientX - F.tap.x, ev.clientY - F.tap.y) < 8;
+    const still = F.tap && Math.hypot(ev.clientX - F.tap.x, ev.clientY - F.tap.y) < (ev.pointerType === 'mouse' ? 8 : 14);   // fingers wobble more
     F.tap = null;
     if (F.active) { const p = F.active; F.active = null; return p.pointer('up', ev); }
     if (still) { const id = propAt(ev, ws); if (id && id !== F.view) show(id); }
