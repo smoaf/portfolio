@@ -490,7 +490,62 @@ export const ROUTE = {
     // the secret: the goblin shark only comes up from the deep at night
     if (night) spawn('goblin-shark', PD(zs(0.55), 0, 5));
 
-    const colliders = [ground, boulders, slabs, hoodoos, overhangs, crowns, poolRocks];
+    // the acacia on the rim, shortly before the road goes down the wall: a gnarled umbrella tree on the
+    // plateau side of the road (the view down the canyon stays open), next to the harpy eagle's pillar.
+    // A crowned eagle on a bare branch towards the road, a secretary bird on the branch reaching out to
+    // the right, a cassowary at its foot. Built in the tree's own frame: +z towards the road, +y up.
+    const acacia = (() => {
+      const u = 0.641, rp = path.getPointAt(u), tq = path.getPointAt(u + 0.002).sub(rp).setY(0).normalize();
+      const side = new THREE.Vector3(-tq.z, 0, tq.x);
+      if (Math.abs(rp.x + side.x * 4 - XC(rp.z)) < Math.abs(rp.x - XC(rp.z))) side.negate();    // away from the river
+      const base = rp.clone().addScaledVector(side, 13);
+      base.y = groundY(base.x, base.z) - 0.15;
+      const yaw = Math.atan2(-side.x, -side.z);
+      const tree = K.group();
+      const bark = lam({ color: night ? 0x3f3630 : 0x5e4a3a }), leaf = lam({ color: night ? 0x34452f : 0x6f7f43, flatShading: true });
+      // trunk and limbs: tapered tubes through a few bent points, each limb forking at its end
+      const LIMBS = [
+        [[[0, -0.3, 0], [0.25, 1.0, 0.1], [-0.12, 1.9, 0.06], [0.05, 2.5, 0]], 0.3, 0.2],               // the trunk, leaning and twisted
+        [[[0.05, 2.4, 0], [0.45, 3.2, 1.2], [0.55, 3.9, 2.6], [0.2, 4.3, 4.2]], 0.15, 0.05],               // bare, out towards the road: the eagle's branch
+        [[[0.05, 2.4, 0], [1.3, 3.5, -0.2], [2.8, 4.6, 0.3], [4.4, 5.1, 0.9]], 0.15, 0.05],                // bare, reaching out right: the secretary bird's
+        [[[0, 2.4, 0], [-1.2, 3.4, -0.6], [-2.6, 4.6, -1.4], [-3.6, 5.4, -1.8]], 0.15, 0.06],
+        [[[0, 2.4, 0], [-0.3, 3.8, 0.3], [-0.2, 5.0, 0.4], [0.1, 5.7, 0.2]], 0.14, 0.06],
+        [[[0, 2.4, 0], [-1.0, 3.4, 0.9], [-2.2, 4.5, 1.8], [-3.0, 5.3, 2.6]], 0.13, 0.05],
+        [[[0.05, 2.4, 0], [0.9, 3.3, -1.3], [1.4, 4.4, -2.6], [1.6, 5.4, -3.4]], 0.13, 0.05],
+        // twigs off the limb ends, and a few dead ones poking out of the crown
+        [[[-3.6, 5.4, -1.8], [-4.5, 5.6, -1.4], [-5.2, 5.9, -1.5]], 0.07, 0.025],
+        [[[-3.0, 5.3, 2.6], [-3.4, 5.6, 3.6], [-3.3, 5.9, 4.3]], 0.07, 0.025],
+        [[[1.6, 5.4, -3.4], [2.6, 5.7, -3.9], [3.2, 6.0, -4.0]], 0.07, 0.025],
+        [[[0.1, 5.7, 0.2], [0.8, 6.3, 0.5], [1.1, 6.9, 0.4]], 0.06, 0.02],
+        [[[0.4, 4.0, 2.9], [1.0, 4.2, 3.5], [1.5, 4.6, 3.8]], 0.05, 0.02],
+        [[[3.5, 4.85, 0.6], [3.9, 5.5, 0.3], [4.0, 6.1, 0.1]], 0.05, 0.02],
+      ];
+      LIMBS.forEach(([pts, r0, r1], i) => K.mesh(K.tube('acacia' + i, pts, r0, r1, 7, 12), bark, [0, 0, 0], tree));
+      // the flat umbrella crown: wide, thin clumps laid in two tiers over the left and back limbs
+      const CROWN = [[-3.4, 5.6, -1.6, 2.6, 2.2], [-2.7, 5.5, 2.3, 2.4, 2.1], [0, 5.9, 0.3, 2.9, 2.6], [1.5, 5.6, -3.0, 2.3, 2.0],
+        [-1.2, 6.1, -0.6, 2.6, 2.3], [-4.6, 5.8, 0.6, 1.8, 1.6], [0.9, 6.0, 2.1, 1.9, 1.6], [-0.8, 5.7, -3.3, 2.0, 1.7]];
+      CROWN.forEach(([x, y, z, sx, sz], i) => K.mesh(K.geo('acacia-crown', () => new THREE.IcosahedronGeometry(1, 1)), leaf, [x, y, z], tree, [0, i * 0.9, 0], [sx, 0.42 + 0.05 * (i % 3), sz]));
+      K.place(tree, base);
+      tree.rotation.y = yaw;
+      tree.updateMatrixWorld(true);
+      const W = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(tree.matrixWorld);
+      // a point on top of limb i, t of the way along it (the tube's radius tapers the same way)
+      const onLimb = (i, t) => {
+        const [pts, r0, r1] = LIMBS[i], q = new THREE.CatmullRomCurve3(pts.map((v) => new THREE.Vector3(...v))).getPointAt(t);
+        return W(q.x, q.y + lerp(r0, r1, t) * 0.9, q.z);
+      };
+      return { tree, base, yaw, W, onLimb };
+    })();
+    spawn('crowned-eagle', acacia.onLimb(1, 0.72), { yaw: acacia.yaw - 0.5 });
+    spawn('secretary-bird', acacia.onLimb(2, 0.8), { yaw: acacia.yaw + 0.9 });
+    {
+      const foot = acacia.W(1.4, 0, 2.3);
+      foot.y = groundY(foot.x, foot.z);
+      const tx = acacia.base.x, tz = acacia.base.z;
+      spawn('cassowary', foot, { roam: 3, keep: (x, z) => Math.hypot(x - tx, z - tz) > 1 });
+    }
+
+    const colliders = [ground, boulders, slabs, hoodoos, overhangs, crowns, poolRocks, ...acacia.tree.children];
     const AMB = {
       under: { every: 2.2, kind: 'noise', hz: 260, vol: 0.12 },
       cliff: { day: { every: 3.4, kind: 'chirp', hz: 2100, vol: 0.16 }, night: { every: 5, kind: 'hoot', hz: 380, vol: 0.14 } },
