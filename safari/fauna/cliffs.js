@@ -55,8 +55,8 @@ function wing(K, body, s, W) {
     if (M.edge) plume(K, arm, M.edge, [x - Math.sin(yaw) * len * 0.8, 0.003, W.bone * 0.4 - Math.cos(yaw) * len * 0.8], yaw, (W.arm / ns) * 1.5, len * 0.2);
     plume(K, arm, M.cov, [s * (u - 0.04) * W.arm, W.bone * 0.35, W.bone * 0.5], yaw * 0.6, (W.arm / ns) * 2, len * 0.5);
     if (M.shaft) {                                         // a glowing shaft under each feather, a line along each covert
-      plume(K, arm, M.shaft, [x, -0.007, W.bone * 0.4], yaw, (W.arm / ns) * 0.16, len * 0.86, true);
-      plume(K, arm, M.shaft, [s * (u - 0.04) * W.arm, W.bone * 0.35 + 0.003, W.bone * 0.5], yaw * 0.6, (W.arm / ns) * 0.2, len * 0.46, true);
+      plume(K, arm, M.shaft, [x, -0.007, W.bone * 0.4], yaw, (W.arm / ns) * 0.2, len * 0.86, true);
+      plume(K, arm, M.shaft, [s * (u - 0.04) * W.arm, W.bone * 0.35 + 0.003, W.bone * 0.5], yaw * 0.6, (W.arm / ns) * 0.24, len * 0.46, true);
     }
   }
   const hand = K.group([s * W.arm, 0, 0], arm);
@@ -429,10 +429,10 @@ export function buildHarpyEagle(K, home, opts = {}) {
 const GRIFFON_UP = 0.55;                                   // the body's centre above the feet
 export function buildGriffon(K, home, opts = {}) {
   const mode = opts.mode || 'soar';
-  const brown = K.mat(0x2c2119, { roughness: 0.85 }), ruffM = K.mat(0xe4d6bb, { roughness: 1 }), skin = K.mat(0xd8cdbd, { roughness: 0.75 });
+  const brown = K.mat(0x2c2119, { roughness: 0.85 }), ruffM = K.mat(0xd8c7a6, { roughness: 1 }), skin = K.mat(0xd8cdbd, { roughness: 0.75 });
   const beakM = K.sheen(0xcdbf9c, { roughness: 0.35 }), legM = K.mat(0x8b867f, { roughness: 0.8 });
   const feather = two(K, 0x211813), cov = two(K, 0xb59870, { roughness: 0.9 }), thighM = K.mat(0x3a2b20, { roughness: 0.95 });
-  const lum = K.glow(0x8ff2d4, 0.7, { side: THREE.DoubleSide });
+  const lum = K.glow(0x8ff2d4, 0.9, { side: THREE.DoubleSide });
   const lumBase = lum.emissiveIntensity;
 
   const root = K.group();
@@ -443,13 +443,13 @@ export function buildGriffon(K, home, opts = {}) {
   K.mesh(K.sphere(0.17, 12, 8), brown, [0, -0.05, 0.2], body, null, [1.05, 1.0, 1.1]);
   K.mesh(K.sphere(0.15, 10, 8), cov, [0, -0.1, 0.08], body, null, [0.85, 0.6, 1.6]);
   // the ruff: a collar of pale down where the neck leaves the body, a few spots of it glowing
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * PI * 2;
-    K.mesh(K.sphere(0.075, 8, 6), ruffM, [Math.cos(a) * 0.12, 0.05 + Math.sin(a) * 0.1, 0.34], body, null, [1, 1, 1.35]);
+  for (let i = 0; i < 16; i++) {                             // uneven tufts, fuller at the nape than under the throat
+    const a = (i / 16) * PI * 2, up = Math.sin(a), k = 0.75 + 0.25 * up + 0.15 * Math.sin(i * 2.7);
+    K.mesh(K.sphere(0.045, 7, 5), ruffM, [Math.cos(a) * 0.105, 0.05 + up * 0.085, 0.31 - 0.02 * up], body, [0.4 * up, 0, a], [k, k * 0.8, 1.5 * k]);
   }
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * PI * 2 + 0.3;
-    K.mesh(K.sphere(0.016, 6, 4), lum, [Math.cos(a) * 0.17, 0.05 + Math.sin(a) * 0.14, 0.36], body);
+    K.mesh(K.sphere(0.018, 6, 4), lum, [Math.cos(a) * 0.135, 0.05 + Math.sin(a) * 0.11, 0.33], body);
   }
   // the long neck, bare and pale with a little down, and the small bare head
   const neck = K.group([0, 0.07, 0.36], body);
@@ -489,7 +489,7 @@ export function buildGriffon(K, home, opts = {}) {
   root.rotation.y = opts.yaw ?? root.rotation.y;
   const T = {};
   // the flight: a circle about (cx, cz) at height y (all of the body's centre), turning `spin` way round
-  const fly = { a: Math.random() * PI * 2, r: opts.radius ?? 20, cx: home.x, cz: home.z, y: home.y, ty: home.y, rise: 1.1,
+  const fly = { a: Math.random() * PI * 2, r: opts.radius ?? 20, cx: home.x, cz: home.z, y: home.y, ty: home.y, rise: 1.1, quick: -Infinity,
     tcx: home.x, tcz: home.z, tr: opts.radius ?? 20, spin: opts.spin ?? 1, v: 9, yr: 0, climb: 0 };
   const m = { ph: mode === 'run' || mode === 'roost' ? 'perch' : 'soar', t: 9, stretched: false, run: 0 };
   const van = { prev: null, vel: new THREE.Vector3(), f: 0, r: 0, u: 0, f0: 0, r0: 0, u0: 0 };
@@ -517,13 +517,14 @@ export function buildGriffon(K, home, opts = {}) {
         if (ph === 'pass') { T.dihedral = 0.08; T.bank = clamp(-fly.yr * 1.2, -0.35, 0.35); }
       }
       birdPose(R, dt, T, ph === 'perch' ? 2.5 : 3.5);
-      neck.rotation.x = -R.body.rotation.x * (ph === 'perch' ? 0.5 : 0.2) + (ph === 'perch' ? -0.1 : 0.55);   // the head held up on the ground, the neck drawn in aloft
+      neck.rotation.x = -R.body.rotation.x * (ph === 'perch' ? 0.5 : 0.2) + (ph === 'perch' ? -0.1 : 0.3);   // the head held up on the ground, the neck drawn in aloft
       K.look(c, head, env, dt, { yaw: 1.3, pitch: 0.5, rate: 2.5, force: ph === 'perch' && (c.state === 'curious' || c.near < 40) });
       K.blink(c, [eyes], dt);
       const breathe = 1 + Math.sin(env.t * 1.4 + c.bob) * 0.015;
       body.scale.set(breathe, breathe, 1);
       // legs: still on the ground, striding on the run, tucked back in the air
-      for (let i = 0; i < 2; i++) legs[i].rotation.x = ph === 'run' ? Math.sin(m.run + i * PI) * 0.55 : R.P.legs;
+      const grounded = ph === 'perch' || ph === 'run' || (ph === 'drop' && m.t < 0.5);    // aloft the feet lie hidden under the tail
+      for (let i = 0; i < 2; i++) { legs[i].rotation.x = ph === 'run' ? Math.sin(m.run + i * PI) * 0.55 : R.P.legs; legs[i].visible = grounded; }
       shade.visible = ph === 'perch' || ph === 'run';
       lum.emissiveIntensity = lumBase * (0.88 + 0.12 * Math.sin(env.t * 0.9 + c.bob));
       fb.rotation.x = R.body.rotation.x; fb.rotation.z = R.body.rotation.z;
@@ -533,13 +534,13 @@ export function buildGriffon(K, home, opts = {}) {
   });
 
   // into the circle from where it is now, flying the way it faces (so the path doesn't jump)
-  const toCircle = (r, tcx, tcz, ty, rise) => {
+  const toCircle = (r, tcx, tcz, ty, rise, quick = -Infinity) => {
     const p = c.root.position, h = c.root.rotation.y, hx = Math.sin(h), hz = Math.cos(h);
     vA.set(tcx - p.x, 0, tcz - p.z);
     fly.spin = hx * vA.z - hz * vA.x > 0 ? -1 : 1;        // turn towards the new centre
     fly.a = Math.atan2(-hx * fly.spin, hz * fly.spin);
     fly.r = r; fly.tr = r; fly.cx = p.x - Math.cos(fly.a) * r; fly.cz = p.z - Math.sin(fly.a) * r;
-    fly.y = p.y + GRIFFON_UP; fly.tcx = tcx; fly.tcz = tcz; fly.ty = ty; fly.rise = rise;
+    fly.y = p.y + GRIFFON_UP; fly.tcx = tcx; fly.tcz = tcz; fly.ty = ty; fly.rise = rise; fly.quick = quick;
     m.ph = 'soar'; m.t = 0;
   };
   const face = (dt, k = 4) => {
@@ -583,11 +584,11 @@ export function buildGriffon(K, home, opts = {}) {
     } else if (m.ph === 'drop') {
       // falls away below the lip on open wings, gathers speed, levels out
       p.addScaledVector(dir, (5 + 3 * Math.min(1, m.t)) * dt);
-      p.y = m.y0 - 6 * ease(m.t / 1.8);
+      p.y = m.y0 - 3 * ease(m.t / 1.4);
       face(dt);
-      if (m.t > 1.8) {
+      if (m.t > 1.4) {
         const th = opts.thermal;
-        toCircle(16, th.x, th.z, th.y, 1.0);
+        toCircle(15, th.x, th.z, th.y, 1.0, m.y0 + GRIFFON_UP + 7);
         c.go('idle', 20);
       }
     } else if (m.ph === 'pass') {
@@ -621,7 +622,8 @@ export function buildGriffon(K, home, opts = {}) {
         // the circle drifts to its centre, the bird rises (or sinks) on the air there
         fly.cx = damp(fly.cx, fly.tcx, 0.35, dt); fly.cz = damp(fly.cz, fly.tcz, 0.35, dt);
         fly.r = damp(fly.r, fly.tr, 0.3, dt);
-        fly.y += clamp(fly.ty - fly.y, -fly.rise * dt, fly.rise * dt);
+        const rise = fly.y < fly.quick ? fly.rise * 3 : fly.rise;   // out of the dip below the lip quickly, then slow
+        fly.y += clamp(fly.ty - fly.y, -rise * dt, rise * dt);
         fly.a += dt * fly.spin * fly.v / Math.max(fly.r, 8);
         p.set(fly.cx + Math.cos(fly.a) * fly.r, fly.y - GRIFFON_UP + Math.sin(fly.a * 1.3 + c.bob) * 1.2 * ease(m.t / 4), fly.cz + Math.sin(fly.a) * fly.r);
         face(dt, 3);

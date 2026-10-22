@@ -443,28 +443,30 @@ export const ROUTE = {
     // the vultures (Himalayan griffons), on the quiet stretch along the rim before the deer: by day one
     // stands at the lip ahead of the van, runs off it as the van comes up, circles in front of it and
     // rises on the air over the canyon; one passes the lens close on the upper leg of the climb; three
-    // circle high above the climb. After dark all five roost on ledges, seen by their glow.
+    // circle high above the climb. After dark all five roost on ledges and the lip, seen by their glow.
     const lipD = (z) => {                                    // just short of where the plateau breaks into the wall
       const d0 = -(wallStart(z) + WALL) - 10, p0 = at(z, d0), y0 = groundY(p0.x, p0.z);
       for (let d = d0; d < d0 + 20; d += 0.25) { const p = at(z, d); if (groundY(p.x, p.z) < y0 - 1.2) return d - 0.8; }
       return d0 + 10;
     };
-    const ledge = (z, n, dd = -1.5) => wallSpot(z, 1.2 + BAND * n * (RIM - 1.2) / RIM - 0.2, dd);   // on the n-th ledge of the wall
     const RUN_Z = -128, runStand = P3(RUN_Z, lipD(RUN_Z) - 4), runEdge = P3(RUN_Z + 1, lipD(RUN_Z + 1));
     if (!night) {
-      const th = at(RUN_Z + 24, lipD(RUN_Z + 24) + 26);
-      spawn('himalayan-griffon', runStand, { mode: 'run', from: 0.46, edge: runEdge, thermal: th.setY(RIM + 38), yaw: Math.atan2(runEdge.x - runStand.x, runEdge.z - runStand.z) - 2 });
+      const th = at(RUN_Z + 24, lipD(RUN_Z + 24) + 18);
+      spawn('himalayan-griffon', runStand, { mode: 'run', from: 0.46, near: 34, edge: runEdge, thermal: th.setY(RIM + 38), yaw: Math.atan2(runEdge.x - runStand.x, runEdge.z - runStand.z) - 2 });
       const pc = path.getPointAt(0.415);
       spawn('himalayan-griffon', new THREE.Vector3(pc.x + 16, pc.y + 14, pc.z), { mode: 'pass', at: 0.374, side: 1, radius: 12 }, { seeAt: 300 });
       spawn('himalayan-griffon', at(-190, -40).setY(96), { radius: 24, spin: 1 }, { seeAt: 300 });
       spawn('himalayan-griffon', at(-118, -34).setY(108), { radius: 30, spin: -1 }, { seeAt: 300 });
       spawn('himalayan-griffon', at(-64, -46).setY(90), { radius: 19, spin: 1 }, { seeAt: 300 });
     } else {
-      spawn('himalayan-griffon', runStand, { mode: 'roost', yaw: 2.2 });
-      spawn('himalayan-griffon', ledge(-196, 1), { mode: 'roost', yaw: 1.6 });
-      spawn('himalayan-griffon', ledge(-170, 2), { mode: 'roost', yaw: 1.4 });
-      spawn('himalayan-griffon', ledge(-100, 3), { mode: 'roost', yaw: 1.8 });
-      spawn('himalayan-griffon', ledge(-150, 6), { mode: 'roost', yaw: 1.5 });
+      // the roosts: one on a ledge above the first leg, three together on the lip above the top of the
+      // climb, one where the runner stands by day (spots found by sampling the wall for flat ground in
+      // clear view of the road)
+      spawn('himalayan-griffon', runStand, { mode: 'roost', yaw: 1.9 });
+      spawn('himalayan-griffon', P3(-125, -61), { mode: 'roost', yaw: 1.3 });
+      spawn('himalayan-griffon', P3(-185, -102.5), { mode: 'roost', yaw: 2.0 });
+      spawn('himalayan-griffon', P3(-170, -98.5), { mode: 'roost', yaw: 1.7 });
+      spawn('himalayan-griffon', P3(-200, -98.5), { mode: 'roost', yaw: 1.2 });
     }
     spawn('fallow-deer', P3(-176, -150)); spawn('fallow-deer', P3(-120, -146)); spawn('fallow-deer', P3(-30, -128)); spawn('fallow-deer', P3(20, -132));
 
