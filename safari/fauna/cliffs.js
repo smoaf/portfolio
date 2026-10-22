@@ -664,7 +664,8 @@ function flatten(g) {
 // leaves the branch: it watches the van come and, as the van passes close, spreads its wings wide
 // and raises the crest (the rare behaviour), then folds them again.
 export function buildCrownedEagle(K, home, opts = {}) {
-  const back = K.mat(0x4a3e35, { roughness: 0.85 }), cream = K.mat(0xe4d8c4, { roughness: 0.95 }), spotM = K.mat(0x6e5341, { roughness: 0.9 });
+  const back = K.mat(0x4a3e35, { roughness: 0.85 }), cream = K.mat(0xe4d8c4, { roughness: 0.95 });
+  const spotM = K.mat(0x6e5341, { roughness: 0.9, emissive: 0x8ff2d4, emissiveIntensity: K.glowLevel * 0.3 });   // the breast drops glow after dark
   const headM = K.mat(0x8c8177, { roughness: 0.9 }), cereM = K.mat(0xe2a13a, { roughness: 0.5 }), beakM = K.sheen(0x2b2724, { roughness: 0.3 });
   const yellow = K.mat(0xe4b03c, { roughness: 0.55 });
   const feather = two(K, 0x3d322b), cov = two(K, 0x6c5a4a, { roughness: 0.9 }), bar = two(K, 0x1d1815);
@@ -705,7 +706,7 @@ export function buildCrownedEagle(K, home, opts = {}) {
   flatten(crest);
   // broad rounded barred wings with glowing shafts, a long tail with dark bars, feathered legs, yellow feet
   const WS = { at: [0.16, 0.12, 0.36], arm: 0.44, hand: 0.5, chord: 0.36, bone: 0.035, sec: 6, prim: 6, primLen: 0.4, primW: 0.075,
-    mats: { wing: feather, cov, prim: feather, tip: bar, shaft: lum } };
+    mats: { wing: feather, cov, prim: feather, tip: bar, shaft: lum, edge: lum } };
   const wings = [wing(K, body, -1, WS), wing(K, body, 1, WS)];
   const tail = fanTail(K, body, [0, 0.0, -0.14], 7, 0.42, 0.1, 0.36, cov, bar, [0.3, 0.55, 0.8], 0.09);
   const legs = K.group([0, 0.22, 0.03], near);                // it never lifts a foot off the branch: one still group
@@ -800,14 +801,14 @@ export function buildSecretaryBird(K, home, opts = {}) {
       const len = 0.2 + 0.035 * Math.sin((2 * k + j) * 1.7) + (k < 2 ? 0.04 : 0);
       blade(K, g, quillM, [0, 0, 0], 0.03, len);
       K.mesh(K.shape('cl-quill', QUILL), quillM, [0, 0, 0], g, null, [0.022, len, 1]);    // crossed, so it reads from the front too
-      blade(K, g, lum, [0.002, len * 0.8, 0], 0.012, len * 0.2);
+      blade(K, g, lum, [0.002, len * 0.72, 0], 0.016, len * 0.28);
     }
     return { g: flatten(fan), rest: 1.65, ph: j * 2.3 };
   });
   // wings: folded on the flanks, black primaries and a grey forewing; the tail: grey with a black band,
   // and two long streamers from its middle
   const WS = { at: [0.12, 0.06, 0.16], arm: 0.38, hand: 0.42, chord: 0.3, bone: 0.03, sec: 6, prim: 6, primLen: 0.36, primW: 0.07,
-    mats: { wing: feather, cov, prim: feather, shaft: lum } };
+    mats: { wing: feather, cov, prim: feather, shaft: lum, edge: lum } };
   const wings = [wing(K, body, -1, WS), wing(K, body, 1, WS)];
   const tail = fanTail(K, body, [0, 0.01, -0.22], 8, 0.36, 0.075, 0.4, cov, feather, [0.7], 0.25);
   for (const s of [-1, 1]) {                                // the streamers ride on the tail (same feathers, no extra draws)
@@ -880,10 +881,10 @@ export function buildSecretaryBird(K, home, opts = {}) {
 // a tall dark casque, a bright blue bare neck and face with red-pink wattles, thick grey legs with a
 // dagger claw on the inner toe. The twist: a few points along the casque and lines down the neck
 // glow. It walks a few steps about the tree, pecks at the ground, looks the van over; fed, it stretches
-// up, fluffs its coat and booms (the rare one).
+// up, fluffs its coat and booms (the rare one). After dark its bare blue skin glows softly too.
 export function buildCassowary(K, home, opts = {}) {
   const coat = K.sheen(0x141214, { roughness: 0.45 }), coatDull = K.mat(0x1d1a1c, { roughness: 0.8 });
-  const blue = K.mat(0x2f7fd8, { roughness: 0.5 }), deep = K.mat(0x3a3f9a, { roughness: 0.55 }), red = K.sheen(0xc8304a, { roughness: 0.35 });
+  const blue = K.mat(0x2f7fd8, { roughness: 0.5, emissive: 0x3f9fff, emissiveIntensity: K.glowLevel * 0.22 }), deep = K.mat(0x3a3f9a, { roughness: 0.55 }), red = K.sheen(0xc8304a, { roughness: 0.35 });
   const casqueM = K.sheen(0x7a5c3c, { roughness: 0.35 }), beakM = K.sheen(0x1b1a1a, { roughness: 0.3 });
   const legM = K.mat(0x8e8a6c, { roughness: 0.75 }), clawM = K.sheen(0x161412, { roughness: 0.3 });
   const lum = lumOf(K);
@@ -899,8 +900,9 @@ export function buildCassowary(K, home, opts = {}) {
     const s = i % 2 ? 1 : -1, ry = Math.sqrt(Math.max(0, 1 - (z / 0.42) ** 2));
     const x = s * Math.sin(a) * 0.29 * ry, y = 0.05 + Math.cos(a) * 0.29 * ry;
     const len = 0.32 + 0.16 * ((i * 0.733) % 1);
-    // each strand hangs from the coat, down and back, the lower ones longest
+    // each strand hangs from the coat, down and back, the lower ones longest; every fourth glows at its tip
     K.mesh(K.cone(0.05, 1, 5), coat, [x, y - len * 0.45, z - len * 0.18], body, [PI + 0.35, 0, s * (0.12 + 0.25 * Math.sin(a))], [1, len, 0.7]);
+    if (i % 5 === 0) { const rz = s * (0.12 + 0.25 * Math.sin(a)), k = Math.cos(rz) * len * 0.42; K.mesh(K.sphere(0.011, 5, 4), lum, [x - Math.sin(rz) * len * 0.42, y - len * 0.45 - 0.94 * k, z - len * 0.18 - 0.34 * k], body); }
   }
   for (let i = 0; i < 9; i++) {                              // the rump hangs over the tail end like a mop
     const a = (i / 8 - 0.5) * 2.2;
@@ -912,7 +914,7 @@ export function buildCassowary(K, home, opts = {}) {
   K.mesh(K.capsule(0.056, 0.22, 3, 8), deep, [0, 0.16, 0.0], neck, [0.2, 0, 0], [1.03, 1, 0.9]);
   K.mesh(K.sphere(0.05, 10, 8), red, [0, 0.2, -0.035], neck, null, [1.1, 1.1, 0.7]);
   for (const s of [-1, 1]) K.mesh(K.sphere(0.026, 10, 8), red, [s * 0.022, 0.12, 0.085], neck, [0.15, 0, 0], [0.75, 1.8, 0.75]);
-  for (const s of [-1, 1]) K.mesh(K.capsule(0.005, 0.2, 2, 4), lum, [s * 0.05, 0.17, 0.045], neck, [0.2, 0, 0]);
+  for (const s of [-1, 1]) K.mesh(K.capsule(0.009, 0.2, 2, 4), lum, [s * 0.05, 0.17, 0.045], neck, [0.2, 0, 0]);
   const head = K.group([0, 0.37, 0.08], neck);
   // the head: blue, a black beak, dark eyes, and the casque standing up on top of it
   K.mesh(K.sphere(0.068, 12, 9), blue, [0, 0, 0], head, null, [0.85, 0.85, 1.25]);
@@ -921,7 +923,7 @@ export function buildCassowary(K, home, opts = {}) {
   K.mesh(K.sphere(0.075, 12, 10), casqueM, [0, 0.08, 0], casque, null, [0.38, 1.35, 1.15]);
   for (let i = 0; i < 4; i++) {                             // glowing points up the casque's front edge
     const u = i / 3, a = -0.6 + 1.6 * u;
-    K.mesh(K.sphere(0.008, 6, 4), lum, [0, 0.07 + Math.sin(a) * 0.09, Math.cos(a) * 0.075], casque);
+    K.mesh(K.sphere(0.013, 6, 4), lum, [0, 0.08 + Math.sin(a) * 0.095, Math.cos(a) * 0.08], casque);
   }
   const eyes = eyePair(K, head, { x: 0.042, y: 0.015, z: 0.03, r: 0.013, iris: 0x7a4218, dir: 0.9 });
   // legs: the thighs hidden in the coat, thick grey shanks, three toes, a long claw on the inner one
