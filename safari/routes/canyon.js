@@ -464,8 +464,8 @@ export const ROUTE = {
       // clear view of the road)
       spawn('himalayan-griffon', runStand, { mode: 'roost', yaw: 1.9 });
       spawn('himalayan-griffon', P3(-125, -61), { mode: 'roost', yaw: 1.3 });
-      spawn('himalayan-griffon', P3(-185, -102.5), { mode: 'roost', yaw: 2.0 });
-      spawn('himalayan-griffon', P3(-170, -98.5), { mode: 'roost', yaw: 1.7 });
+      spawn('himalayan-griffon', P3(-185, lipD(-185)), { mode: 'roost', yaw: 2.0 });
+      spawn('himalayan-griffon', P3(-170, lipD(-170)), { mode: 'roost', yaw: 1.7 });
       spawn('himalayan-griffon', P3(-200, -98.5), { mode: 'roost', yaw: 1.2 });
     }
     spawn('fallow-deer', P3(-176, -150)); spawn('fallow-deer', P3(-120, -146)); spawn('fallow-deer', P3(-30, -128)); spawn('fallow-deer', P3(20, -132));

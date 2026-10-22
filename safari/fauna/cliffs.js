@@ -431,7 +431,7 @@ export function buildGriffon(K, home, opts = {}) {
   const mode = opts.mode || 'soar';
   const brown = K.mat(0x2c2119, { roughness: 0.85 }), ruffM = K.mat(0xd8c7a6, { roughness: 1 }), skin = K.mat(0xd8cdbd, { roughness: 0.75 });
   const beakM = K.sheen(0xcdbf9c, { roughness: 0.35 }), legM = K.mat(0x8b867f, { roughness: 0.8 });
-  const feather = two(K, 0x211813), cov = two(K, 0xb59870, { roughness: 0.9 }), thighM = K.mat(0x3a2b20, { roughness: 0.95 });
+  const feather = two(K, 0x211813), cov = two(K, 0xb59870, { roughness: 0.9 });
   const lum = K.glow(0x8ff2d4, 0.9, { side: THREE.DoubleSide });
   const lumBase = lum.emissiveIntensity;
 
@@ -456,8 +456,8 @@ export function buildGriffon(K, home, opts = {}) {
   K.mesh(K.capsule(0.045, 0.16, 3, 8), skin, [0, 0.07, 0.04], neck, [-0.5, 0, 0]);
   const head = K.group([0, 0.16, 0.1], neck);
   K.mesh(K.sphere(0.07, 12, 9), skin, [0, 0, 0], head, null, [0.9, 0.9, 1.2]);
-  K.mesh(K.sphere(0.05, 10, 6), K.mat(0xc2b6a4, { roughness: 0.8 }), [0, -0.02, 0.05], head, null, [1, 0.85, 1.1]);   // cheeks
-  K.mesh(K.sphere(0.03, 8, 6), K.mat(0x6d6258), [0, 0.012, 0.085], head, null, [0.9, 0.6, 0.8]);   // the cere
+  K.mesh(K.sphere(0.05, 10, 6), skin, [0, -0.02, 0.05], head, null, [1, 0.85, 1.1]);              // cheeks
+  K.mesh(K.sphere(0.03, 8, 6), legM, [0, 0.012, 0.085], head, null, [0.9, 0.6, 0.8]);               // the grey cere
   hookBeak(K, head, beakM, [0, 0, 0.08], 0.1, 0.05);
   const eyes = eyePair(K, head, { x: 0.042, y: 0.022, z: 0.03, r: 0.014, iris: 0x7a4e26, dir: 0.85 });
   // long broad wings with fingered tips, pale coverts on top; a short dark wedge of a tail
@@ -468,7 +468,7 @@ export function buildGriffon(K, home, opts = {}) {
   // legs: dark feathered thighs, grey scaly shanks, long toes
   const legs = [-1, 1].map((s) => {
     const g = K.group([s * 0.08, 0.36, 0.02], near);
-    K.mesh(K.sphere(0.07, 8, 6), thighM, [0, 0.02, 0], g, null, [0.9, 1.3, 1.1]);
+    K.mesh(K.sphere(0.07, 8, 6), brown, [0, 0.02, 0], g, null, [0.9, 1.3, 1.1]);
     K.mesh(K.capsule(0.022, 0.22, 3, 6), legM, [0, -0.2, 0.01], g);
     for (const a of [-0.5, 0, 0.5, PI]) K.mesh(K.capsule(0.014, 0.07, 2, 5), legM, [Math.sin(a) * 0.05, -0.345, Math.cos(a) * 0.05], g, [PI / 2, a, 0]);
     return g;
@@ -632,7 +632,7 @@ export function buildGriffon(K, home, opts = {}) {
     c.pose(c, dt, env);
     c.root.updateMatrixWorld();
   };
-  return K.lod(c, near, far, 60);
+  return K.lod(c, near, far, 42);
 }
 
 // ---------------------------------------------------------------- crested caracara
