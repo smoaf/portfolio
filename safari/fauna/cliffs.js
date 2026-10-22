@@ -23,6 +23,7 @@ export const SPECIES = {
   'crested-caracara': { id: 'crested-caracara', name: 'Crested caracara', points: 150, call: { hz: 720, kind: 'noise' } },
   'markhor': { id: 'markhor', name: 'Markhor', points: 210, call: { hz: 330, kind: 'noise' } },
   'fallow-deer': { id: 'fallow-deer', name: 'Fallow deer', points: 140, call: { hz: 120, kind: 'hoot' } },
+  'himalayan-griffon': { id: 'himalayan-griffon', name: 'Himalayan griffon', points: 190, call: { hz: 240, kind: 'noise' } },
 };
 
 // ---------------------------------------------------------------- feathers, wings, tails, eyes
@@ -39,7 +40,7 @@ function plume(K, parent, mat, p, yaw, w, len, slim = false, tilt = 0) {
 }
 
 // A wing on side s (+1 = the bird's left, +x). W: { at, arm, hand, chord, bone, sec, prim, primLen, primW,
-// mats: { wing, cov, prim, tip, edge } }. The arm carries the secondaries and their coverts, the hand
+// mats: { wing, cov, prim, tip, edge, shaft } }. The arm carries the secondaries and their coverts, the hand
 // the fingered primaries; both are groups so a beat bends at the wrist.
 function wing(K, body, s, W) {
   const M = W.mats;
@@ -53,6 +54,10 @@ function wing(K, body, s, W) {
     plume(K, arm, M.wing, [x, -0.004, W.bone * 0.4], yaw, (W.arm / ns) * 1.8, len);
     if (M.edge) plume(K, arm, M.edge, [x - Math.sin(yaw) * len * 0.8, 0.003, W.bone * 0.4 - Math.cos(yaw) * len * 0.8], yaw, (W.arm / ns) * 1.5, len * 0.2);
     plume(K, arm, M.cov, [s * (u - 0.04) * W.arm, W.bone * 0.35, W.bone * 0.5], yaw * 0.6, (W.arm / ns) * 2, len * 0.5);
+    if (M.shaft) {                                         // a glowing shaft under each feather, a line along each covert
+      plume(K, arm, M.shaft, [x, -0.007, W.bone * 0.4], yaw, (W.arm / ns) * 0.2, len * 0.86, true);
+      plume(K, arm, M.shaft, [s * (u - 0.04) * W.arm, W.bone * 0.35 + 0.003, W.bone * 0.5], yaw * 0.6, (W.arm / ns) * 0.24, len * 0.46, true);
+    }
   }
   const hand = K.group([s * W.arm, 0, 0], arm);
   hand.rotation.order = 'YXZ';
@@ -64,6 +69,7 @@ function wing(K, body, s, W) {
     const len = W.primLen * (0.8 + 0.32 * Math.sin(u * PI * 0.8));
     plume(K, hand, M.prim, [x, -0.003 * i, z], yaw, W.primW, len, true);
     if (M.tip) plume(K, hand, M.tip, [x - Math.sin(yaw) * len * 0.74, 0.004 - 0.003 * i, z - Math.cos(yaw) * len * 0.74], yaw, W.primW * 0.8, len * 0.27, true);
+    if (M.shaft) plume(K, hand, M.shaft, [x, -0.006 - 0.003 * i, z], yaw, W.primW * 0.16, len * 0.9, true);
   }
   for (let i = 0; i < 3; i++) plume(K, hand, M.cov, [s * W.hand * (0.06 + 0.2 * i), W.bone * 0.3, W.bone * 0.5], -s * 0.15 * i, W.hand * 0.32, W.chord * 0.5);
   return { arm, hand, s };
@@ -406,6 +412,227 @@ export function buildHarpyEagle(K, home, opts = {}) {
     c.root.updateMatrixWorld();
   };
   return K.lod(c, near, far, 45);
+}
+
+// ---------------------------------------------------------------- himalayan griffon (the vultures)
+
+// A big griffon vulture, ~2.9 m across: dark brown-black flight feathers, pale tan coverts, a pale
+// fluffy ruff round the neck, a bare pale head with a hooked beak. The twist: the feather shafts and
+// a few spots in the ruff glow faintly (strong after dark). opts.mode says what it does:
+//   'run'    stands on the rim (opts.edge: the lip in front of it); when the van comes near (once it is
+//            past opts.from) it runs a few steps to the edge, drops off, circles over opts.thermal and
+//            rises on it
+//   'pass'   circles over its home; once the van reaches opts.at it comes in and passes the lens at
+//            about 4 m (opts.side: +1 = on the van's right), then circles out again
+//   'soar'   circles over its home (opts.radius), rising and sinking a little
+//   'roost'  sits on a ledge (the night): watches the van, stretches its wings when it is close
+const GRIFFON_UP = 0.55;                                   // the body's centre above the feet
+export function buildGriffon(K, home, opts = {}) {
+  const mode = opts.mode || 'soar';
+  const brown = K.mat(0x2c2119, { roughness: 0.85 }), ruffM = K.mat(0xd8c7a6, { roughness: 1 }), skin = K.mat(0xd8cdbd, { roughness: 0.75 });
+  const beakM = K.sheen(0xcdbf9c, { roughness: 0.35 }), legM = K.mat(0x8b867f, { roughness: 0.8 });
+  const feather = two(K, 0x211813), cov = two(K, 0xb59870, { roughness: 0.9 });
+  const lum = K.glow(0x8ff2d4, 0.9, { side: THREE.DoubleSide });
+  const lumBase = lum.emissiveIntensity;
+
+  const root = K.group();
+  const near = K.group(null, root), far = K.group(null, root);
+  const body = K.group([0, GRIFFON_UP, 0], near);
+  // body (+z along the spine): a broad dark barrel, a deep chest, streaky tan underparts
+  K.mesh(K.sphere(0.2, 14, 10), brown, [0, 0.02, 0.02], body, null, [1.08, 0.95, 1.9]);
+  K.mesh(K.sphere(0.17, 12, 8), brown, [0, -0.05, 0.2], body, null, [1.05, 1.0, 1.1]);
+  K.mesh(K.sphere(0.15, 10, 8), cov, [0, -0.1, 0.08], body, null, [0.85, 0.6, 1.6]);
+  // the ruff: a collar of pale down where the neck leaves the body, a few spots of it glowing
+  for (let i = 0; i < 16; i++) {                             // uneven tufts, fuller at the nape than under the throat
+    const a = (i / 16) * PI * 2, up = Math.sin(a), k = 0.75 + 0.25 * up + 0.15 * Math.sin(i * 2.7);
+    K.mesh(K.sphere(0.045, 7, 5), ruffM, [Math.cos(a) * 0.105, 0.05 + up * 0.085, 0.31 - 0.02 * up], body, [0.4 * up, 0, a], [k, k * 0.8, 1.5 * k]);
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * PI * 2 + 0.3;
+    K.mesh(K.sphere(0.018, 6, 4), lum, [Math.cos(a) * 0.135, 0.05 + Math.sin(a) * 0.11, 0.33], body);
+  }
+  // the long neck, bare and pale with a little down, and the small bare head
+  const neck = K.group([0, 0.07, 0.36], body);
+  K.mesh(K.capsule(0.045, 0.16, 3, 8), skin, [0, 0.07, 0.04], neck, [-0.5, 0, 0]);
+  const head = K.group([0, 0.16, 0.1], neck);
+  K.mesh(K.sphere(0.07, 12, 9), skin, [0, 0, 0], head, null, [0.9, 0.9, 1.2]);
+  K.mesh(K.sphere(0.05, 10, 6), skin, [0, -0.02, 0.05], head, null, [1, 0.85, 1.1]);              // cheeks
+  K.mesh(K.sphere(0.03, 8, 6), legM, [0, 0.012, 0.085], head, null, [0.9, 0.6, 0.8]);               // the grey cere
+  hookBeak(K, head, beakM, [0, 0, 0.08], 0.1, 0.05);
+  const eyes = eyePair(K, head, { x: 0.042, y: 0.022, z: 0.03, r: 0.014, iris: 0x7a4e26, dir: 0.85 });
+  // long broad wings with fingered tips, pale coverts on top; a short dark wedge of a tail
+  const WS = { at: [0.15, 0.1, 0.2], arm: 0.6, hand: 0.66, chord: 0.46, bone: 0.04, sec: 8, prim: 7, primLen: 0.52, primW: 0.095,
+    mats: { wing: feather, cov, prim: feather, shaft: lum } };
+  const wings = [wing(K, body, -1, WS), wing(K, body, 1, WS)];
+  const tail = fanTail(K, body, [0, 0.02, -0.32], 10, 0.32, 0.085, 0.5, feather, null);
+  // legs: dark feathered thighs, grey scaly shanks, long toes
+  const legs = [-1, 1].map((s) => {
+    const g = K.group([s * 0.08, 0.36, 0.02], near);
+    K.mesh(K.sphere(0.07, 8, 6), brown, [0, 0.02, 0], g, null, [0.9, 1.3, 1.1]);
+    K.mesh(K.capsule(0.022, 0.22, 3, 6), legM, [0, -0.2, 0.01], g);
+    for (const a of [-0.5, 0, 0.5, PI]) K.mesh(K.capsule(0.014, 0.07, 2, 5), legM, [Math.sin(a) * 0.05, -0.345, Math.cos(a) * 0.05], g, [PI / 2, a, 0]);
+    return g;
+  });
+  const shade = K.shadow(root, 0.45);
+  const R = { body, wings, tail, P: birdState({ fold: mode === 'run' || mode === 'roost' ? 1 : 0, pitch: -0.45, legs: 0 }) };
+
+  // far: barrel, ruff, head and one wing slab that folds in on the ground
+  const fb = K.group([0, GRIFFON_UP, 0], far);
+  K.mesh(K.sphere(0.2, 8, 6), brown, [0, 0.02, 0.02], fb, null, [1.08, 0.95, 1.9]);
+  K.mesh(K.sphere(0.13, 8, 6), ruffM, [0, 0.06, 0.34], fb);
+  K.mesh(K.sphere(0.07, 6, 5), skin, [0, 0.22, 0.48], fb);
+  const fw = K.group([0, 0.08, 0.12], fb);
+  K.mesh(K.box(2.8, 0.03, 0.5), feather, [0, 0, -0.1], fw);
+  K.mesh(K.box(1.4, 0.032, 0.22), cov, [0, 0.003, 0.02], fw);
+
+  K.place(root, home);
+  root.rotation.y = opts.yaw ?? root.rotation.y;
+  const T = {};
+  // the flight: a circle about (cx, cz) at height y (all of the body's centre), turning `spin` way round
+  const fly = { a: Math.random() * PI * 2, r: opts.radius ?? 20, cx: home.x, cz: home.z, y: home.y, ty: home.y, rise: 1.1, quick: -Infinity,
+    tcx: home.x, tcz: home.z, tr: opts.radius ?? 20, spin: opts.spin ?? 1, v: 9, yr: 0, climb: 0 };
+  const m = { ph: mode === 'run' || mode === 'roost' ? 'perch' : 'soar', t: 9, stretched: false, run: 0 };
+  const van = { prev: null, vel: new THREE.Vector3(), f: 0, r: 0, u: 0, f0: 0, r0: 0, u0: 0 };
+  const vF = new THREE.Vector3(), vR = new THREE.Vector3(), dir = new THREE.Vector3();
+  if (mode === 'run' && opts.edge) dir.subVectors(opts.edge, home).setY(0).normalize();
+
+  const c = K.makeCreature({
+    species: SPECIES['himalayan-griffon'], root, home, flyer: true, radius: 0.75, eye: new THREE.Vector3(0, GRIFFON_UP + 0.2, 0.42),
+    fleeAt: 9, curiousAt: 34, shy: 0.4,
+    onState(c, s) { if (s === 'rare' && c._env && c._env.call) c._env.call(c, 'rare'); },
+    pose(c, dt, env) {
+      const ph = m.ph;
+      if (ph === 'perch') {
+        const rare = c.state === 'rare' ? ease(c.t / 0.8) * ease((c.hold - c.t) / 0.8) : 0;     // the wings spread to the sides, held, folded
+        Object.assign(T, { fold: 1 - rare, mantle: rare * 0.6, amp: 0, rate: 0, dihedral: 0.05 * rare, sweep: 0, pitch: -0.45 + 0.15 * rare, bank: 0, legs: 0, fan: 1 + 0.3 * rare, tailUp: 0 });
+      } else if (ph === 'run') {
+        const k = clamp(m.t / 1.6, 0, 1);                  // the wings open as it runs, and start to beat
+        Object.assign(T, { fold: 0.6 * (1 - k), mantle: 0, amp: 0.55 * k, rate: 7, dihedral: 0.1, sweep: -0.1, pitch: -0.15, bank: 0, legs: 0, fan: 1.2, tailUp: 0.05 });
+      } else if (ph === 'drop') {
+        Object.assign(T, { fold: 0, mantle: 0, amp: m.t > 0.9 ? 0.5 : 0.1, rate: 5, dihedral: 0.05, sweep: 0.15, pitch: 0.35, bank: 0, legs: 1.2, fan: 1.4, tailUp: 0.1 });
+      } else {
+        const burst = Math.sin(env.t * 0.33 + c.bob) > 0.8 || ph === 'pass';
+        Object.assign(T, { fold: 0, mantle: 0, amp: burst ? 0.32 : 0.02, rate: burst ? 3.2 : 1, dihedral: 0.13, sweep: 0.04,
+          pitch: clamp(-fly.climb * 0.05, -0.25, 0.25), bank: clamp(-fly.yr * 1.6, -0.6, 0.6), legs: 1.3, fan: 1.05, tailUp: 0 });
+        if (ph === 'pass') { T.dihedral = 0.08; T.bank = clamp(-fly.yr * 1.2, -0.35, 0.35); }
+      }
+      birdPose(R, dt, T, ph === 'perch' ? 2.5 : 3.5);
+      neck.rotation.x = -R.body.rotation.x * (ph === 'perch' ? 0.5 : 0.2) + (ph === 'perch' ? -0.1 : 0.3);   // the head held up on the ground, the neck drawn in aloft
+      K.look(c, head, env, dt, { yaw: 1.3, pitch: 0.5, rate: 2.5, force: ph === 'perch' && (c.state === 'curious' || c.near < 40) });
+      K.blink(c, [eyes], dt);
+      const breathe = 1 + Math.sin(env.t * 1.4 + c.bob) * 0.015;
+      body.scale.set(breathe, breathe, 1);
+      // legs: still on the ground, striding on the run, tucked back in the air
+      const grounded = ph === 'perch' || ph === 'run' || (ph === 'drop' && m.t < 0.5);    // aloft the feet lie hidden under the tail
+      for (let i = 0; i < 2; i++) { legs[i].rotation.x = ph === 'run' ? Math.sin(m.run + i * PI) * 0.55 : R.P.legs; legs[i].visible = grounded; }
+      shade.visible = ph === 'perch' || ph === 'run';
+      lum.emissiveIntensity = lumBase * (0.88 + 0.12 * Math.sin(env.t * 0.9 + c.bob));
+      fb.rotation.x = R.body.rotation.x; fb.rotation.z = R.body.rotation.z;
+      fw.scale.x = 0.25 + 0.75 * (1 - R.P.fold);
+      fw.rotation.z = Math.sin(R.P.phase) * R.P.amp * 0.5;
+    },
+  });
+
+  // into the circle from where it is now, flying the way it faces (so the path doesn't jump)
+  const toCircle = (r, tcx, tcz, ty, rise, quick = -Infinity) => {
+    const p = c.root.position, h = c.root.rotation.y, hx = Math.sin(h), hz = Math.cos(h);
+    vA.set(tcx - p.x, 0, tcz - p.z);
+    fly.spin = hx * vA.z - hz * vA.x > 0 ? -1 : 1;        // turn towards the new centre
+    fly.a = Math.atan2(-hx * fly.spin, hz * fly.spin);
+    fly.r = r; fly.tr = r; fly.cx = p.x - Math.cos(fly.a) * r; fly.cz = p.z - Math.sin(fly.a) * r;
+    fly.y = p.y + GRIFFON_UP; fly.tcx = tcx; fly.tcz = tcz; fly.ty = ty; fly.rise = rise; fly.quick = quick;
+    m.ph = 'soar'; m.t = 0;
+  };
+  const face = (dt, k = 4) => {
+    vB.subVectors(c.root.position, vC);
+    fly.climb = damp(fly.climb, vB.y / Math.max(dt, 1e-3), 2.5, dt);
+    if (Math.hypot(vB.x, vB.z) > 1e-4) {
+      const d = wrap(Math.atan2(vB.x, vB.z) - c.root.rotation.y) * Math.min(1, dt * k);
+      c.root.rotation.y += d;
+      fly.yr = damp(fly.yr, d / Math.max(dt, 1e-3), 2, dt);
+    }
+  };
+
+  c.step = (dt, env) => {
+    c._env = env; c.t += dt; m.t += dt;
+    const p = c.root.position;
+    vC.copy(p);
+    // the van's heading, from how the lens moved (the pass is laid out in the van's own frame)
+    if (van.prev && dt > 0) { vA.subVectors(env.camPos, van.prev).divideScalar(dt); if (vA.length() < 40) van.vel.lerp(vA, Math.min(1, dt * 4)); }
+    van.prev = (van.prev || new THREE.Vector3()).copy(env.camPos);
+
+    if (m.ph === 'perch') {
+      const st = c.state, d = env.dist;
+      if (mode === 'run' && env.u > (opts.from ?? 0) && (d < (opts.near ?? 52) || env.u > (opts.at ?? 1))) { m.ph = 'run'; m.t = 0; c.go('rare', 6); }
+      else if (st === 'idle' || st === 'wander' || st === 'eat') {
+        if (d < c.curiousAt && c.t > 0.6 && Math.random() < dt * 0.9) c.go('curious', 3 + Math.random() * 3);
+        else if (st !== 'idle') c.go('idle', 2);
+      } else if (st === 'curious') {
+        if (d < 16 && !m.stretched) { m.stretched = true; c.go('rare', 3.4); }
+        else if (c.t > c.hold) c.go('idle', 2 + Math.random() * 2);
+      } else if (st === 'rare' && c.t > c.hold) c.go('idle', 3);
+      if (d > 60) m.stretched = false;
+    } else if (m.ph === 'run') {
+      // a few long hopping strides to the lip, then off it
+      m.run += dt * 9;
+      const left = vA.subVectors(opts.edge, p).setY(0).length();
+      const step = Math.min(left, (1.6 + 2.2 * clamp(m.t / 1.4, 0, 1)) * dt);
+      p.addScaledVector(dir, step);
+      p.y = K.groundY(p.x, p.z) + Math.abs(Math.sin(m.run)) * 0.08;
+      c.root.rotation.y += wrap(Math.atan2(dir.x, dir.z) - c.root.rotation.y) * Math.min(1, dt * 6);
+      if (left < 0.05) { m.ph = 'drop'; m.t = 0; m.y0 = p.y; }
+    } else if (m.ph === 'drop') {
+      // falls away below the lip on open wings, gathers speed, levels out
+      p.addScaledVector(dir, (5 + 3 * Math.min(1, m.t)) * dt);
+      p.y = m.y0 - 3 * ease(m.t / 1.4);
+      face(dt);
+      if (m.t > 1.4) {
+        const th = opts.thermal;
+        toCircle(15, th.x, th.z, th.y, 1.0, m.y0 + GRIFFON_UP + 7);
+        c.go('idle', 20);
+      }
+    } else if (m.ph === 'pass') {
+      // in the van's frame: forward f, sideways r, up u of the body's centre from the lens
+      vF.copy(van.vel).setY(0);
+      if (vF.lengthSq() < 0.01) vF.set(-Math.sin(c.root.rotation.y), 0, -Math.cos(c.root.rotation.y));
+      vF.normalize(); vR.set(-vF.z, 0, vF.x);
+      const vs = Math.max(0, van.vel.dot(vF));
+      van.f -= (opts.speed ?? 11) * dt + vs * dt;           // the bird's own speed plus the van's: it meets the van
+      const k = ease(1 - (van.f - 6) / Math.max(1, van.f0 - 6));
+      const side = (opts.side ?? 1) * 3.4, up = 2.1;            // 4.0 m from the lens at the closest
+      van.r = THREE.MathUtils.lerp(van.r0, side, k); van.u = THREE.MathUtils.lerp(van.u0, up, k);
+      p.copy(env.camPos).addScaledVector(vF, van.f).addScaledVector(vR, van.r);
+      p.y += van.u - GRIFFON_UP;
+      face(dt, 8);
+      if (van.f < -22) {                                   // past: out over the drop and up again
+        c.go('idle', 20);
+        toCircle(18, p.x + vR.x * Math.sign(side) * 30, p.z + vR.z * Math.sign(side) * 30, p.y + GRIFFON_UP + 18, 1.2);
+      }
+    } else {
+      if (mode === 'pass' && !m.passed && env.u > opts.at) {
+        vF.copy(van.vel).setY(0);
+        if (vF.lengthSq() > 0.01) {
+          vF.normalize(); vR.set(-vF.z, 0, vF.x);
+          vA.subVectors(p, env.camPos); vA.y += GRIFFON_UP;
+          van.f0 = van.f = vA.dot(vF); van.r0 = van.r = vA.dot(vR); van.u0 = van.u = vA.y;
+          if (van.f > 20) { m.passed = true; m.ph = 'pass'; m.t = 0; c.go('rare', 30); }
+        }
+      }
+      if (m.ph === 'soar') {
+        // the circle drifts to its centre, the bird rises (or sinks) on the air there
+        fly.cx = damp(fly.cx, fly.tcx, 0.35, dt); fly.cz = damp(fly.cz, fly.tcz, 0.35, dt);
+        fly.r = damp(fly.r, fly.tr, 0.3, dt);
+        const rise = fly.y < fly.quick ? fly.rise * 3 : fly.rise;   // out of the dip below the lip quickly, then slow
+        fly.y += clamp(fly.ty - fly.y, -rise * dt, rise * dt);
+        fly.a += dt * fly.spin * fly.v / Math.max(fly.r, 8);
+        p.set(fly.cx + Math.cos(fly.a) * fly.r, fly.y - GRIFFON_UP + Math.sin(fly.a * 1.3 + c.bob) * 1.2 * ease(m.t / 4), fly.cz + Math.sin(fly.a) * fly.r);
+        face(dt, 3);
+      }
+    }
+    c.pose(c, dt, env);
+    c.root.updateMatrixWorld();
+  };
+  return K.lod(c, near, far, 42);
 }
 
 // ---------------------------------------------------------------- crested caracara
@@ -863,6 +1090,7 @@ export function buildFallowDeer(K, home, opts = {}) {
 
 export const BUILDERS = {
   'argentavis-giant-bird': buildArgentavis,
+  'himalayan-griffon': buildGriffon,
   'harpy-eagle': buildHarpyEagle,
   'crested-caracara': buildCaracaraFlock,
   'crested-caracara-perched': buildCaracaraPerched,
