@@ -24,6 +24,9 @@ export const SPECIES = {
   'markhor': { id: 'markhor', name: 'Markhor', points: 210, call: { hz: 330, kind: 'noise' } },
   'fallow-deer': { id: 'fallow-deer', name: 'Fallow deer', points: 140, call: { hz: 120, kind: 'hoot' } },
   'himalayan-griffon': { id: 'himalayan-griffon', name: 'Himalayan griffon', points: 190, call: { hz: 240, kind: 'noise' } },
+  'crowned-eagle': { id: 'crowned-eagle', name: 'Crowned eagle', points: 220, call: { hz: 1400, kind: 'trill' } },
+  'secretary-bird': { id: 'secretary-bird', name: 'Secretary bird', points: 200, call: { hz: 300, kind: 'noise' } },
+  'cassowary': { id: 'cassowary', name: 'Cassowary', points: 210, call: { hz: 90, kind: 'hoot' } },
 };
 
 // ---------------------------------------------------------------- feathers, wings, tails, eyes
@@ -635,6 +638,346 @@ export function buildGriffon(K, home, opts = {}) {
   return K.lod(c, near, far, 42);
 }
 
+// ---------------------------------------------------------------- the acacia on the rim (crowned eagle, secretary bird, cassowary)
+
+// the glow the acacia's birds share with the griffons: faint teal by day, clearly lit after dark
+const lumOf = (K) => K.glow(0x8ff2d4, 0.9, { side: THREE.DoubleSide });
+// a feather standing in its own plane (seen from the side), unit size, pointing up (+y) from its base
+function blade(K, parent, mat, p, w, len, slim = true) {
+  return K.mesh(K.shape(slim ? 'cl-quill' : 'cl-feather', slim ? QUILL : FEATHER), mat, p, parent, [0, PI / 2, 0], [w, len, 1]);
+}
+// lay the meshes of g's child groups straight into g, keeping where they are, so the bake can merge
+// them into a few draw calls (a fan of feathers that only ever moves as one)
+function flatten(g) {
+  for (const ch of [...g.children]) {
+    if (ch.isMesh) continue;
+    ch.updateMatrix();
+    for (const m of [...ch.children]) { m.updateMatrix(); m.matrix.premultiply(ch.matrix); m.matrix.decompose(m.position, m.quaternion, m.scale); g.add(m); }
+    g.remove(ch);
+  }
+  return g;
+}
+
+// A young crowned eagle on a bare branch of the acacia: a grey-brown head with a crest of dark-tipped
+// feathers, a cream breast mottled with brown, barred wings and tail, a yellow-orange cere, pale eyes,
+// legs feathered down to big yellow feet. The twist: glowing feather shafts and crest tips. It never
+// leaves the branch: it watches the van come and, as the van passes close, spreads its wings wide
+// and raises the crest (the rare behaviour), then folds them again.
+export function buildCrownedEagle(K, home, opts = {}) {
+  const back = K.mat(0x4a3e35, { roughness: 0.85 }), cream = K.mat(0xe4d8c4, { roughness: 0.95 });
+  const spotM = K.mat(0x6e5341, { roughness: 0.9, emissive: 0x8ff2d4, emissiveIntensity: K.glowLevel * 0.3 });   // the breast drops glow after dark
+  const headM = K.mat(0x8c8177, { roughness: 0.9 }), cereM = K.mat(0xe2a13a, { roughness: 0.5 }), beakM = K.sheen(0x2b2724, { roughness: 0.3 });
+  const yellow = K.mat(0xe4b03c, { roughness: 0.55 });
+  const feather = two(K, 0x3d322b), cov = two(K, 0x6c5a4a, { roughness: 0.9 }), bar = two(K, 0x1d1815);
+  const crestM = two(K, 0x6a5e53, { roughness: 0.9 }), crestTip = two(K, 0x1c1815);
+  const lum = lumOf(K);
+
+  const root = K.group();
+  const near = K.group(null, root), far = K.group(null, root);
+  const body = K.group([0, 0.3, 0], near);
+  // body (+z along the spine): a grey-brown back, the cream breast and belly spotted with brown
+  K.mesh(K.sphere(0.2, 14, 10), back, [0, 0.03, 0.18], body, null, [1.0, 0.92, 1.5]);
+  K.mesh(K.sphere(0.18, 12, 9), cream, [0, -0.07, 0.15], body, null, [0.95, 0.85, 1.45]);
+  for (let i = 0; i < 18; i++) {                            // the mottling: rows of brown drops down the breast
+    const a = (((i * 7) % 9) / 8 - 0.5) * 1.7, b = -0.55 + (i / 17) * 1.35;
+    const r = [0.171, 0.153, 0.261];
+    K.mesh(K.sphere(0.02, 6, 4), spotM, [Math.sin(a) * Math.cos(b) * r[0] * 0.98, -0.07 - Math.cos(a) * Math.cos(b) * r[1] * 0.98, 0.15 + Math.sin(b) * r[2] * 0.98], body, [b, 0, a], [1, 0.45, 1.5]);
+  }
+  for (const s of [-1, 1]) K.mesh(K.sphere(0.08, 10, 7), cream, [s * 0.08, -0.12, 0.03], body, null, [0.9, 1.1, 1.5]);   // feathered thighs
+  const neck = K.group([0, 0.06, 0.42], body);
+  const head = K.group([0, 0.09, 0.0], neck);
+  // the head: grey-brown and a little paler on the face, the crest at the back, the hooked beak with
+  // its yellow-orange base, pale grey eyes looking ahead
+  K.mesh(K.capsule(0.085, 0.1, 3, 8), headM, [0, -0.08, -0.02], head);
+  K.mesh(K.sphere(0.115, 14, 10), headM, [0, 0.02, 0], head, null, [0.95, 0.95, 1.05]);
+  K.mesh(K.sphere(0.09, 12, 8), cream, [0, -0.03, 0.05], head, null, [0.95, 0.8, 0.8]);
+  K.mesh(K.sphere(0.03, 8, 6), cereM, [0, 0.012, 0.105], head, null, [1.15, 0.85, 1]);
+  hookBeak(K, head, beakM, [0, 0.0, 0.11], 0.095, 0.055);
+  const eyes = eyePair(K, head, { x: 0.05, y: 0.035, z: 0.085, r: 0.019, iris: 0xd4d6cf, dir: 0.32 });
+  // the crest: dark-tipped feathers in a fan at the back of the head, laid back at rest, up when it is excited
+  const crest = K.group([0, 0.08, -0.06], head);
+  for (let i = 0; i < 7; i++) {
+    const u = i / 6 - 0.5, g = K.group([u * 0.07, 0, -Math.abs(u) * 0.02], crest, [0, 0, -u * 0.7]);
+    const len = 0.15 - Math.abs(u) * 0.06;
+    blade(K, g, crestM, [0, 0, 0], 0.065, len, false);
+    blade(K, g, crestTip, [0.001, len * 0.6, 0], 0.06, len * 0.42, false);
+    blade(K, g, lum, [0.002, len * 0.72, 0], 0.014, len * 0.3);
+  }
+  flatten(crest);
+  // broad rounded barred wings with glowing shafts, a long tail with dark bars, feathered legs, yellow feet
+  const WS = { at: [0.16, 0.12, 0.36], arm: 0.44, hand: 0.5, chord: 0.36, bone: 0.035, sec: 6, prim: 6, primLen: 0.4, primW: 0.075,
+    mats: { wing: feather, cov, prim: feather, tip: bar, shaft: lum, edge: lum } };
+  const wings = [wing(K, body, -1, WS), wing(K, body, 1, WS)];
+  const tail = fanTail(K, body, [0, 0.0, -0.14], 7, 0.42, 0.1, 0.36, cov, bar, [0.3, 0.55, 0.8], 0.09);
+  const legs = K.group([0, 0.22, 0.03], near);                // it never lifts a foot off the branch: one still group
+  for (const s of [-1, 1]) {
+    K.mesh(K.capsule(0.035, 0.12, 3, 7), cream, [s * 0.075, -0.1, 0], legs);
+    for (const a of [-0.45, 0, 0.45, PI]) K.mesh(K.capsule(0.016, 0.065, 2, 5), yellow, [s * 0.075 + Math.sin(a) * 0.045, -0.2, Math.cos(a) * 0.045], legs, [PI / 2, a, 0]);
+  }
+  const R = { body, wings, tail, P: birdState({ fold: 1, pitch: -1.0, legs: 0 }) };
+
+  // far: body, breast, head, and the wings as one slab that folds in on the branch
+  const fb = K.group([0, 0.3, 0], far);
+  K.mesh(K.sphere(0.2, 8, 6), back, [0, 0.03, 0.18], fb, null, [1, 0.92, 1.55]);
+  K.mesh(K.sphere(0.17, 8, 6), cream, [0, -0.07, 0.15], fb, null, [0.95, 0.85, 1.4]);
+  K.mesh(K.sphere(0.13, 8, 6), headM, [0, 0.12, 0.48], fb);
+  const fw = K.group([0, 0.06, 0.25], fb);
+  K.mesh(K.box(1.9, 0.03, 0.42), feather, [0, 0, -0.18], fw);
+
+  K.place(root, home);
+  root.rotation.y = opts.yaw ?? root.rotation.y;
+  const T = {};
+  const m = { spread: false };
+  const c = K.makeCreature({
+    species: SPECIES['crowned-eagle'], root, home, flyer: true, radius: 0.6, eye: new THREE.Vector3(0, 0.95, 0.12), yaw: root.rotation.y,
+    fleeAt: 0, curiousAt: 40, shy: 0.4,
+    onState(c, s) { if (s === 'rare' && c._env && c._env.call) c._env.call(c, 'rare'); },
+    pose(c, dt, env) {
+      const st = c.state;
+      // the wings open out and up, are held there with a slow beat or two, and fold again
+      const open = st === 'rare' ? ease(c.t / 0.7) * ease((c.hold - c.t) / 0.9) : 0;
+      // now and then it puffs up and shakes its feathers
+      const ruffle = Math.pow(Math.max(0, Math.sin(env.t * 0.31 + c.bob * 3)), 12);
+      Object.assign(T, { fold: 1 - open, mantle: 0.15 * open, amp: 0.12 * open, rate: 2.6, dihedral: 0.38 * open, sweep: -0.15 * open,
+        pitch: -1.0 + 0.2 * open, bank: 0, legs: 0, fan: 1 + 0.5 * open + 0.2 * ruffle, tailUp: 0.08 * open });
+      birdPose(R, dt, T, 3);
+      neck.rotation.x = -R.body.rotation.x * 0.92;
+      const raise = Math.max(open, st === 'curious' || c.near < 30 ? 0.55 : 0.1, ruffle);
+      crest.rotation.x = damp(crest.rotation.x, THREE.MathUtils.lerp(-1.25, -0.2, raise), 4, dt);
+      K.look(c, head, env, dt, { yaw: 1.6, pitch: 0.55, rate: 3, force: st === 'curious' || st === 'rare' || c.near < 45 });
+      K.blink(c, [eyes], dt);
+      const breathe = 1 + Math.sin(env.t * 1.6 + c.bob) * 0.015 + 0.06 * ruffle;
+      body.scale.set(breathe, breathe, 1 + 0.03 * ruffle);
+      fb.rotation.x = R.body.rotation.x;
+      fw.scale.x = 0.22 + 0.78 * (1 - R.P.fold);
+    },
+  });
+  // it never walks and never flies off: it watches, and spreads its wings once when the van is close
+  c.step = (dt, env) => {
+    c._env = env; c.t += dt;
+    const st = c.state, d = env.dist;
+    if (st !== 'rare' && !m.spread && d < (opts.spreadAt ?? 22)) { m.spread = true; c.go('rare', 4.6); }
+    else if (st === 'rare') { if (c.t > c.hold) c.go('idle', 3); }
+    else if (st === 'idle') { if (d < c.curiousAt && c.t > 0.6 && Math.random() < dt * 0.8) c.go('curious', 3 + Math.random() * 3); }
+    else if (st === 'curious') { if (c.t > c.hold) c.go('idle', 2 + Math.random() * 2); }
+    else c.go('idle', 2);
+    if (d > 60) m.spread = false;
+    c.pose(c, dt, env);
+    c.root.updateMatrixWorld();
+  };
+  return K.lod(c, near, far, 45);
+}
+
+// A secretary bird standing high in the acacia: pale grey, black flight feathers and black "trousers",
+// a long crest of dark quills at the nape, a bare orange face, a grey hooked beak, very long pale legs
+// and two long tail streamers. The twist: the quill tips and the wing shafts glow. It stands, turns its
+// head, bobs its crest and ruffles its feathers; when the van is close it raises the crest.
+export function buildSecretaryBird(K, home, opts = {}) {
+  const grey = K.mat(0xb7bab8, { roughness: 0.92 }), pale = K.mat(0xd6d8d4, { roughness: 0.95 }), black = K.mat(0x171514, { roughness: 0.8 });
+  const faceM = K.mat(0xf2862a, { roughness: 0.6 }), beakM = K.sheen(0x7d7873, { roughness: 0.35 }), legM = K.mat(0xd4a07e, { roughness: 0.7 });
+  const feather = two(K, 0x1a1817), cov = two(K, 0xa9aca9, { roughness: 0.92 }), quillM = two(K, 0x201d1b, { roughness: 0.85 });
+  const lum = lumOf(K);
+  const HIP = 0.72;
+
+  const root = K.group();
+  const near = K.group(null, root), far = K.group(null, root);
+  const body = K.group([0, HIP, 0], near);
+  // body (+z along the spine): a slim pale grey barrel, paler at the throat
+  K.mesh(K.sphere(0.16, 14, 10), grey, [0, 0.02, 0.04], body, null, [1.0, 0.95, 1.75]);
+  K.mesh(K.sphere(0.12, 12, 8), pale, [0, -0.02, 0.24], body, null, [0.95, 1.0, 0.9]);
+  const neck = K.group([0, 0.06, 0.3], body);
+  K.mesh(K.capsule(0.045, 0.15, 3, 8), pale, [0, 0.08, 0.025], neck, [0.35, 0, 0]);
+  const head = K.group([0, 0.18, 0.06], neck);
+  // the head: small, grey, an orange bare face round the eyes, a short hooked grey beak
+  K.mesh(K.sphere(0.068, 12, 9), grey, [0, 0, 0], head, null, [0.9, 0.95, 1.15]);
+  for (const s of [-1, 1]) K.mesh(K.sphere(0.036, 10, 7), faceM, [s * 0.042, 0.006, 0.032], head, null, [0.32, 0.75, 1.15]);
+  hookBeak(K, head, beakM, [0, -0.005, 0.07], 0.075, 0.042);
+  const eyes = eyePair(K, head, { x: 0.052, y: 0.01, z: 0.03, r: 0.014, iris: 0x5a3a1c, dir: 0.95 });
+  // the crest: long dark quills from the back of the head, in two fans (left, right) that bob apart
+  const quills = [-1, 1].map((s, j) => {
+    const fan = K.group([s * 0.012, 0.035, -0.035], head);
+    for (let k = 0; k < 5; k++) {
+      const g = K.group([s * 0.006 * k, -0.012 * k, -0.008 * k], fan, [-0.09 * k, 0, s * (0.18 + 0.12 * k)]);
+      const len = 0.2 + 0.035 * Math.sin((2 * k + j) * 1.7) + (k < 2 ? 0.04 : 0);
+      blade(K, g, quillM, [0, 0, 0], 0.03, len);
+      K.mesh(K.shape('cl-quill', QUILL), quillM, [0, 0, 0], g, null, [0.022, len, 1]);    // crossed, so it reads from the front too
+      blade(K, g, lum, [0.002, len * 0.72, 0], 0.016, len * 0.28);
+    }
+    return { g: flatten(fan), rest: 1.65, ph: j * 2.3 };
+  });
+  // wings: folded on the flanks, black primaries and a grey forewing; the tail: grey with a black band,
+  // and two long streamers from its middle
+  const WS = { at: [0.12, 0.06, 0.16], arm: 0.38, hand: 0.42, chord: 0.3, bone: 0.03, sec: 6, prim: 6, primLen: 0.36, primW: 0.07,
+    mats: { wing: feather, cov, prim: feather, shaft: lum, edge: lum } };
+  const wings = [wing(K, body, -1, WS), wing(K, body, 1, WS)];
+  const tail = fanTail(K, body, [0, 0.01, -0.22], 8, 0.36, 0.075, 0.4, cov, feather, [0.7], 0.25);
+  for (const s of [-1, 1]) {                                // the streamers ride on the tail (same feathers, no extra draws)
+    plume(K, tail, cov, [s * 0.012, 0.004, 0], s * 0.03, 0.055, 0.78, true);
+    plume(K, tail, feather, [s * 0.012 - s * 0.03 * 0.6, 0.007, -0.6], s * 0.03, 0.05, 0.18, true);
+  }
+  // legs: black feathered thighs, then the long bare shanks and short toes
+  const legs = K.group([0, HIP - 0.06, 0.02], near);         // it stands still on its branch: one still group
+  for (const s of [-1, 1]) {
+    K.mesh(K.capsule(0.038, 0.12, 3, 7), black, [s * 0.06, -0.02, 0], legs);
+    K.mesh(K.capsule(0.015, 0.5, 3, 6), legM, [s * 0.06, -0.38, 0], legs);
+    for (const a of [-0.5, 0, 0.5, PI]) K.mesh(K.capsule(0.01, 0.06, 2, 5), legM, [s * 0.06 + Math.sin(a) * 0.04, -HIP + 0.075, Math.cos(a) * 0.04], legs, [PI / 2, a, 0]);
+  }
+  const R = { body, wings, tail, P: birdState({ fold: 1, pitch: -0.3, legs: 0 }) };
+
+  // far: body, head with its crest, legs as two sticks
+  const fb = K.group([0, HIP, 0], far);
+  K.mesh(K.sphere(0.16, 8, 6), grey, [0, 0.02, 0.04], fb, null, [1.0, 0.95, 1.8]);
+  K.mesh(K.box(0.05, 0.03, 0.75), feather, [0, 0, -0.55], fb);
+  K.mesh(K.sphere(0.07, 6, 5), grey, [0, 0.3, 0.42], fb);
+  K.mesh(K.box(0.02, 0.1, 0.22), quillM, [0, 0.33, 0.3], fb, [0.6, 0, 0]);
+  for (const s of [-1, 1]) K.mesh(K.box(0.025, HIP, 0.025), legM, [s * 0.06, HIP / 2, 0.02], far);
+
+  K.place(root, home);
+  root.rotation.y = opts.yaw ?? root.rotation.y;
+  const T = {};
+  const c = K.makeCreature({
+    species: SPECIES['secretary-bird'], root, home, flyer: true, radius: 0.7, eye: new THREE.Vector3(0, HIP + 0.32, 0.38), yaw: root.rotation.y,
+    fleeAt: 0, curiousAt: 34, shy: 0.5,
+    onState(c, s) { if (s === 'rare' && c._env && c._env.call) c._env.call(c, 'rare'); },
+    pose(c, dt, env) {
+      const st = c.state;
+      // the rare one: a long stretch, wings half open and the crest fanned right up
+      const show = st === 'rare' ? ease(c.t / 0.8) * ease((c.hold - c.t) / 0.8) : 0;
+      const ruffle = Math.pow(Math.max(0, Math.sin(env.t * 0.27 + c.bob * 2)), 12);
+      Object.assign(T, { fold: 1 - 0.7 * show, mantle: 0.35 * show, amp: 0.08 * show, rate: 2, dihedral: 0.2 * show, sweep: 0, pitch: -0.3 + 0.1 * show,
+        bank: 0, legs: 0, fan: 1 + 0.25 * ruffle + 0.4 * show, tailUp: 0.05 * ruffle });
+      birdPose(R, dt, T, 3);
+      neck.rotation.x = -R.body.rotation.x * 0.6 - 0.1 * show;
+      K.look(c, head, env, dt, { yaw: 1.4, pitch: 0.5, rate: 2.5, force: st === 'curious' || c.near < 28 });
+      K.blink(c, [eyes], dt);
+      // the quills bob each on its own beat with the head's moves, and rise when it is alert
+      const alert = Math.max(show, st === 'curious' || c.near < 26 ? 0.5 : 0, ruffle * 0.6);
+      for (const q of quills) {
+        const want = -(q.rest - 0.75 * alert) + Math.sin(env.t * 2.1 + q.ph) * 0.08 + head.rotation.y * 0.15;
+        q.g.rotation.x = damp(q.g.rotation.x, want, 5, dt);
+      }
+      const breathe = 1 + Math.sin(env.t * 1.5 + c.bob) * 0.015 + 0.07 * ruffle;
+      body.scale.set(breathe, breathe, 1);
+      fb.rotation.x = R.body.rotation.x;
+    },
+  });
+  // it stands on its branch: watches, raises the crest, and now and then stretches (the rare one)
+  c.step = (dt, env) => {
+    c._env = env; c.t += dt;
+    const st = c.state, d = env.dist;
+    if (st === 'idle') {
+      if (d < c.curiousAt && c.t > 0.6 && Math.random() < dt * 0.7) c.go('curious', 3 + Math.random() * 3);
+      else if (c.t > c.hold && Math.random() < dt * 0.05) c.go('rare', 4);
+    } else if (st === 'curious') { if (c.t > c.hold) c.go(Math.random() < 0.35 ? 'rare' : 'idle', 4 + Math.random() * 2); }
+    else if (st === 'rare') { if (c.t > c.hold) c.go('idle', 4 + Math.random() * 3); }
+    else c.go('idle', 2);
+    c.pose(c, dt, env);
+    c.root.updateMatrixWorld();
+  };
+  return K.lod(c, near, far, 42);
+}
+
+// A cassowary at the foot of the acacia: a heavy body under a coat of glossy black hair-like plumage,
+// a tall dark casque, a bright blue bare neck and face with red-pink wattles, thick grey legs with a
+// dagger claw on the inner toe. The twist: a few points along the casque and lines down the neck
+// glow. It walks a few steps about the tree, pecks at the ground, looks the van over; fed, it stretches
+// up, fluffs its coat and booms (the rare one). After dark its bare blue skin glows softly too.
+export function buildCassowary(K, home, opts = {}) {
+  const coat = K.sheen(0x141214, { roughness: 0.45 }), coatDull = K.mat(0x1d1a1c, { roughness: 0.8 });
+  const blue = K.mat(0x2f7fd8, { roughness: 0.5, emissive: 0x3f9fff, emissiveIntensity: K.glowLevel * 0.22 }), deep = K.mat(0x3a3f9a, { roughness: 0.55 }), red = K.sheen(0xc8304a, { roughness: 0.35 });
+  const casqueM = K.sheen(0x7a5c3c, { roughness: 0.35 }), beakM = K.sheen(0x1b1a1a, { roughness: 0.3 });
+  const legM = K.mat(0x8e8a6c, { roughness: 0.75 }), clawM = K.sheen(0x161412, { roughness: 0.3 });
+  const lum = lumOf(K);
+  const HIP = 0.95;
+
+  const root = K.group();
+  const near = K.group(null, root), far = K.group(null, root);
+  const body = K.group([0, HIP + 0.1, 0], near);
+  // the body: a rounded hump, and the coat hanging off it in long glossy strands
+  K.mesh(K.sphere(0.34, 16, 12), coatDull, [0, 0.05, 0], body, null, [0.85, 0.85, 1.25]);
+  for (let i = 0; i < 48; i++) {
+    const a = PI * (0.12 + 0.76 * ((i * 0.618) % 1)), z = -0.36 + 0.66 * ((i * 0.381 + 0.13) % 1);
+    const s = i % 2 ? 1 : -1, ry = Math.sqrt(Math.max(0, 1 - (z / 0.42) ** 2));
+    const x = s * Math.sin(a) * 0.29 * ry, y = 0.05 + Math.cos(a) * 0.29 * ry;
+    const len = 0.32 + 0.16 * ((i * 0.733) % 1);
+    // each strand hangs from the coat, down and back, the lower ones longest; every fourth glows at its tip
+    K.mesh(K.cone(0.05, 1, 5), coat, [x, y - len * 0.45, z - len * 0.18], body, [PI + 0.35, 0, s * (0.12 + 0.25 * Math.sin(a))], [1, len, 0.7]);
+    if (i % 5 === 0) { const rz = s * (0.12 + 0.25 * Math.sin(a)), k = Math.cos(rz) * len * 0.42; K.mesh(K.sphere(0.011, 5, 4), lum, [x - Math.sin(rz) * len * 0.42, y - len * 0.45 - 0.94 * k, z - len * 0.18 - 0.34 * k], body); }
+  }
+  for (let i = 0; i < 9; i++) {                              // the rump hangs over the tail end like a mop
+    const a = (i / 8 - 0.5) * 2.2;
+    K.mesh(K.cone(0.06, 1, 5), coat, [Math.sin(a) * 0.2, 0.05 + Math.cos(a) * 0.12, -0.42], body, [PI + 0.7, 0, a * 0.4], [1, 0.42, 0.7]);
+  }
+  // the neck: deep blue-violet at the back, bright blue at the front, the wattles and a red nape
+  const neck = K.group([0, 0.18, 0.36], body);
+  K.mesh(K.capsule(0.058, 0.26, 3, 8), blue, [0, 0.17, 0.035], neck, [0.2, 0, 0]);
+  K.mesh(K.capsule(0.056, 0.22, 3, 8), deep, [0, 0.16, 0.0], neck, [0.2, 0, 0], [1.03, 1, 0.9]);
+  K.mesh(K.sphere(0.05, 10, 8), red, [0, 0.2, -0.035], neck, null, [1.1, 1.1, 0.7]);
+  for (const s of [-1, 1]) K.mesh(K.sphere(0.026, 10, 8), red, [s * 0.022, 0.12, 0.085], neck, [0.15, 0, 0], [0.75, 1.8, 0.75]);
+  for (const s of [-1, 1]) K.mesh(K.capsule(0.009, 0.2, 2, 4), lum, [s * 0.05, 0.17, 0.045], neck, [0.2, 0, 0]);
+  const head = K.group([0, 0.37, 0.08], neck);
+  // the head: blue, a black beak, dark eyes, and the casque standing up on top of it
+  K.mesh(K.sphere(0.068, 12, 9), blue, [0, 0, 0], head, null, [0.85, 0.85, 1.25]);
+  K.mesh(K.cone(0.032, 0.13, 7), beakM, [0, -0.012, 0.11], head, [PI / 2, 0, 0], [1, 1, 0.75]);
+  const casque = K.group([0, 0.05, -0.005], head, [-0.25, 0, 0]);
+  K.mesh(K.sphere(0.075, 12, 10), casqueM, [0, 0.08, 0], casque, null, [0.38, 1.35, 1.15]);
+  for (let i = 0; i < 4; i++) {                             // glowing points up the casque's front edge
+    const u = i / 3, a = -0.6 + 1.6 * u;
+    K.mesh(K.sphere(0.013, 6, 4), lum, [0, 0.08 + Math.sin(a) * 0.095, Math.cos(a) * 0.08], casque);
+  }
+  const eyes = eyePair(K, head, { x: 0.042, y: 0.015, z: 0.03, r: 0.013, iris: 0x7a4218, dir: 0.9 });
+  // legs: the thighs hidden in the coat, thick grey shanks, three toes, a long claw on the inner one
+  const legs = [-1, 1].map((s) => {
+    const g = K.group([s * 0.13, HIP, 0.04], near);
+    K.mesh(K.capsule(0.075, 0.2, 3, 7), coatDull, [0, -0.12, 0], g);
+    K.mesh(K.capsule(0.042, 0.48, 3, 7), legM, [0, -0.62, 0.02], g);
+    for (const a of [-0.38, 0, 0.38]) K.mesh(K.capsule(0.022, 0.13, 2, 5), legM, [Math.sin(a) * 0.08, -HIP + 0.022, 0.03 + Math.cos(a) * 0.08], g, [PI / 2, a, 0]);
+    K.mesh(K.cone(0.016, 0.12, 5), clawM, [-s * Math.sin(0.38) * 0.17, -HIP + 0.022, 0.03 + Math.cos(0.38) * 0.17], g, [PI / 2, -s * 0.38, 0]);
+    return g;
+  });
+  K.shadow(root, 0.45, 0.6);
+
+  // far: the body, the neck and head with its casque, the legs
+  K.mesh(K.sphere(0.34, 8, 6), coat, [0, HIP + 0.1, 0], far, null, [0.9, 0.95, 1.3]);
+  K.mesh(K.capsule(0.07, 0.4, 2, 6), blue, [0, HIP + 0.5, 0.42], far, [0.2, 0, 0]);
+  K.mesh(K.box(0.04, 0.16, 0.14), casqueM, [0, HIP + 0.85, 0.48], far);
+  for (const s of [-1, 1]) K.mesh(K.capsule(0.045, 0.7, 2, 5), legM, [s * 0.13, 0.45, 0.04], far);
+
+  K.place(root, home);
+  let prevX = home.x, prevZ = home.z, sp = 0, stride = 0, peck = 0;
+  const c = K.makeCreature({
+    species: SPECIES['cassowary'], root, home, ground: K.groundY, radius: 0.8, eye: new THREE.Vector3(0, HIP + 0.7, 0.45),
+    speed: 0.7, roam: opts.roam ?? 3, fleeAt: 2.5, curiousAt: 26, shy: 0.3, rareChance: 0.6, keep: opts.keep,
+    onState(c, s) { if (s === 'rare' && c._env && c._env.call) c._env.call(c, 'rare'); },
+    pose(c, dt, env) {
+      c._env = env;
+      const p = c.root.position, st = c.state;
+      sp = damp(sp, Math.hypot(p.x - prevX, p.z - prevZ) / Math.max(dt, 1e-3), 6, dt);
+      prevX = p.x; prevZ = p.z;
+      // the walk: slow heavy strides, the body rolling a little from foot to foot
+      const walk = clamp(sp / 0.6, 0, 1);
+      stride += dt * (1.5 + sp * 3.2) * (walk > 0.05 ? 1 : 0);
+      legs[0].rotation.x = Math.sin(stride) * 0.42 * walk; legs[1].rotation.x = -Math.sin(stride) * 0.42 * walk;
+      body.position.y = HIP + 0.1 + Math.abs(Math.cos(stride)) * 0.03 * walk;
+      body.rotation.z = Math.sin(stride) * 0.04 * walk;
+      // pecking: in bouts while it stands about, and at the feed
+      const pecking = (st === 'idle' && Math.sin(env.t * 0.45 + c.bob) > 0.35) || (st === 'eat' && sp < 0.15);
+      peck = damp(peck, pecking ? 1 : 0, 3, dt);
+      const boom = st === 'rare' ? ease(c.t / 0.8) * ease((c.hold - c.t) / 0.8) : 0;
+      const jab = peck > 0.6 ? Math.max(0, Math.sin(env.t * 5 + c.bob)) * 0.35 : 0;
+      neck.rotation.x = damp(neck.rotation.x, peck * 2.1 + jab - boom * 0.35, 5, dt);
+      body.rotation.x = damp(body.rotation.x, peck * 0.3 - boom * 0.1, 3, dt);
+      if (peck > 0.5) { head.rotation.x = damp(head.rotation.x, 1.3 - neck.rotation.x, 4, dt); head.rotation.y = damp(head.rotation.y, 0, 4, dt); }
+      else K.look(c, head, env, dt, { yaw: 1.1, pitch: 0.4, rate: 2.5, force: st === 'curious' || st === 'rare' });
+      K.blink(c, [eyes], dt);
+      // the boom: the coat fluffs out and the body throbs
+      const br = 1 + Math.sin(env.t * 1.3 + c.bob) * 0.012 + boom * (0.08 + 0.04 * Math.sin(c.t * 9));
+      body.scale.set(br, br, 1 + boom * 0.04);
+    },
+  });
+  return K.lod(c, near, far, 45);
+}
+
 // ---------------------------------------------------------------- crested caracara
 
 // One caracara body. lite = a flock bird: no neck or leg joints, legs tucked, head fixed.
@@ -1091,6 +1434,9 @@ export function buildFallowDeer(K, home, opts = {}) {
 export const BUILDERS = {
   'argentavis-giant-bird': buildArgentavis,
   'himalayan-griffon': buildGriffon,
+  'crowned-eagle': buildCrownedEagle,
+  'secretary-bird': buildSecretaryBird,
+  'cassowary': buildCassowary,
   'harpy-eagle': buildHarpyEagle,
   'crested-caracara': buildCaracaraFlock,
   'crested-caracara-perched': buildCaracaraPerched,
