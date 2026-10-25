@@ -100,19 +100,19 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       sayEl.classList.add('on');
       clearTimeout(sayTimer); sayTimer = setTimeout(() => sayEl.classList.remove('on'), 1400);
     },
-    // the print slides out of the camera and stacks up at the bottom right; only the last few stay
+    // the print slides out of the camera at the bottom right, stays 2 s and slides away to the right;
+    // each print keeps its own 2 s, so a fast burst stacks a few for a moment (only the last few stay)
     addShot(shot) {
       const card = el('div', 'sf-shot');
       card.appendChild(copyThumb(shot.thumb));
       card.appendChild(el('div', 'sf-cap', `<span>${shot.best ? shot.best.species.name : 'Empty'}</span><b>${shot.points}</b>`));
       shotsEl.appendChild(card);
       requestAnimationFrame(() => card.classList.add('in'));
+      const leave = (c) => { if (c.classList.contains('out')) return; c.classList.add('out'); setTimeout(() => c.remove(), 460); };
+      setTimeout(() => leave(card), 2000);
       while (shotsEl.children.length > 6) shotsEl.firstChild.remove();
-      if (shotsEl.children.length > 3) {
-        const old = shotsEl.firstChild;
-        old.classList.add('out');
-        setTimeout(() => old.remove(), 420);
-      }
+      const live = [...shotsEl.children].filter((c) => !c.classList.contains('out'));
+      if (live.length > 3) leave(live[0]);
     },
     // the name of a stretch of the route, when the van rolls into it
     title(big, small) {

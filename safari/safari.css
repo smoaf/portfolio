@@ -74,10 +74,16 @@
 .sf-shot { background: #f6f2ea; color: #1d1b18; padding: 6px 6px 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
   transform: translateX(120%); opacity: 0; transition: transform .45s cubic-bezier(.2,.7,.2,1), opacity .45s; }
 .sf-shot.in { transform: none; opacity: 1; }
-.sf-shot.out { opacity: 0; transform: translateY(-6px); }
+.sf-shot.out { opacity: 0; transform: translateX(120%); }
 .sf-shot canvas, .sf-shot img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
 .sf-shot .sf-cap { display: flex; justify-content: space-between; gap: 6px; margin-top: 5px; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; }
 .sf-shot .sf-cap b { color: #1d1b18; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* on a computer the prints are half as big again */
+@media (hover: hover) and (pointer: fine) and (min-width: 561px) {
+  .sf-feed { width: 198px; gap: 12px; }
+  .sf-shot { padding: 9px 9px 12px; }
+  .sf-shot .sf-cap { margin-top: 7.5px; font-size: 14px; gap: 9px; }
+}
 
 /* flash, and the word that comes up when a shot lands */
 .sf-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
