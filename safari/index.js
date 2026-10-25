@@ -11,7 +11,7 @@
 //
 // A route module (safari/routes/*.js) brings the terrain, the creatures and the palette; the engine
 // brings the camera, the scoring, the sound and the HUD. A route with water (`under`, `dive`) also
-// gets the submersible: the hatches, the lamps, the tinted fog and the muffled sound.
+// gets the submersible: the lamps, the tinted fog and the muffled sound.
 import * as THREE from 'three';
 import { makeRig, FOV } from './rig.js';
 import { createHud } from './hud.js';
@@ -107,7 +107,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     torch.position.set(0, 0, 0); torch.target.position.set(0, 0, -30);
     rig.camera.add(torch, torch.target);
   }
-  // the submersible's lamps: off until the hatches close, then a wide pair that follows the lens
+  // the submersible's lamps: off until the dive begins, then a wide pair that follows the lens
   const lamps = [];
   if (world.dive) {
     [-0.7, 0.7].forEach((x) => {
@@ -345,8 +345,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     renderer.setSize(host.clientWidth, host.clientHeight, false);
   }
 
-  // ---- the medium and the stretches of the route. The dive is announced a moment before the van
-  // touches the water, so the hatches are shut by the time the surface closes over the lens.
+  // ---- the medium and the stretches of the route. The dive begins a moment before the van
+  // touches the water, so the lamps are on by the time the surface closes over the lens.
   function stepMedium(dt) {
     const u = rig.progress;
     if (world.dive) {
@@ -354,7 +354,6 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       const inside = u > u0 - 0.012 && u < u1;
       if (inside !== S.diving) {
         S.diving = inside;
-        hud.dive(inside);
         audio.call({ x: 0, y: -1, z: 0, hz: inside ? 180 : 260, kind: 'noise', vol: 0.5 });
       }
       lamps.forEach((l) => { l.intensity += ((S.diving ? 70 : 0) - l.intensity) * Math.min(1, dt * 3); });
