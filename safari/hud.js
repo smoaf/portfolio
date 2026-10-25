@@ -93,6 +93,11 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     setZoom(fov, wide) { zoomEl.textContent = (wide / fov).toFixed(1) + '×'; },
     setMuted(on_) { muteEl.setAttribute('aria-pressed', String(on_)); muteEl.textContent = on_ ? 'Muted' : 'Sound'; },
     progress(u) { railEl.style.width = Math.round(u * 100) + '%'; },
+    // is this point inside the frame the corner marks draw (the reticle)?
+    inFrame(x, y) {
+      const a = root.querySelector('.sf-corner.tl').getBoundingClientRect(), b = root.querySelector('.sf-corner.br').getBoundingClientRect();
+      return x >= a.left && x <= b.right && y >= a.top && y <= b.bottom;
+    },
     flash() { flashEl.classList.remove('on'); void flashEl.offsetWidth; flashEl.classList.add('on'); },
     say(big, small) {
       sayEl.innerHTML = `<b>${big}</b>${small || ''}`;

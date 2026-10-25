@@ -436,20 +436,22 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   const el = hud.root;
   const pointers = new Map();
   let downAt = null, pinch = 0, fov0 = 0, moved = 0;
-  // with a mouse the aim follows the cursor, no button needed, and a click is the shutter; touch and
-  // pen keep drag to look, tap to shoot, pinch to zoom
+  // with a mouse the aim follows the cursor, no button needed, and a click inside the frame is the
+  // shutter (outside it the cursor shows and a click does nothing); touch and pen keep drag to look,
+  // tap to shoot, pinch to zoom
   const aim = (ev) => rig.aim((ev.clientX / Math.max(1, el.clientWidth)) * 2 - 1, (ev.clientY / Math.max(1, el.clientHeight)) * 2 - 1);
+  const cursor = (ev) => el.classList.toggle('sf-outside', !hud.inFrame(ev.clientX, ev.clientY));
   el.addEventListener('pointerdown', (ev) => {
     if (S.over) return;
     audio.start();
-    if (ev.pointerType === 'mouse') { aim(ev); if (ev.button === 0) shoot(); return; }
+    if (ev.pointerType === 'mouse') { aim(ev); cursor(ev); if (ev.button === 0 && hud.inFrame(ev.clientX, ev.clientY)) shoot(); return; }
     pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     el.setPointerCapture(ev.pointerId);
     if (pointers.size === 1) { downAt = { x: ev.clientX, y: ev.clientY, t: performance.now() }; moved = 0; }
     if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); fov0 = rig.state.fov; }
   }, sig);
   el.addEventListener('pointermove', (ev) => {
-    if (ev.pointerType === 'mouse') { if (!S.over) aim(ev); return; }
+    if (ev.pointerType === 'mouse') { if (!S.over) aim(ev); cursor(ev); return; }
     if (!pointers.has(ev.pointerId)) return;
     const prev = pointers.get(ev.pointerId);
     if (pointers.size === 1) {

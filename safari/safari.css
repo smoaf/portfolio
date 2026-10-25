@@ -173,6 +173,22 @@
 .sf-hint.on { opacity: 1; transform: translate(-50%, 0); }
 .safari.reporting .sf-hint { display: none; }
 
+/* on a computer: the frame sits about 10% further in on every side, the cursor shows outside it,
+   and the film count is twice the size */
+.safari.sf-outside { cursor: default; }
+@media (hover: hover) and (pointer: fine) {
+  .sf-corner.tl { top: 9.2%; left: 10.4%; }
+  .sf-corner.tr { top: 9.2%; right: 10.4%; }
+  .sf-corner.bl { bottom: 15.2%; left: 10.4%; }
+  .sf-corner.br { bottom: 15.2%; right: 10.4%; }
+  .sf-rail { left: calc(10.4% + 40px); right: calc(10.4% + 40px); bottom: 15.2%; }
+  .sf-read { bottom: calc(15.2% - 28px); }
+  .sf-read-l { left: 10.4%; bottom: calc(15.2% - 44px); }
+  .sf-read-r { right: 10.4%; }
+  #sf-film { font-size: 24px; }
+  #sf-film::before { width: 22px; height: 16px; margin-right: 14px; border-width: 2px; border-left-width: 6px; border-right-width: 6px; }
+}
+
 @media (max-width: 560px) {
   .sf-corner { width: 22px; height: 22px; }
   .sf-rail { left: calc(6% + 30px); right: calc(6% + 30px); }
