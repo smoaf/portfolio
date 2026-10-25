@@ -1,6 +1,6 @@
 // The photo album in the van: a travel scrapbook. 2–3 photos per page, stuck on with strips of tape,
 // laid out from the manifest (assets/album/index.json). Positions and turns vary per page but are
-// seeded by the page number, so a page always looks the same.
+// seeded by the page's place in the book, so a page always looks the same.
 //   - the open book is the largest the photos ever get: no lightbox, no zoom
 //   - sharpness: a photo is never shown larger than its own pixels (CSS size x devicePixelRatio <= w, h);
 //     on big screens the book stops growing instead
@@ -89,6 +89,8 @@ export function openAlbum(root, manifest, { onClose } = {}) {
   let pwMax = Infinity;
   layouts.forEach((L) => L.forEach((ph) => { pwMax = Math.min(pwMax, ph.p.w / (ph.w * dpr), ph.p.h / (ph.h * dpr)); }));
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // a phone (touch, small screen either way round) always shows one page at a time
+  const phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) <= 600;
   let spread = true, at = 0, busy = false, pw = 300;
   root.innerHTML = `<div class="album-stage"><div class="album-book" aria-live="polite"></div></div>
     <div class="album-bar"><button class="album-prev" aria-label="Previous page">‹</button><span class="album-count"></span><button class="album-next" aria-label="Next page">›</button></div>`;
@@ -131,8 +133,6 @@ export function openAlbum(root, manifest, { onClose } = {}) {
       d.append(t, tp);
       el.appendChild(d);
     });
-    const no = document.createElement('span'); no.className = 'album-no'; no.textContent = i + 1;
-    el.appendChild(no);
     return el;
   }
   function preload(v) {                       // warm the browser cache for the next view only
@@ -146,11 +146,12 @@ export function openAlbum(root, manifest, { onClose } = {}) {
     const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 70;
     const availW = r.width - 32, availH = r.height - top - 96;
     const first = at * perView();
-    spread = availW / availH > 1.15;
+    spread = !phone && availW / availH > 1.15;
     at = Math.floor(first / perView());
     pw = Math.max(120, Math.min(spread ? availW / 2 : availW, availH / PAGE_H, pwMax));
     book.style.setProperty('--pw', pw + 'px');
     book.classList.toggle('single', !spread);
+    book.classList.toggle('phone', phone);
   }
   function render() {
     book.querySelectorAll('.album-sheet, .album-flip').forEach((e) => e.remove());
@@ -224,6 +225,6 @@ export function openAlbum(root, manifest, { onClose } = {}) {
       setTimeout(() => { if (!root.classList.contains('open')) { root.hidden = true; root.innerHTML = ''; } }, 300);
       onClose && onClose();
     },
-    state: () => ({ at, spread, pw, pwMax, dpr, views: views() }),
+    state: () => ({ at, spread, phone, pw, pwMax, dpr, views: views() }),
   };
 }
