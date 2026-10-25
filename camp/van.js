@@ -11,6 +11,7 @@
 // ground at z = 0, the body floor at z = 0.95. The page places the group on the van in the model.
 import * as THREE from 'three';
 import { summary } from '../safari/fieldlog.js';
+import { localBoard } from '../safari/leaderboard.js';
 
 // `ready` says whether the route has its terrain yet; the screen shows COMING SOON for the others.
 export const ROUTES = [
@@ -434,7 +435,7 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
   root.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
 
   // --- the start menu on the screen: amber monospace text on a dark CRT, a slight glow and scanlines
-  const UI = { state: 'home', hover: null, items: [], blink: true, route: null, log: [] };
+  const UI = { state: 'home', hover: null, items: [], blink: true, route: null, log: [], board: [] };
   const TOD = { dawn: 'DAWN', day: 'DAY', dusk: 'DUSK', night: 'NIGHT' };
   function draw() {
     const W = canvas.width, H = canvas.height, g = ctx;
@@ -471,21 +472,45 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
       ROUTES.forEach((r, i) => item(r.id, '> ' + r.name, 250 + i * 118, 46, r.line));
       item('back', '< BACK', 600, 38);
     } else if (UI.state === 'log') {
-      // the checklist: one row of cells per route (a lit cell per species photographed), the
-      // count, and the secret animals named once found, else only when they come out
+      // the checklist: one column per route, a row of cells (a lit cell per species photographed), the
+      // count, the secret animals named once found, else only when they come out; below, the route's
+      // top 10 runs (read only), 1–5 and 6–10 side by side
       text('FIELD LOG · SPECIES PHOTOGRAPHED', 72, 150, 32, dim, 600);
+      const colW = (W - 144 - 48) / 2;
+      const right = (s, x, y, size, col) => { g.font = `600 ${size}px "IBM Plex Mono", ui-monospace, Menlo, monospace`; return text(s, x - g.measureText(s).width, y, size, col); };
+      const wrap = (s, x, y, size, maxW, lines) => {      // at most `lines` lines, the last one cut with …
+        g.font = `500 ${size}px "IBM Plex Mono", ui-monospace, Menlo, monospace`;
+        const words = s.split(' '), out = [];
+        let cur = '';
+        words.forEach((w) => { const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > maxW && cur) { out.push(cur); cur = w; } else cur = t; });
+        if (cur) out.push(cur);
+        if (out.length > lines) { out.length = lines; out[lines - 1] += ' …'; }
+        out.forEach((l, k) => text(l, x, y + k * (size + 6), size, dim, 500));
+      };
       ROUTES.forEach((r, i) => {
-        const y = 230 + i * 160, L = UI.log[i];
-        text(r.name, 72, y, 44);
-        if (!L) { text('NOT SURVEYED YET. DRIVE IT ONCE.', 72, y + 58, 26, dim, 500); return; }
-        text(`${L.found}/${L.total}${L.rare ? ` · ${L.rare} RARE` : ''}`, 330, y, 32, L.found === L.total ? amber : dim, 600);
-        const x0 = 72, w = (W - 144) / Math.max(1, L.total);
-        for (let k = 0; k < L.total; k++) {
-          g.fillStyle = k < L.found ? amber : 'rgba(255, 189, 61, 0.16)';
-          g.fillRect(x0 + k * w + 2, y + 34, Math.max(2, w - 4), 16);
+        const x0 = 72 + i * (colW + 48), y = 215, L = UI.log[i], rows = UI.board[i] || [];
+        text(r.name, x0, y, 40);
+        if (!L) text('NOT SURVEYED YET. DRIVE IT ONCE.', x0, y + 50, 20, dim, 500);
+        else {
+          right(`${L.found}/${L.total}${L.rare ? ` · ${L.rare} RARE` : ''}`, x0 + colW, y, 26, L.found === L.total ? amber : dim);
+          const w = colW / Math.max(1, L.total);
+          for (let k = 0; k < L.total; k++) {
+            g.fillStyle = k < L.found ? amber : 'rgba(255, 189, 61, 0.16)';
+            g.fillRect(x0 + k * w + 1, y + 30, Math.max(2, w - 2), 14);
+          }
+          const sec = L.secrets.map((q) => (q.found ? q.name.toUpperCase() + ' *' : '??? AT ' + q.when)).join(' · ');
+          if (sec) wrap('SECRET: ' + sec, x0, y + 72, 20, colW, 2);
         }
-        const sec = L.secrets.map((q) => (q.found ? q.name.toUpperCase() + ' *' : '??? AT ' + q.when)).join(' · ');
-        if (sec) text('SECRET: ' + sec, 72, y + 82, 24, dim, 500);
+        text('BEST RUNS', x0, 370, 22, dim, 600);
+        g.fillStyle = 'rgba(255, 189, 61, 0.3)'; g.fillRect(x0, 388, colW, 2);
+        if (!rows.length) { text('NO RUNS YET', x0, 414, 22, dim, 500); return; }
+        const subW = (colW - 24) / 2;
+        rows.slice(0, 10).forEach((e, k) => {
+          const x = x0 + Math.floor(k / 5) * (subW + 24), ry = 414 + (k % 5) * 30;
+          right(`${k + 1}.`, x + 40, ry, 22, dim);
+          text(String(e.name), x + 52, ry, 22, amber, 600);
+          right(String(e.score), x + subW, ry, 22, amber);
+        });
       });
       item('back', '< BACK', 590, 38);
     } else if (UI.state === 'soon') {
@@ -512,7 +537,7 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
   function press(id) {
     if (!id) return false;
     if (id === 'start') UI.state = 'routes';
-    else if (id === 'log') { UI.state = 'log'; UI.log = ROUTES.map((r) => summary(r.id)); }
+    else if (id === 'log') { UI.state = 'log'; UI.log = ROUTES.map((r) => summary(r.id)); UI.board = ROUTES.map((r) => localBoard(r.id)); }
     else if (id === 'back') UI.state = UI.state === 'soon' ? 'routes' : 'home';
     else {
       const r = ROUTES.find((q) => q.id === id);
