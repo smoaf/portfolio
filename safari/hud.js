@@ -51,7 +51,6 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     <div class="sf-tools"><button id="sf-feed">${feedLabel(pellets)}</button></div>
     <div class="sf-feed" id="sf-shots" aria-live="polite"></div>
     <div class="sf-sea"></div>
-    <div class="sf-hatch" id="sf-hatch"><i></i><i></i><span id="sf-hatch-say"></span></div>
     <div class="sf-title" id="sf-title"></div>
     <div class="sf-say" id="sf-say"></div>
     <div class="sf-flash" id="sf-flash"></div>
@@ -64,7 +63,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
   const q = (id) => root.querySelector('#' + id);
   const filmEl = q('sf-film'), zoomEl = q('sf-zoom'), feedEl = q('sf-feed'), shotsEl = q('sf-shots'),
         sayEl = q('sf-say'), flashEl = q('sf-flash'), helpEl = q('sf-help'), railEl = q('sf-rail'),
-        muteEl = q('sf-mute'), hintEl = q('sf-hint'), exitEl = q('sf-exit'), clockEl = q('sf-clock'), titleEl = q('sf-title'), hatchEl = q('sf-hatch'), hatchSay = q('sf-hatch-say');
+        muteEl = q('sf-mute'), hintEl = q('sf-hint'), exitEl = q('sf-exit'), clockEl = q('sf-clock'), titleEl = q('sf-title');
 
   // buttons must never also take a photo, so they swallow the tap before the view sees it
   const stop = (e) => e.stopPropagation();
@@ -79,7 +78,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
   helpEl.textContent = touch ? 'Drag to look · tap to shoot · pinch to zoom' : 'Mouse to aim · click or Enter to shoot · wheel to zoom · space or F to feed';
   setTimeout(() => helpEl.classList.add('gone'), 7000);
 
-  let sayTimer = 0, titleTimer = 0, hatchTimer = 0, report = null, viewer = null;
+  let sayTimer = 0, titleTimer = 0, report = null, viewer = null;
   const keys = new AbortController();
   const api = {
     root,
@@ -120,13 +119,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       titleEl.classList.remove('on'); void titleEl.offsetWidth; titleEl.classList.add('on');
       clearTimeout(titleTimer); titleTimer = setTimeout(() => titleEl.classList.remove('on'), 3600);
     },
-    // the van becomes a submersible: the hatches close over the view, the lamps come on, and they
-    // open again on the other side. `under` tints the frame while the van is below the surface.
-    dive(on, words) {
-      hatchSay.textContent = words || (on ? 'Hatches closed · lamps on' : 'Surfacing · hatches open');
-      hatchEl.classList.remove('shut'); void hatchEl.offsetWidth; hatchEl.classList.add('shut');
-      clearTimeout(hatchTimer); hatchTimer = setTimeout(() => hatchEl.classList.remove('shut'), 2100);
-    },
+    // `under` tints the frame while the van is below the surface
     under(k) { root.style.setProperty('--under', k.toFixed(3)); root.classList.toggle('under', k > 0.02); },
     help(text) { helpEl.textContent = text; helpEl.classList.remove('gone'); setTimeout(() => helpEl.classList.add('gone'), 5000); },
     // how to zoom, on the first stretch where the lens needs it; it stays until the visitor zooms
@@ -289,7 +282,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     get reporting() { return !!report; },
     get reportShown() { return !!report && report.isConnected; },
     get viewing() { return !!viewer; },
-    dispose() { keys.abort(); clearTimeout(sayTimer); clearTimeout(titleTimer); clearTimeout(hatchTimer); root.remove(); },
+    dispose() { keys.abort(); clearTimeout(sayTimer); clearTimeout(titleTimer); root.remove(); },
   };
   api.setFilm(film, film);
   api.setPellets(pellets);
