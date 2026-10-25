@@ -159,9 +159,9 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         <div class="sf-grid" id="sf-picks"></div>
         <div class="sf-board">
           <div><h3>Your name for the board</h3>
-            <form class="sf-entry" id="sf-form"><input id="sf-name" maxlength="14" placeholder="Visitor" aria-label="Name for the leaderboard" autocomplete="off"><button type="submit" id="sf-save">Save</button></form>
+            <form class="sf-entry" id="sf-form"><input id="sf-name" maxlength="5" placeholder="NAME" aria-label="Name for the leaderboard, up to 5 letters" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="submit" id="sf-save">Save</button></form>
             <p class="sf-empty" id="sf-note" style="margin-top:10px">Scores stay in this browser for now.</p></div>
-          <div><h3>Best runs · ${r.name} · ${TOD[t] || 'Day'}</h3><ol class="sf-list" id="sf-list"></ol></div>
+          <div><h3>Best runs · ${r.name}</h3><ol class="sf-list" id="sf-list"></ol></div>
         </div>
         <div class="sf-done"><button id="sf-again">Drive it again</button><button id="sf-back">Back to the van</button></div>
       </div>`;
@@ -248,24 +248,39 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       const listEl = report.querySelector('#sf-list');
       const draw = (rows, mine) => {
         listEl.innerHTML = '';
-        if (!rows.length) { listEl.innerHTML = '<li><span class="sf-rank">–</span><span>No runs yet</span><span>0</span></li>'; return; }
-        rows.slice(0, 8).forEach((e, i) => {
+        if (!rows.length) { listEl.innerHTML = '<li class="sf-none">No runs yet</li>'; return; }
+        rows.slice(0, 10).forEach((e, i) => {
           const li = el('li', e === mine || (mine && e.at === mine.at) ? 'me' : '',
-            `<span class="sf-rank">${i + 1}</span><span>${esc(e.name)}</span><span>${esc(e.score)}</span>`);
+            `<span class="sf-rank">${i + 1}.</span><span>${esc(e.name)}</span><span class="sf-score">${esc(e.score)}</span>`);
           listEl.appendChild(li);
         });
       };
-      draw(await store.list(r.id, t), null);
-      const { lastName, rememberName } = await import('./leaderboard.js');
-      const nameEl = report.querySelector('#sf-name');
+      draw(await store.list(r.id), null);
+      const { lastName, rememberName, cleanName } = await import('./leaderboard.js');
+      const form = report.querySelector('#sf-form'), nameEl = report.querySelector('#sf-name'), saveEl = report.querySelector('#sf-save');
+      // only capitals A–Z, Ä, Ö, Ü, at most 5: a lowercase letter turns into its capital, any other key is not taken
+      const tidy = () => {
+        const v = nameEl.value, c = cleanName(v);
+        if (c !== v) {
+          const at = cleanName(v.slice(0, nameEl.selectionStart ?? v.length)).length;
+          nameEl.value = c;
+          try { nameEl.setSelectionRange(at, at); } catch (err) { /* not focused */ }
+        }
+        saveEl.disabled = !c;
+      };
       nameEl.value = lastName();
-      report.querySelector('#sf-form').addEventListener('submit', async (e) => {
+      tidy();
+      nameEl.addEventListener('input', tidy);
+      let saved = false;                               // one save per run
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const name = (nameEl.value || 'Visitor').trim().slice(0, 14);
+        const name = cleanName(nameEl.value);
+        if (saved || !name) return;
+        saved = true;
+        form.hidden = true;
         rememberName(name);
-        const mine = await store.add(r.id, t, { name, score: total(), shots: shots.length, species });
-        draw(await store.list(r.id, t), mine);
-        report.querySelector('#sf-save').textContent = 'Saved';
+        const mine = await store.add(r.id, { name, score: total(), shots: shots.length, species });
+        draw(await store.list(r.id), mine);
         report.querySelector('#sf-note').textContent = 'Saved in this browser.';
       });
       setTimeout(() => { const b = report && report.querySelector('#sf-back'); if (b) b.focus({ preventScroll: true }); }, 450);

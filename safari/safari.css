@@ -140,6 +140,13 @@
 .safari .sf-card.counts { box-shadow: 0 0 0 2px #d8a542, 0 8px 22px rgba(0,0,0,0.4); }
 .sf-card.counts .sf-meta span { color: #8a5d12; font-weight: 600; }
 .sf-empty { color: var(--vf-dim); font-size: 13px; margin-bottom: 20px; }
+/* the board: rank, name, and the score in its own column on the right */
+.sf-list { list-style: none; margin: 1em 0; padding: 0; max-width: 300px; font-variant-numeric: tabular-nums; }
+.sf-list li { display: grid; grid-template-columns: 2.6em 1fr auto; gap: 8px; padding: 2px 0; }
+.sf-list .sf-rank { color: var(--vf-dim); }
+.sf-list .sf-score { text-align: right; }
+.sf-list li.sf-none { display: block; color: var(--vf-dim); }
+.sf-entry[hidden] { display: none; }
 /* one photo large on top of the report */
 .sf-view { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; background: rgba(8, 7, 6, 0.84); opacity: 0; transition: opacity .25s;
   padding: calc(56px + env(safe-area-inset-top, 0px)) 12px calc(56px + env(safe-area-inset-bottom, 0px)); cursor: zoom-out; touch-action: pan-y; }
