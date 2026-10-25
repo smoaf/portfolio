@@ -110,11 +110,12 @@ export function makeRig({ route, scene, aspect = 1.6 }) {
     get progress() { return S.u; },
     get done() { return S.done; },
     step,
-    // drag: the view follows the finger, in the same feel as the station's inside views
+    // drag: the view follows the finger, faster than the station's inside views: sideways 2.2 times,
+    // up and down 1.7 times the plain finger-follow
     drag(dx, dy, height) {
       const k = THREE.MathUtils.degToRad(camera.fov) / Math.max(1, height);
-      S.yaw = THREE.MathUtils.clamp(S.yaw + dx * k, -S.yawLimit, S.yawLimit);
-      S.pitch = THREE.MathUtils.clamp(S.pitch + dy * k, -S.pitchLimit, S.pitchLimit);
+      S.yaw = THREE.MathUtils.clamp(S.yaw + dx * k * 2.2, -S.yawLimit, S.yawLimit);
+      S.pitch = THREE.MathUtils.clamp(S.pitch + dy * k * 1.7, -S.pitchLimit, S.pitchLimit);
       S.lastDrag = S.t; S.auto.set(0, 0);
     },
     // mouse aim: nx, ny from -1 to 1 across the screen. The middle of the screen is straight ahead

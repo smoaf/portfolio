@@ -461,7 +461,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
-      hud.setZoom(rig.setZoom(fov0 * pinch / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))), FOV.wide);
+      // the pinch zooms half as much again as the fingers spread (setZoom keeps the lens range)
+      hud.setZoom(rig.setZoom(fov0 * Math.pow(pinch / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), 1.5)), FOV.wide);
       if (Math.abs(rig.state.fov - fov0) > 1) zoomed();
     }
   }, sig);
