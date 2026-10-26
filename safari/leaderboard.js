@@ -9,8 +9,9 @@
 //
 // Names are 1 to 5 capital letters (A–Z, Ä, Ö, Ü), see `cleanName`.
 
-const KEY = 'smo.safari.scores.v2';
-const OLD = 'smo.safari.scores.v1';                    // the earlier boards (Smo's test runs): cleared once
+const KEY = 'smo.safari.scores.v3';
+// the earlier boards, cleared once: v1 Smo's test runs, v2 scored before the bonus points (not comparable)
+const OLD = ['smo.safari.scores.v1', 'smo.safari.scores.v2'];
 const MAX = 10;                                        // kept per board, all of them shown
 export const NAME_MAX = 5;
 
@@ -20,7 +21,7 @@ export function cleanName(s) {
 }
 
 function read() {
-  try { localStorage.removeItem(OLD); } catch (e) { /* ignore */ }
+  OLD.forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
   try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
 }
 function write(all) {
