@@ -444,7 +444,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   el.addEventListener('pointerdown', (ev) => {
     if (S.over) return;
     audio.start();
-    if (ev.pointerType === 'mouse') { aim(ev); cursor(ev); if (ev.button === 0 && hud.inFrame(ev.clientX, ev.clientY)) shoot(); return; }
+    if (ev.pointerType === 'mouse') { aim(ev); cursor(ev); if (ev.button === 0 && !hud.dropShot(ev.clientX, ev.clientY) && hud.inFrame(ev.clientX, ev.clientY)) shoot(); return; }
     pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     el.setPointerCapture(ev.pointerId);
     if (pointers.size === 1) { downAt = { x: ev.clientX, y: ev.clientY, t: performance.now() }; moved = 0; }
@@ -469,8 +469,8 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   const up = (ev) => {
     const had = pointers.delete(ev.pointerId);
     if (!had || S.over) { downAt = null; return; }
-    // a short press that did not travel is the shutter; a drag only looks
-    if (pointers.size === 0 && downAt && moved < 16 && performance.now() - downAt.t < 700) shoot();
+    // a short press that did not travel is the shutter (on a print it sends the print away); a drag only looks
+    if (pointers.size === 0 && downAt && moved < 16 && performance.now() - downAt.t < 700 && !hud.dropShot(downAt.x, downAt.y)) shoot();
     downAt = null;
   };
   el.addEventListener('pointerup', up, sig);
