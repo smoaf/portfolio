@@ -1,14 +1,17 @@
 // Taking and judging a photo. The thumbnail is grabbed straight off the WebGL canvas in the same
 // frame as the render (the renderer keeps no drawing buffer, so it has to happen there and then),
-// and the score is worked out from what the lens actually had in front of it:
+// and the score is worked out from what the lens actually had in front of it.
 //
-//   subject    the creature is in frame, big enough to read and not hidden
-//   size       best when it fills a good part of the frame, less when it is a dot or cropped
-//   centring   how near the middle of the viewfinder it sits
-//   facing     whether it looks towards the camera
-//   behaviour  the rare behaviour is the shot worth waiting for
-//   company    more than one species in the same frame
-//   occlusion  rock, plant or another animal in the way
+// The base score is the species' value times how big the animal is in the frame (a soft bell: a
+// third of the frame is ideal) times how near the middle it sits. On top come the bonuses, all
+// stackable, each a share of the base score:
+//
+//   + group     2 or more animals of the photographed species in frame     +25% (once)
+//   + species   every other species in frame                              +50% each
+//   + feeding   the animal is eating, or walking to the feed               +50%
+//   + pose      the animal is in its rare pose or rare behaviour           +50%
+//
+// An animal that is hidden behind rock, plants or another animal is not a subject at all.
 import * as THREE from 'three';
 
 export const THUMB = { w: 216, h: 162 };               // the little polaroid in the feed and the album
@@ -46,9 +49,6 @@ export function judge({ camera, creatures, colliders, aspect }) {
     // centring: the middle of the frame counts most, the corners least
     const off = Math.min(1, Math.hypot(vB.x * 0.8, vB.y) / 1.0);
     const centre = 1 - 0.75 * off * off;
-    // facing: 1 when it looks straight down the lens
-    vC.subVectors(eye, vA).setY(0).normalize();
-    const facing = 0.65 + 0.35 * THREE.MathUtils.clamp(c.forward(vB).dot(vC), -1, 1);
     // occlusion: three rays, from the lens to the head, the shoulder and the flank
     const OFF = [[0, 0, 0], [c.radius * 0.6, -c.radius * 0.5, 0], [-c.radius * 0.6, 0, 0]];
     let open = 0;
@@ -60,35 +60,44 @@ export function judge({ camera, creatures, colliders, aspect }) {
       ray.far = Math.max(0.1, len - c.radius * 0.5);
       if (!colliders.length || !ray.intersectObjects(colliders, false).length) open++;
     }
-    const clear = open / OFF.length;
-    if (clear < 0.34) continue;                        // fully hidden: not a photo of anything
-    const rare = c.state === 'rare';
-    subjects.push({ c, species: c.species, size, sizeFrac: f, centre, facing, clear, rare, dist });
+    if (open / OFF.length < 0.34) continue;            // fully hidden: not a photo of anything
+    subjects.push({ c, species: c.species, size, sizeFrac: f, centre, rare: c.state === 'rare', feeding: c.state === 'eat', dist });
   }
-  if (!subjects.length) return { points: 0, subjects: [], best: null, aspect };
+  if (!subjects.length) return { points: 0, subjects: [], best: null, bonuses: [], aspect };
   subjects.sort((a, b) => b.size * b.centre - a.size * a.centre);
   const best = subjects[0];
-  const species = new Set(subjects.map((s) => s.species.id));
-  const company = Math.min(0.45, (species.size - 1) * 0.15);
-  const base = best.species.points || 100;
-  const points = Math.round(base * best.size * best.centre * best.facing * best.clear * (best.rare ? 1.6 : 1) * (1 + company));
+  const base = (best.species.points || 100) * best.size * best.centre;
+  const others = new Set(subjects.map((s) => s.species.id));
+  others.delete(best.species.id);
+  const bonuses = [];
+  if (subjects.filter((s) => s.species.id === best.species.id).length > 1) bonuses.push(BONUS.group);
+  others.forEach(() => bonuses.push(BONUS.species));
+  if (best.feeding) bonuses.push(BONUS.feeding);
+  if (best.rare) bonuses.push(BONUS.pose);
+  const points = Math.round(base * (1 + bonuses.reduce((n, b) => n + b.share, 0)));
   return {
-    points, best, subjects, aspect,
-    parts: { size: best.size, centre: best.centre, facing: best.facing, clear: best.clear, rare: best.rare, company, species: species.size },
+    points, best, subjects, aspect, bonuses,
+    parts: { base: Math.round(base), size: best.size, centre: best.centre, rare: best.rare, feeding: best.feeding, species: others.size + 1 },
   };
 }
 
-// The words under the polaroid: short, so a phone can read them at a glance.
+// the bonuses, with the words the polaroid and the report show for them
+export const BONUS = {
+  group: { id: 'group', label: '+ group', share: 0.25 },
+  species: { id: 'species', label: '+ species', share: 0.5 },
+  feeding: { id: 'feeding', label: '+ feeding', share: 0.5 },
+  pose: { id: 'pose', label: '+ pose', share: 0.5 },
+};
+// the bonus words of a shot, e.g. "+ group + feeding"; empty when it earned none
+export const bonusText = (shot) => (shot.bonuses || []).map((b) => b.label).join(' ');
+
+// The words under the score when a shot comes in: short, so a phone can read them at a glance.
 export function verdict(shot) {
   if (!shot.best) return 'Nothing in frame';
   const p = shot.parts, bits = [];
-  if (p.rare) bits.push('rare behaviour');
   if (p.size > 0.75) bits.push('well framed'); else if (shot.best.sizeFrac < 0.12) bits.push('far away');
   if (p.centre > 0.9) bits.push('centred');
-  if (p.facing > 0.9) bits.push('looking at you');
-  if (p.clear < 0.9) bits.push('partly hidden');
-  if (p.species > 1) bits.push(`${p.species} species`);
-  return bits.slice(0, 2).join(' · ') || 'in frame';
+  return bits.join(' · ') || 'in frame';
 }
 
 // Grab the frame that was just drawn. Called from inside the render loop, right after render().

@@ -4,7 +4,7 @@
 // in the middle, grain and a few specks of dust, and the figures along the bottom edge of the frame.
 // The HUD element is also the input surface: the station's canvas sits behind it, so no drag of
 // the safari ever reaches the station's orbit controls.
-import { verdict } from './photo.js';
+import { bonusText } from './photo.js';
 
 const TOD = { dawn: 'Dawn', day: 'Day', dusk: 'Dusk', night: 'Night' };
 // names on the board come back out of localStorage, so they go in as text, never as markup
@@ -121,7 +121,11 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     addShot(shot) {
       const card = el('div', 'sf-shot');
       card.appendChild(copyThumb(shot.thumb));
-      card.appendChild(el('div', 'sf-cap', `<span>${shot.best ? shot.best.species.name : 'Empty'}</span><b>${shot.points}</b>`));
+      // the final score with the bonuses it earned under it; a frame worth nothing gets no label at all
+      if (shot.best && shot.points) {
+        card.appendChild(el('div', 'sf-cap', `<span>${shot.best.species.name}</span><b>${shot.points}</b>`));
+        if (shot.bonuses.length) card.appendChild(el('div', 'sf-bonus', bonusText(shot)));
+      }
       shotsEl.appendChild(card);
       requestAnimationFrame(() => card.classList.add('in'));
       setTimeout(() => leave(card), 2000);
@@ -180,10 +184,12 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       shots.forEach((s, i) => {
         const card = el('button', 'sf-card' + (counted.has(s) ? ' counts' : ''));
         card.type = 'button';
-        card.setAttribute('aria-label', `Photo ${i + 1}: ${name(s)}, ${s.points} points${counted.has(s) ? ', counts' : ''}. Open large`);
+        card.setAttribute('aria-label', `Photo ${i + 1}: ${name(s)}, ${s.points} points${bonusText(s) ? ' ' + bonusText(s) : ''}. Open large`);
         try { card.appendChild(copyThumb(s.thumb)); } catch (err) { console.error('Safari photo failed', err); }   // one bad print doesn't stop the report
-        card.appendChild(el('div', 'sf-name', esc(name(s))));
-        card.appendChild(el('div', 'sf-meta', `<span>${counted.has(s) ? 'Counts' : s.best ? verdict(s) : '–'}</span><b>${s.points}</b>`));
+        if (s.best && s.points) {       // the same final score and bonus words as the polaroid; an empty frame has no label
+          card.appendChild(el('div', 'sf-name', esc(name(s))));
+          card.appendChild(el('div', 'sf-meta', `<span>${bonusText(s)}</span><b>${s.points}</b>`));
+        }
         card.addEventListener('click', () => open(i));
         grid.appendChild(card);
       });
@@ -223,9 +229,10 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         pic.innerHTML = '';
         if (s.big) { const img = new Image(); img.src = s.big; img.alt = name(s); pic.appendChild(img); }
         else pic.appendChild(copyThumb(s.thumb));
-        viewer.querySelector('.sf-vname').textContent = name(s);
-        viewer.querySelector('.sf-vmeta').textContent = !s.best ? '' : counted.has(s) ? `Counts · ${verdict(s)}` : verdict(s);
-        viewer.querySelector('.sf-vpts').textContent = `${s.points}`;
+        const worth = !!(s.best && s.points);
+        viewer.querySelector('.sf-vname').textContent = worth ? name(s) : '';
+        viewer.querySelector('.sf-vmeta').textContent = worth ? bonusText(s) : '';
+        viewer.querySelector('.sf-vpts').textContent = worth ? `${s.points}` : '';
         viewer.querySelector('.sf-vcount').textContent = `${at + 1} / ${shots.length}`;
         viewer.querySelectorAll('.sf-vbtn').forEach((b) => { b.hidden = shots.length < 2; });
         requestAnimationFrame(() => viewer && viewer.classList.add('on'));

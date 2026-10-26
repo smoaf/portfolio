@@ -78,11 +78,13 @@
 .sf-shot canvas, .sf-shot img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
 .sf-shot .sf-cap { display: flex; justify-content: space-between; gap: 6px; margin-top: 5px; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; }
 .sf-shot .sf-cap b { color: #1d1b18; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sf-shot .sf-bonus { margin-top: 2px; font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a5d12; text-align: right; }   /* the bonuses, small under the score */
 /* on a computer the prints are half as big again */
 @media (hover: hover) and (pointer: fine) and (min-width: 561px) {
   .sf-feed { width: 198px; gap: 12px; }
   .sf-shot { padding: 9px 9px 12px; }
   .sf-shot .sf-cap { margin-top: 7.5px; font-size: 14px; gap: 9px; }
+  .sf-shot .sf-bonus { margin-top: 3px; font-size: 12px; }
 }
 
 /* flash, and the word that comes up when a shot lands */
