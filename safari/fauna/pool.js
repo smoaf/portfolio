@@ -291,7 +291,7 @@ export function buildLanternTetras(K, home, opts = {}) {
     } else if (c.state === 'idle' || c.state === 'wander' || c.state === 'curious') {
       const pellet = env.pellets.find((p) => !p.eaten && p.sunk && p.pos.distanceTo(c.root.position) < 16 * FEED_REACH);
       if (pellet) { c.pellet = pellet; c.go('eat', 9); }
-      else if (env.tod === 'dusk' && Math.random() < dt * 0.05) { c.go('rare', 7); if (env.call) env.call(c, 'rare'); }
+      else if (env.tod === 'dusk' && Math.random() < dt * 0.05) { c.go('rare', 7); if (c.state === 'rare' && env.call) env.call(c, 'rare'); }
       else if (camD < 14 && c.state !== 'curious' && Math.random() < dt * 0.4) c.go('curious', 3);
       else if (c.t > c.hold) c.go(c.state === 'wander' ? 'idle' : 'wander', 4 + Math.random() * 4);
     } else if (c.state === 'eat') {

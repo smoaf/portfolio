@@ -42,12 +42,16 @@ export function makeCreature(def) {
     pose: def.pose || (() => {}),
     onState: def.onState || null,
     keep: def.keep || null,                             // (x, z) => false where it must not walk (deep water)
+    rareOff: false,                                     // safari/poses.js: no rare pose this run
+    startle: null,                                      // safari/poses.js: feed startles it (a Set of the pellets it saw)
+    lookAt: null, hopY: 0,
     visible: true,
   };
   c.root.position.copy(c.home);
   c.root.rotation.y = c.yaw;
 
   const go = (state, hold) => {
+    if (state === 'rare' && c.rareOff) { state = 'idle'; hold = 2; }
     if (c.state === state) return;
     c.state = state; c.t = 0; c.hold = hold;
     if (c.onState) c.onState(c, state);
@@ -79,6 +83,7 @@ export function makeCreature(def) {
   // env: { camPos, t, tod, pellets, dist }
   c.step = (dt, env) => {
     c.t += dt;
+    c.root.position.y -= c.hopY; c.hopY = 0;
     const dist = env.dist;
     // the van decides a lot: too close and it bolts, close enough and it looks over
     if (c.state !== 'flee' && c.state !== 'rare' && dist < c.fleeAt * (0.6 + c.shy * 0.8)) {
@@ -88,8 +93,11 @@ export function makeCreature(def) {
       if (env.call && Math.random() < 0.5) env.call(c, 'flee');
     } else if (c.state === 'idle' || c.state === 'wander' || c.state === 'curious') {
       // feed wins over everything but fleeing, also while the animal is looking the van over
-      const pellet = env.pellets.find((p) => p.landed && !p.eaten && p.pos.distanceTo(c.root.position) < 14 * FEED_REACH);
-      if (pellet) { c.pellet = pellet; go('eat', 6 * FEED_REACH); }   // more time for the longer walk
+      const pellet = env.pellets.find((p) => p.landed && !p.eaten && p.pos.distanceTo(c.root.position) < 14 * FEED_REACH && !(c.startle && c.startle.has(p)));
+      if (pellet && c.startle) {                        // startled: a jump, a look at the food, then its pose
+        c.startle.add(pellet); c.lookAt = pellet.pos; c.face = 0;
+        go('curious', 1.4); c.t = 0;
+      } else if (pellet) { c.pellet = pellet; go('eat', 6 * FEED_REACH); }   // more time for the longer walk
       else if (c.state !== 'curious') {
         if (dist < c.curiousAt && dist > c.fleeAt && c.t > 0.6 && Math.random() < dt * (1.2 - c.shy)) go('curious', 2.5 + Math.random() * 2);
         else if (c.rareAt && c.rareAt === env.tod && Math.random() < dt * 0.06) go('rare', 5);
@@ -104,6 +112,12 @@ export function makeCreature(def) {
         if (walkTo(c.target, dt) || c.t > c.hold) go('idle', 1.5 + Math.random() * 3);
         break;
       case 'curious':
+        if (c.lookAt) {
+          turnTo(c.lookAt.x, c.lookAt.z, dt, 5);
+          c.hopY = Math.sin(Math.min(1, c.t / 0.35) * Math.PI) * c.radius * 0.5;
+          if (c.t > c.hold) { c.lookAt = null; go('rare', 5); }
+          break;
+        }
         turnTo(env.camPos.x, env.camPos.z, dt, 1.6);
         if (dist > c.fleeAt * 1.6) {                     // comes a step nearer, never into its own flee zone
           vA.subVectors(env.camPos, c.root.position).setY(0).normalize();
@@ -129,7 +143,9 @@ export function makeCreature(def) {
         if (c.t > c.hold) go('idle', 2);
         break;
     }
+    if (c.state !== 'curious') c.lookAt = null;
     c.pose(c, dt, env);
+    c.root.position.y += c.hopY;
     c.root.updateMatrixWorld();
   };
   return c;
@@ -150,7 +166,7 @@ export function makeFlock({ species, root, bodies, centre, radius = 26, height =
     c.t += dt;
     // one shared circle; a dive is the rare behaviour, and feed on the ground starts it
     const feeding = env.pellets.some((p) => p.landed && !p.eaten && p.pos.distanceTo(centre) < 40 * FEED_REACH);
-    if (feeding && c.state !== 'rare') { c.state = 'rare'; c.t = 0; if (env.call) env.call(c, 'rare'); }
+    if (feeding && c.state !== 'rare' && !c.rareOff) { c.state = 'rare'; c.t = 0; if (env.call) env.call(c, 'rare'); }
     if (c.state === 'rare' && c.t > 7) c.state = 'idle';
     const dip = c.state === 'rare' ? (0.5 - 0.5 * Math.cos(Math.min(1, c.t / 7) * Math.PI * 2)) : 0;
     let best = null, bestD = Infinity;
