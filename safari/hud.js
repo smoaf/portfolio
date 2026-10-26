@@ -79,6 +79,8 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
   setTimeout(() => helpEl.classList.add('gone'), 7000);
 
   let sayTimer = 0, titleTimer = 0, report = null, viewer = null;
+  // a print slides away to the right and is gone once the slide is over
+  const leave = (c) => { if (c.classList.contains('out')) return; c.classList.add('out'); setTimeout(() => c.remove(), 460); };
   const keys = new AbortController();
   const api = {
     root,
@@ -104,6 +106,16 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       sayEl.classList.add('on');
       clearTimeout(sayTimer); sayTimer = setTimeout(() => sayEl.classList.remove('on'), 1400);
     },
+    // a tap or click on a print sends it away at once, the same way it leaves on its own (the photo
+    // stays in the bag); true when the point was on one, so the caller doesn't shoot
+    dropShot(x, y) {
+      const hit = [...shotsEl.children].find((c) => {      // one already sliding away still catches the tap
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+      });
+      if (hit) leave(hit);
+      return !!hit;
+    },
     // the print slides out of the camera at the bottom right, stays 2 s and slides away to the right;
     // each print keeps its own 2 s, so a fast burst stacks a few for a moment (only the last few stay)
     addShot(shot) {
@@ -112,7 +124,6 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       card.appendChild(el('div', 'sf-cap', `<span>${shot.best ? shot.best.species.name : 'Empty'}</span><b>${shot.points}</b>`));
       shotsEl.appendChild(card);
       requestAnimationFrame(() => card.classList.add('in'));
-      const leave = (c) => { if (c.classList.contains('out')) return; c.classList.add('out'); setTimeout(() => c.remove(), 460); };
       setTimeout(() => leave(card), 2000);
       while (shotsEl.children.length > 6) shotsEl.firstChild.remove();
       const live = [...shotsEl.children].filter((c) => !c.classList.contains('out'));
