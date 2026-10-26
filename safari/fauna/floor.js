@@ -1062,7 +1062,7 @@ export function buildLadybird(K, home, opts = {}) {
   c.step = (dt, env) => {
     c.t += dt;
     // a feed pellet nearby, or the dark, sets them spiralling up
-    if (c.state !== 'rare') {
+    if (c.state !== 'rare' && !c.rareOff) {
       const fed = env.pellets.some((p) => p.landed && !p.eaten && p.pos.distanceTo(c.root.position) < 12 * FEED_REACH);
       if (fed || (env.tod === 'night' && Math.random() < dt * 0.03) || Math.random() < dt * 0.006) {
         c.go('rare', 8);

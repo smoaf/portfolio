@@ -13,6 +13,7 @@ import * as FLOOR from '../fauna/floor.js';
 import * as CLIFFS from '../fauna/cliffs.js';
 import * as DEEP from '../fauna/deep.js';
 import * as WATERFOLK from '../fauna/pool.js';
+import { planPoses } from '../poses.js';
 
 const WATER = -0.7;                                        // the river's surface
 const RIM = 74;                                            // the plateau above the walls
@@ -91,6 +92,46 @@ const ROAD = [
   // and out onto the floor for the last stretch
   { z: 508, d: 22 }, { z: 530, d: 25 },
 ];
+
+// What sets off each species' rare pose (see safari/poses.js). The pose is the species' own:
+const POSES = {
+  // the floor
+  'saiga-antelope': 'near',          // stotting: stiff-legged leaps, the nose flared
+  'cape-buffalo': 'near',            // snorts, tosses its head and paws the ground at the van
+  'giant-tortoise': 'feed',          // after eating it stretches its neck right up to browse
+  'frilled-lizard': 'startle',       // feed landing close startles it: it jumps and opens its frill
+  'fennec-fox': 'near',              // hears prey: ears flick, a crouch, a pounce, then it digs
+  'peacock-spider': 'near',          // the courtship dance: the striped fan up and shaking
+  'stag-beetle': 'startle',          // rears up and opens its jaws at the food that dropped by it
+  'picasso-bug': 'feed',             // after feeding, its markings pulse with light
+  ladybird: 'feed',                  // feed sets the swarm spiralling up
+  'fire-salamander': 'near',         // rears up, its yellow markings flaring (dawn and dusk only)
+  // the cliffs and the rim
+  markhor: 'near',                   // rears up on its hind legs
+  'fallow-deer': 'near',             // the buck groans: head up, neck stretched
+  'harpy-eagle': 'near',             // raises its crest and mantles its wings
+  'crested-caracara': 'near',        // perched: the head-throw, head flung back, calling
+  'crested-caracara:flock': 'feed',  // the circling flock: feed on the ground makes it dive for it
+  'argentavis-giant-bird': 'near',   // a low pass over the van, everything spread
+  'secretary-bird': 'near',          // stretches, wings half open and the crest up
+  cassowary: 'feed',                 // after eating it stretches up, fluffs its coat and booms
+  'crowned-eagle': 'always',         // its wing spread as the van passes (FEAT-002), every run
+  'himalayan-griffon': 'always',     // the take-off run, the close pass and the stretch (FEAT-001), every run
+  // the deep pool
+  'coconut-octopus-glowing': 'startle',  // sinking feed: it pulls its shell over itself and flares
+  nautilus: 'near',                  // one slow turn while light runs along its chambers
+  'leafy-seadragon': 'near',         // its leafy fins flutter fast and glow
+  jellyfish: 'near',                 // the bells pulse bright
+  'goblin-shark': 'feed',            // after feeding, three slingshot strikes of its jaw (night only)
+  'giant-isopod': 'startle',         // rolls up at the food that sank by it, antennae waving
+  'sea-slug-nudibranch': 'near',     // its gills and horns flare
+  'feather-duster-worm': 'feed',     // after feeding, the crowns glow
+  'sea-pen': 'near',                 // the colony waves and lights up
+  'deep-sea-cucumber': 'near',       // lifts off and shows its glowing veil
+  axolotl: 'feed',                   // after eating it hovers and rears, gills flaring
+  'lantern-tetra': 'feed',           // after feeding the shoal balls up and flashes
+  'sea-anemone': 'feed',             // after feeding the crowns open wide and light runs along them
+};
 
 export const ROUTE = {
   id: 'canyon',
@@ -545,6 +586,9 @@ export const ROUTE = {
       spawn('cassowary', foot, { roam: 3, keep: (x, z) => Math.hypot(x - tx, z - tz) > 1 });
     }
 
+    // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
+    const poses = planPoses({ creatures, path, plan: POSES });
+
     const colliders = [ground, boulders, slabs, hoodoos, overhangs, crowns, poolRocks, ...acacia.tree.children];
     const AMB = {
       under: { every: 2.2, kind: 'noise', hz: 260, vol: 0.12 },
@@ -552,7 +596,7 @@ export const ROUTE = {
     };
 
     return {
-      path, groundY, creatures, colliders, palette: P,
+      path, groundY, creatures, colliders, palette: P, poses,
       under: ROUTE.under[tod] || ROUTE.under.day,
       waterY: () => WATER,
       dive: [dive0, dive1],
