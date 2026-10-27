@@ -10,6 +10,7 @@ import { makeKit } from '../kit.js';
 import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, instanced, addSway, shaftMaterial, motes, pacing } from '../terrain.js';
 import * as FOREST from '../fauna/forest.js';
 import * as ESTUARY from '../fauna/estuary.js';
+import * as FARBANK from '../fauna/farbank.js';
 import { planPoses } from '../poses.js';
 
 const WATER = 0;
@@ -67,6 +68,9 @@ const POSES = {
   'moon-jelly': 'near',              // the swarm rises and every bell pulses bright
   frigatebird: 'near',               // the male inflates his red throat pouch, glowing, and swoops
   'frigatebird:flock': 'feed',       // the birds riding the thermal: feed on the water makes them dive for it
+  // the far bank
+  jaguar: 'always',                  // steps onto the road, looks at the van, climbs the tree beside it (FEAT-004)
+  'rhinoceros-hornbill': 'always',   // the pair crossing low over the road and landing in a tall tree (FEAT-004)
 };
 
 export const ROUTE = {
@@ -440,7 +444,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 808 });
-    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS };
+    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS };
     const creatures = [];
     // everything starts out turned towards the road (give or take), so a perched animal never
     // shows the van its back for the whole drive
@@ -561,6 +565,61 @@ export const ROUTE = {
     spawn('giant-anteater', beside(uC(0.85), -13));
     if (night) spawn('poodle-moth', beside(uC(0.6), 5, 3.2), {}, small);
     if (night) spawn('glow-mushroom', beside(uC(0.42), -6.5), {}, small);
+
+    // the far bank's own animals (safari/fauna/farbank.js): strawberry poison frogs by the giant tree,
+    // a pair of rhinoceros hornbills crossing low over the road, and the jaguar that steps out in front
+    // of the van, looks at it and climbs the tree beside the road. Every spot and heading is worked out
+    // here without the route's random numbers, so the animals and plants before them stay as they were.
+    const roadLen = path.getLength();
+    const side = (u) => { const t = path.getTangentAt(u); return new THREE.Vector3(-t.z, 0, t.x).normalize(); };
+    const headTo = (u) => { const t = path.getTangentAt(u); return Math.atan2(t.x, t.z); };   // facing the way the van drives
+    // a tree by the road with a bough reaching out from it along `dir`, `len` long, its centre line at
+    // height h, starting `off` from the trunk's axis; thick at the trunk, thinner towards the end.
+    // Returns where it starts, its direction, and top(d): the height of its top d metres along it
+    const bough = (foot, dir, h, len, thick, trunk = 0.9, off = null) => {
+      perchItems.push({ p: foot, s: [trunk, 1, trunk] });
+      const start = foot.clone().setY(foot.y + h);
+      if (off) start.add(off);
+      branchItems.push({ p: start.clone().addScaledVector(dir, len / 2), s: [thick, len, thick], rz: Math.PI / 2, ry: Math.atan2(dir.z, -dir.x) });
+      return { start, dir, top: (d) => start.y + thick * (0.2 - 0.09 * Math.min(1, d / len)) };
+    };
+    // the frogs: three on a mossy log and one on a broad leaf, right at the road side, facing it
+    const uF = uNear(56, 236) - 0.008, tF = path.getTangentAt(uF).setY(0).normalize();
+    const frogYaw = Math.atan2(-tF.z, tF.x);
+    const logAt = beside(uF, -4.4);
+    spawn('strawberry-poison-frog', logAt, { bed: 'log', yaw: frogYaw }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, 1.05).setY(logAt.y + 0.57), { yaw: frogYaw - 0.5 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, -0.7).setY(logAt.y + 0.57), { yaw: frogYaw + 0.4 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', beside(uF + 0.004, -3.9), { bed: 'leaf', yaw: frogYaw + 0.2 }, { seeAt: 60 });
+
+    // the hornbills: by day the pair waits on a bough in the forest on the left, ahead of the van, and
+    // once the van is ~45 m off they cross the road low in front of it and land on a tall tree's bough
+    // over the right side of the road. After dark both roost on that bough.
+    const uH = uC(0.27), sH = side(uH);
+    const footL = beside(uH + 0.004, 13), toRoad = sH.clone().negate();
+    const landB = bough(footL, toRoad, 9, 7, 1.3);
+    const landAt = [6.2, 5.3].map((d) => landB.start.clone().addScaledVector(toRoad, d).setY(landB.top(d)));
+    const landYaw = headTo(uH) + Math.PI;                       // looking back down the road at the van
+    if (night) landAt.forEach((p, i) => spawn('rhinoceros-hornbill', p, { mode: 'roost', yaw: landYaw + (i ? 0.3 : -0.2) }, { seeAt: 260 }));
+    else {
+      const footS = beside(uH + 0.016, -21), startB = bough(footS, sH, 8, 4, 1.1);
+      const lift = (u, sd, h) => beside(u, sd).setY(beside(u, sd).y + h);
+      const paths = [
+        [startB.start.clone().addScaledVector(sH, 3.4).setY(startB.top(3.4)), lift(uH + 0.009, -10, 6.5), lift(uH, 0, 4.4), lift(uH + 0.0015, 3.5, 6.8), landAt[0]],
+        [startB.start.clone().addScaledVector(sH, 2.6).setY(startB.top(2.6)), lift(uH + 0.0105, -11, 7.4), lift(uH + 0.0015, 0.6, 5.3), lift(uH + 0.0025, 3, 7.6), landAt[1]],
+      ];
+      paths.forEach((pts, i) => spawn('rhinoceros-hornbill', landAt[i], { mode: 'cross', path: pts, at: uH, length: roadLen, lead: 46, delay: i * 0.5, landYaw: landYaw + (i ? 0.3 : -0.2), yaw: 0 }, { seeAt: 260 }));
+    }
+
+    // the jaguar: waits in the undergrowth on the right, walks out onto the road ahead of the van and
+    // stops in the middle to look at it, then crosses to the tree on the left, climbs it and lies down
+    // on the bough that reaches along the road towards the van. Night and day alike.
+    const uJ = uC(0.5) + 0.003, sJ = side(uJ);
+    const footJ = beside(uJ - 0.001, -6.2), dirJ = path.getTangentAt(uJ).setY(0).normalize().negate();
+    const boughJ = bough(footJ, dirJ, 3.1, 3.2, 1.7, 1.1, sJ.clone().multiplyScalar(0.5));   // from the road side of the trunk
+    const lieAt = boughJ.start.clone().addScaledVector(dirJ, 1.6).setY(boughJ.top(1.6));
+    spawn('jaguar', lieAt, { from: beside(uJ + 0.004, 9.5), cross: beside(uJ, 0), foot: footJ, bough: { start: boughJ.start, dir: dirJ, y: boughJ.top(0.6) },
+      trunkR: 0.6, at: uJ, length: roadLen, lead: 85, leave: 42, yaw: 0 });
 
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);

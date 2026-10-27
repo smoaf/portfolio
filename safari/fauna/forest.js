@@ -38,7 +38,7 @@ const mirror = (pts) => pts.map(([x, y]) => [-x, y]);
 
 // a pair of eyes in one group (so both blink together and bake into few meshes). `dark` makes plain
 // glossy mammal eyes (ball + catchlight); otherwise the kit's full eye with iris and pupil.
-function eyePair(K, parent, pos, { dx, r, iris = 0x2a1a10, glow = 0, yaw = 0.35, pitch = 0, dark = false, slit = false }) {
+export function eyePair(K, parent, pos, { dx, r, iris = 0x2a1a10, glow = 0, yaw = 0.35, pitch = 0, dark = false, slit = false }) {
   const g = K.group(pos, parent);
   for (const s of [-1, 1]) {
     if (dark) {
@@ -56,7 +56,7 @@ function eyePair(K, parent, pos, { dx, r, iris = 0x2a1a10, glow = 0, yaw = 0.35,
 }
 
 // a jointed leg: hip group -> upper capsule, knee group -> lower capsule (+ a foot callback)
-function leg(K, parent, pos, { r1, l1, r2, l2, m1, m2 = m1, foot }) {
+export function leg(K, parent, pos, { r1, l1, r2, l2, m1, m2 = m1, foot }) {
   const hip = K.group(pos, parent);
   K.mesh(K.capsule(r1, l1, 3, 7), m1, [0, -l1 / 2, 0], hip);
   const knee = K.group([0, -l1, 0], hip);
@@ -76,7 +76,7 @@ function rareCue(c, env) {
 
 // a percher stays exactly where it was put: the shared state machine still runs (it decides the
 // moods), but the root never walks, turns or drops to the ground. Feed nearby sets off the show.
-function perch(c) {
+export function perch(c) {
   const step = c.step;
   c.step = (dt, env) => {
     if (!c._p0) { c._p0 = c.root.position.clone(); c._y0 = c.root.rotation.y; }
@@ -108,7 +108,7 @@ function fold(g) {
 }
 
 // the gait: legs = [{ hip, knee, ph, front }]; w = how much they swing (smoothed by the caller)
-function gait(legs, ph, w, amp = 0.5, bend = 0.7) {
+export function gait(legs, ph, w, amp = 0.5, bend = 0.7) {
   for (const L of legs) {
     const p = ph + L.ph, s = Math.sin(p);
     L.hip.rotation.x = s * amp * w + (L.base || 0);
