@@ -15,7 +15,7 @@ const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 const damp = (a, b, k, dt) => a + (b - a) * Math.min(1, k * dt);
 const clamp = THREE.MathUtils.clamp;
 // feathers are flat, and seen from below as often as from above
-const two = (K, color, o = {}) => K.mat(color, { side: THREE.DoubleSide, roughness: 0.78, ...o });
+export const two = (K, color, o = {}) => K.mat(color, { side: THREE.DoubleSide, roughness: 0.78, ...o });
 
 export const SPECIES = {
   'argentavis-giant-bird': { id: 'argentavis-giant-bird', name: 'Argentavis', points: 320, call: { hz: 170, kind: 'hoot' } },
@@ -32,11 +32,11 @@ export const SPECIES = {
 // ---------------------------------------------------------------- feathers, wings, tails, eyes
 
 // a rounded body feather and a slim pointed flight feather, unit size, base at the origin, tip at +y
-const FEATHER = [[-0.3, 0], [0.3, 0], [0.5, 0.45], [0.44, 0.8], [0.2, 0.97], [0, 1], [-0.2, 0.97], [-0.44, 0.8], [-0.5, 0.45]];
-const QUILL = [[-0.24, 0], [0.24, 0], [0.44, 0.4], [0.36, 0.82], [0.12, 0.98], [0, 1], [-0.14, 0.95], [-0.34, 0.8], [-0.42, 0.4]];
+export const FEATHER = [[-0.3, 0], [0.3, 0], [0.5, 0.45], [0.44, 0.8], [0.2, 0.97], [0, 1], [-0.2, 0.97], [-0.44, 0.8], [-0.5, 0.45]];
+export const QUILL = [[-0.24, 0], [0.24, 0], [0.44, 0.4], [0.36, 0.82], [0.12, 0.98], [0, 1], [-0.14, 0.95], [-0.34, 0.8], [-0.42, 0.4]];
 
 // one feather laid flat and pointing back (-z), turned by `yaw`, w wide and len long
-function plume(K, parent, mat, p, yaw, w, len, slim = false, tilt = 0) {
+export function plume(K, parent, mat, p, yaw, w, len, slim = false, tilt = 0) {
   const m = K.mesh(K.shape(slim ? 'cl-quill' : 'cl-feather', slim ? QUILL : FEATHER), mat, p, parent, [-PI / 2 + tilt, yaw, 0], [w, len, 1]);
   m.rotation.order = 'YXZ';
   return m;
@@ -45,7 +45,7 @@ function plume(K, parent, mat, p, yaw, w, len, slim = false, tilt = 0) {
 // A wing on side s (+1 = the bird's left, +x). W: { at, arm, hand, chord, bone, sec, prim, primLen, primW,
 // mats: { wing, cov, prim, tip, edge, shaft } }. The arm carries the secondaries and their coverts, the hand
 // the fingered primaries; both are groups so a beat bends at the wrist.
-function wing(K, body, s, W) {
+export function wing(K, body, s, W) {
   const M = W.mats;
   const arm = K.group([s * W.at[0], W.at[1], W.at[2]], body);
   arm.rotation.order = 'YXZ';
@@ -79,7 +79,7 @@ function wing(K, body, s, W) {
 }
 
 // a fan of n tail feathers pointing back from `at`, with an optional band (tip or bars) on each
-function fanTail(K, body, at, n, len, w, spread, mat, band, bandAt = [0.72], bandLen = 0.28) {
+export function fanTail(K, body, at, n, len, w, spread, mat, band, bandAt = [0.72], bandLen = 0.28) {
   const g = K.group(at, body);
   for (let i = 0; i < n; i++) {
     const u = n > 1 ? i / (n - 1) - 0.5 : 0, yaw = -u * spread, l = len * (1 - Math.abs(u) * 0.12);
@@ -91,7 +91,7 @@ function fanTail(K, body, at, n, len, w, spread, mat, band, bandAt = [0.72], ban
 
 // Both eyes in one group (blinking scales it), flattened into it so the bake makes them a few draw
 // calls. dir = how far round to the side the eyes look (0 = straight ahead). ring = a glowing eye-ring.
-function eyePair(K, head, { x, y, z, r, iris = null, glow = 0, dir = 0.5, slit = false, ring = null }) {
+export function eyePair(K, head, { x, y, z, r, iris = null, glow = 0, dir = 0.5, slit = false, ring = null }) {
   const g = K.group([0, y, 0], head);
   const dark = K.sheen(0x0b0908, { roughness: 0.12 }), shine = K.mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.9 });
   const im = iris === null ? null : glow ? K.glow(iris, glow, { roughness: 0.15 }) : K.sheen(iris, { roughness: 0.15 });
@@ -122,10 +122,10 @@ function hookBeak(K, parent, mat, p, len, w) {
 // mantle 1 = wings spread low around the body, amp/rate = the wing beat, dihedral = the soaring V,
 // sweep = wings drawn back (+) or reached forward (-), pitch = body pitch, legs = leg swing (+ = tucked)
 const BIRD_KEYS = ['fold', 'mantle', 'amp', 'dihedral', 'sweep', 'pitch', 'bank', 'legs', 'fan', 'tailUp'];
-function birdState(o = {}) {
+export function birdState(o = {}) {
   return { fold: 0, mantle: 0, amp: 0, dihedral: 0.1, sweep: 0, pitch: 0, bank: 0, legs: 1.3, fan: 1, tailUp: 0, phase: Math.random() * 6, rate: 0, ...o };
 }
-function birdPose(R, dt, T, k = 3) {
+export function birdPose(R, dt, T, k = 3) {
   const P = R.P;
   for (const key of BIRD_KEYS) P[key] = damp(P[key], T[key], key === 'bank' ? 2 : k, dt);
   P.rate = damp(P.rate, T.rate, 4, dt);
