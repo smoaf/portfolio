@@ -588,8 +588,8 @@ export const ROUTE = {
     const frogYaw = Math.atan2(-tF.z, tF.x);
     const logAt = beside(uF, -4.4);
     spawn('strawberry-poison-frog', logAt, { bed: 'log', yaw: frogYaw }, { seeAt: 60 });
-    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, 1.05).setY(logAt.y + 0.55), { yaw: frogYaw - 0.5 }, { seeAt: 60 });
-    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, -0.7).setY(logAt.y + 0.55), { yaw: frogYaw + 0.4 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, 1.05).setY(logAt.y + 0.57), { yaw: frogYaw - 0.5 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, -0.7).setY(logAt.y + 0.57), { yaw: frogYaw + 0.4 }, { seeAt: 60 });
     spawn('strawberry-poison-frog', beside(uF + 0.004, -3.9), { bed: 'leaf', yaw: frogYaw + 0.2 }, { seeAt: 60 });
 
     // the hornbills: by day the pair waits on a bough in the forest on the left, ahead of the van, and

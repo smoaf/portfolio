@@ -46,7 +46,9 @@ const yawTo = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
 export function buildJaguar(K, home, opts = {}) {
   const coat = K.mat(0xc8913a, { roughness: 0.88 }), cream = K.mat(0xeee0c2, { roughness: 0.92 });
   const ink = K.mat(0x17110c, { roughness: 0.9 });
-  const ring = K.mat(0x1a130d, { roughness: 0.85, emissive: 0x9af2d6, emissiveIntensity: K.glowLevel * 0.32 });
+  // the rosette lines: no glow to speak of by day, a clear thin line of light after dark
+  const ring = K.mat(0x1a130d, { roughness: 0.85, emissive: 0x9af2d6, emissiveIntensity: Math.max(0, K.glowLevel - 0.25) * 0.3 });
+  const inner = K.mat(0xa66b26, { roughness: 0.9 });                // the darker gold inside a rosette
   const noseM = K.mat(0x7a4e44, { roughness: 0.6 }), mouthM = K.mat(0x2a1a14, { roughness: 0.8 });
 
   const root = new THREE.Group();
@@ -56,9 +58,9 @@ export function buildJaguar(K, home, opts = {}) {
   const body = K.group(null, near);
   const tor = K.group([0, 0.6, 0], body);
   // the torso: haunch, barrel and a deep chest; the pale belly under it
-  const PARTS = [[0, 0.02, -0.36, 0.23, 0.26, 0.3], [0, 0, 0, 0.25, 0.27, 0.42], [0, 0.02, 0.36, 0.26, 0.3, 0.3]];   // x y z rx ry rz
+  const PARTS = [[0, 0.02, -0.4, 0.21, 0.24, 0.3], [0, 0, 0, 0.22, 0.24, 0.46], [0, 0.02, 0.4, 0.23, 0.27, 0.3]];   // x y z rx ry rz
   for (const [x, y, z, rx, ry, rz] of PARTS) K.mesh(K.sphere(1, 16, 11), coat, [x, y, z], tor, null, [rx, ry, rz]);
-  K.mesh(K.sphere(1, 12, 8), cream, [0, -0.1, 0.02], tor, null, [0.2, 0.18, 0.56]);
+  K.mesh(K.sphere(1, 12, 8), cream, [0, -0.09, 0.02], tor, null, [0.18, 0.16, 0.6]);
   K.mesh(K.sphere(1, 12, 8), cream, [0, -0.06, 0.48], tor, null, [0.17, 0.2, 0.16]);              // the throat and chest
   // the rosettes, fitted onto whichever part of the torso is outermost at that spot
   const q = new THREE.Quaternion(), n = new THREE.Vector3();
@@ -78,32 +80,34 @@ export function buildJaguar(K, home, opts = {}) {
     }
     return best;
   };
-  const ringGeo = K.torus(1, 0.2, 3, 9), dotGeo = K.sphere(1, 6, 4);
-  for (let row = 0; row < 11; row++) {
-    const z = -0.6 + row * 0.115;
-    for (let i = 0; i < 7; i++) {
-      const a = -0.35 + (i + (row % 2) * 0.5) * ((PI + 0.7) / 7) + (K.rand() - 0.5) * 0.18;
+  // a rosette is a broken ring: an arc of four fifths, turned a different way each time
+  const ringGeo = K.torus(1, 0.16, 3, 9, PI * 1.6), dotGeo = K.sphere(1, 6, 4), discGeo = K.geo('fb-disc', () => new THREE.CircleGeometry(1, 9));
+  for (let row = 0; row < 13; row++) {
+    const z = -0.66 + row * 0.108;
+    for (let i = 0; i < 8; i++) {
+      const a = -0.35 + (i + (row % 2) * 0.5) * ((PI + 0.7) / 8) + (K.rand() - 0.5) * 0.2;
       if (a > PI + 0.35) continue;
       const s = skin(a, z + (K.rand() - 0.5) * 0.05);
       if (!s) continue;
-      const size = 0.042 + K.rand() * 0.018 - Math.abs(z) * 0.02;
-      q.setFromUnitVectors(Z, s.n);
-      const m = K.mesh(ringGeo, ring, [s.p.x + s.n.x * 0.004, s.p.y + s.n.y * 0.004, s.p.z + s.n.z * 0.004], tor, null, [size, size * (0.75 + K.rand() * 0.3), size * 0.35]);
-      m.quaternion.copy(q);
-      const d = K.mesh(dotGeo, ink, [s.p.x + s.n.x * 0.006, s.p.y + s.n.y * 0.006, s.p.z + s.n.z * 0.006], tor, null, [size * 0.28, size * 0.28, size * 0.1]);
-      d.quaternion.copy(q);
+      const size = 0.034 + K.rand() * 0.016 - Math.abs(z) * 0.015;
+      q.setFromUnitVectors(Z, s.n).multiply(new THREE.Quaternion().setFromAxisAngle(Z, K.rand() * PI * 2));
+      const at = (k) => [s.p.x + s.n.x * k, s.p.y + s.n.y * k, s.p.z + s.n.z * k];
+      K.mesh(ringGeo, ring, at(0.004), tor, null, [size, size * (0.7 + K.rand() * 0.35), size * 0.3]).quaternion.copy(q);
+      K.mesh(discGeo, inner, at(0.003), tor, null, [size * 0.85, size * 0.62, 1]).quaternion.copy(q);
+      if (K.rand() < 0.6) K.mesh(dotGeo, ink, at(0.005), tor, null, [size * 0.2, size * 0.2, size * 0.08]).quaternion.copy(q);
     }
   }
   // the spine: a line of solid black spots along the back
-  for (let i = 0; i < 9; i++) K.mesh(dotGeo, ink, [0, 0.29 - Math.abs(i - 4) * 0.004, -0.5 + i * 0.12], tor, null, [0.028, 0.012, 0.045]);
+  for (let i = 0; i < 9; i++) K.mesh(dotGeo, ink, [0, 0.262 - Math.abs(i - 4) * 0.004, -0.5 + i * 0.12], tor, null, [0.028, 0.012, 0.045]);
 
   // neck and head: a short thick neck, a broad round head with small rounded ears
   const neck = K.group([0, 0.68, 0.5], body);
   K.mesh(K.capsule(0.15, 0.2, 3, 9), coat, [0, 0.0, 0.08], neck, [1.2, 0, 0]);
   K.mesh(K.sphere(1, 10, 8), cream, [0, -0.08, 0.1], neck, null, [0.12, 0.12, 0.14]);
   const head = K.group([0, 0.06, 0.24], neck);
+  head.scale.set(1.22, 1.15, 1.1);                               // a broad, heavy head: the jaguar's mark
   K.mesh(K.sphere(1, 16, 11), coat, [0, 0, 0], head, null, [0.165, 0.15, 0.16]);
-  K.mesh(K.sphere(1, 12, 9), coat, [0, -0.05, 0.12], head, null, [0.115, 0.085, 0.1]);             // the muzzle
+  K.mesh(K.sphere(1, 12, 9), coat, [0, -0.05, 0.11], head, null, [0.12, 0.085, 0.09]);             // the muzzle, short and wide
   for (const s of [-1, 1]) K.mesh(K.sphere(1, 10, 8), cream, [s * 0.045, -0.07, 0.17], head, null, [0.055, 0.045, 0.05]);   // whisker pads
   K.mesh(K.sphere(1, 10, 8), cream, [0, -0.115, 0.1], head, null, [0.07, 0.035, 0.07]);            // chin
   K.mesh(K.sphere(1, 8, 6), noseM, [0, -0.025, 0.215], head, null, [0.035, 0.022, 0.02]);
@@ -129,7 +133,7 @@ export function buildJaguar(K, home, opts = {}) {
   const tails = [];
   let parent = body, at = [0, 0.66, -0.62];
   for (let i = 0; i < 3; i++) {
-    const g = K.group(at, parent, [0.9 - i * 0.15, 0, 0]);
+    const g = K.group(at, parent, [[-0.75, -0.25, 0.45][i], 0, 0]);
     const r = 0.05 - i * 0.008;
     K.mesh(K.capsule(r, 0.22, 3, 7), coat, [0, 0, -0.13], g, [PI / 2, 0, 0]);
     K.mesh(K.torus(1, 0.25, 3, 9), ink, [0, 0, -0.2], g, null, [r * 1.02, r * 1.02, r * 1.4]);
@@ -154,7 +158,7 @@ export function buildJaguar(K, home, opts = {}) {
   // it walks up until its chest nearly touches the bark, then rears and closes in as it climbs
   const toTrunk = new THREE.Vector3(Math.sin(trunkYaw), 0, Math.cos(trunkYaw));
   const climbAt = foot.clone().addScaledVector(toTrunk, -(opts.trunkR ?? 0.6) - 0.75);
-  const CLOSE = 0.85;                                            // how far it closes in on the trunk as it rears
+  const CLOSE = 0.98;                                            // how far it closes in on the trunk as it rears
   const lieAt = home.clone();                                    // home is its spot on the branch
   const lieYaw = bough ? Math.atan2(bough.dir.x, bough.dir.z) : 0;
   const crossYaw = yawTo(from, cross);
@@ -181,15 +185,15 @@ export function buildJaguar(K, home, opts = {}) {
         // lying: forelegs out in front (on the ground) or both pairs hanging down either side of the branch
         const onBranch = S.ph === 'lie' || S.ph === 'onto';
         const lx = onBranch ? (L.front ? 0.25 : 0.15) : (L.front ? -1.35 : 1.25);
-        const lk = onBranch ? (L.front ? 0.3 : -0.25) : (L.front ? 0.2 : -2.2);
+        const lk = onBranch ? (L.front ? 0.45 : -0.4) : (L.front ? 0.2 : -2.2);
         L.hip.rotation.x = hx * (1 - S.lie) + lx * S.lie;
         L.knee.rotation.x = kx * (1 - S.lie) + lk * S.lie;
-        L.hip.rotation.z = onBranch ? (L.hip.position.x > 0 ? 1 : -1) * 0.42 * S.lie : 0;
+        L.hip.rotation.z = onBranch ? (L.hip.position.x > 0 ? 1 : -1) * 0.62 * S.lie : 0;
       });
       tor.rotation.z = Math.sin(S.gph) * 0.04 * S.w;
       tor.rotation.y = Math.sin(S.gph) * 0.05 * S.w;
       body.position.y = -0.36 * S.lie + Math.abs(Math.sin(S.gph * 2)) * 0.015 * S.w;
-      pivot.rotation.x = -1.2 * S.rear;
+      pivot.rotation.x = -1.35 * S.rear;
       // the head: low while it walks, raised and turned to the van when it stops on the road and on the branch
       S.look = damp(S.look, S.ph === 'look' || S.ph === 'lie' || S.ph === 'wait' ? 1 : 0, 3, dt);
       neck.rotation.x = damp(neck.rotation.x, (S.w > 0.5 ? 0.2 : -0.1) - 0.15 * S.lie + (climbing ? 0.9 : 0), 4, dt);
@@ -201,8 +205,8 @@ export function buildJaguar(K, home, opts = {}) {
       const hang = S.ph === 'lie' || S.ph === 'onto' ? S.lie : 0;
       tails.forEach((g, i) => {
         g.rotation.y = Math.sin(env.t * 1.1 - i * 0.7 + c.bob) * (0.18 + 0.1 * i) * (1 - hang) + Math.sin(S.gph - i * 0.6) * 0.12 * S.w;
-        const rest = [0.9, -0.2, -0.35][i] * (1 - hang) + [1.5, 0.15, -0.1][i] * hang;
-        g.rotation.x = rest + (i === 2 ? Math.max(0, Math.sin(env.t * 1.9 + c.bob)) * 0.5 * hang : 0) - (climbing && i === 0 ? 0.6 : 0);
+        const rest = [-0.75, -0.25, 0.45][i] * (1 - hang) + [-1.35, -0.1, 0.25][i] * hang;   // low with the tip curled up; straight down from the branch
+        g.rotation.x = rest + (i === 2 ? Math.max(0, Math.sin(env.t * 1.9 + c.bob)) * 0.5 * hang : 0) + (climbing && i === 0 ? -0.6 : 0);
       });
       shade.visible = S.ph !== 'climb' && S.ph !== 'onto' && S.ph !== 'lie';
     },
@@ -289,10 +293,13 @@ const HORN_UP = 0.36;                                             // the body's 
 export function buildRhinocerosHornbill(K, home, opts = {}) {
   const mode = opts.mode || 'roost';
   const black = K.mat(0x121010, { roughness: 0.7 }), white = K.mat(0xeee9df, { roughness: 0.85 });
-  const billM = K.sheen(0xf1e2a8, { roughness: 0.35 }), casqueM = K.sheen(0xe2501e, { roughness: 0.32 }), casqueY = K.sheen(0xf2b437, { roughness: 0.32 });
+  const night = Math.max(0, K.glowLevel - 0.25);                  // 0 by day, ~2 at night
+  const billM = K.sheen(0xf1e2a8, { roughness: 0.35 });
+  const casqueM = K.sheen(0xe2501e, { roughness: 0.32, emissive: 0xff5a1e, emissiveIntensity: night * 0.35 }), casqueY = K.sheen(0xf2b437, { roughness: 0.32, emissive: 0xffb43a, emissiveIntensity: night * 0.3 });
   const legM = K.mat(0x5b5c56, { roughness: 0.8 }), skinM = K.mat(0x2a2422, { roughness: 0.7 });
   const feather = two(K, 0x141212, { roughness: 0.65 }), cov = two(K, 0x1d1a19, { roughness: 0.7 }), tailW = two(K, 0xf0ece4, { roughness: 0.8 });
-  const lum = K.glow(0xffc070, 0.9, { side: THREE.DoubleSide });
+  // the glow along the casque and the wing edges: dark by day (the wings are all black), lit after dark
+  const lum = K.mat(0x1c1612, { emissive: 0xffbe6a, emissiveIntensity: Math.max(0.03, night) * 1.1, roughness: 0.5, side: THREE.DoubleSide });
   const lumBase = lum.emissiveIntensity;
 
   const root = K.group();
@@ -313,7 +320,7 @@ export function buildRhinocerosHornbill(K, home, opts = {}) {
   // the casque: a horn lying on the upper bill, its front end swept up and back
   K.mesh(K.tube('fb-casque', [[0, 0.04, 0.03], [0, 0.065, 0.12], [0, 0.07, 0.2], [0, 0.11, 0.25], [0, 0.15, 0.22]], 0.035, 0.012, 8, 12), casqueM, null, head);
   K.mesh(K.tube('fb-casqueY', [[0, 0.035, 0.12], [0, 0.04, 0.2], [0, 0.07, 0.25]], 0.028, 0.012, 7, 8), casqueY, null, head);
-  K.mesh(K.tube('fb-casqueLum', [[0, 0.09, 0.05], [0, 0.103, 0.13], [0, 0.107, 0.2], [0, 0.145, 0.25], [0, 0.18, 0.22]], 0.006, 0.004, 5, 12), lum, null, head);
+  K.mesh(K.tube('fb-casqueLum', [[0, 0.09, 0.05], [0, 0.103, 0.13], [0, 0.107, 0.2], [0, 0.145, 0.25], [0, 0.18, 0.22]], 0.011, 0.006, 5, 12), lum, null, head);
   for (const s of [-1, 1]) K.mesh(K.sphere(0.02, 8, 6), skinM, [s * 0.05, 0.012, 0.035], head);   // the bare skin round the eye
   const eyes = birdEyes(K, head, { x: 0.058, y: 0.014, z: 0.038, r: 0.012, iris: 0xd0261a, glow: 0.4, dir: 0.9 });
   // broad wings, black with the glowing edge; the white tail with a black band
@@ -429,7 +436,7 @@ export function buildRhinocerosHornbill(K, home, opts = {}) {
 // sets it on another frog's log).
 export function buildPoisonFrog(K, home, opts = {}) {
   const red = K.sheen(0xd9221c, { roughness: 0.25 }), blue = K.sheen(0x1d3a8c, { roughness: 0.3 });
-  const dot = K.mat(0x1a0d0c, { roughness: 0.5 }), lumDot = K.mat(0x2a1210, { roughness: 0.4, emissive: 0x7ff3ff, emissiveIntensity: K.glowLevel * 0.9 });
+  const dot = K.mat(0x1a0d0c, { roughness: 0.5 }), lumDot = K.mat(0x2a1210, { roughness: 0.4, emissive: 0x7ff3ff, emissiveIntensity: Math.max(0.03, K.glowLevel - 0.25) * 0.9 });
   const throatM = K.sheen(0xb81a18, { roughness: 0.3 });
   const bark = K.mat(0x4b3b2b, { roughness: 1 }), moss = K.mat(0x3f5e2c, { roughness: 1 }), leafM = K.mat(0x2f6a34, { roughness: 0.7, side: THREE.DoubleSide });
 
@@ -439,7 +446,7 @@ export function buildPoisonFrog(K, home, opts = {}) {
     bedY = 0.44;
     K.mesh(K.cyl(0.24, 0.27, 2.2, 9), bark, [0.3, 0.22, 0], near, [0, 0, PI / 2]);
     K.mesh(K.cyl(0.245, 0.245, 0.03, 9), K.mat(0x7a5e40, { roughness: 1 }), [1.41, 0.22, 0], near, [0, 0, PI / 2]);
-    K.mesh(K.sphere(1, 9, 6), moss, [0.1, 0.42, 0], near, null, [0.7, 0.08, 0.2]);
+    K.mesh(K.sphere(1, 9, 6), moss, [0.15, 0.42, 0.02], near, null, [0.45, 0.04, 0.18]);
     K.mesh(K.sphere(1, 7, 5), moss, [0.9, 0.4, 0.06], near, null, [0.32, 0.07, 0.16]);
     K.mesh(K.cyl(0.24, 0.27, 2.2, 5), bark, [0.3, 0.22, 0], far, [0, 0, PI / 2]);
   } else if (opts.bed === 'leaf') {
@@ -461,17 +468,20 @@ export function buildPoisonFrog(K, home, opts = {}) {
     K.mesh(K.sphere(1, 5, 4), K.mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.9 }), [s * 0.025, 0.031, 0.055], trunk, null, 0.003);
   }
   // speckles over the back, a few of them faintly glowing
-  for (let i = 0; i < 14; i++) {
-    const a = (i * 2.399) % (PI * 2), r = 0.5 + 0.45 * ((i * 0.37) % 1), z = -0.045 + (i / 13) * 0.08;
-    K.mesh(K.sphere(1, 5, 4), i % 3 ? dot : lumDot, [Math.cos(a) * 0.026 * r, 0.03 - Math.abs(Math.cos(a)) * 0.012, z], trunk, null, 0.0032 + (i % 2) * 0.0012);
+  for (let i = 0; i < 16; i++) {
+    const z = -0.05 + ((i * 0.618) % 1) * 0.085, a = 0.35 + ((i * 0.382) % 1) * (PI - 0.7);
+    const k = Math.sqrt(Math.max(0, 1 - ((z + 0.01) / 0.058) ** 2));
+    K.mesh(K.sphere(1, 5, 4), i % 3 ? dot : lumDot, [Math.cos(a) * 0.038 * k, Math.sin(a) * 0.032 * k, z], trunk, null, [0.0055, 0.003, 0.0055]);
   }
-  // the blue legs: forelegs propping it up, hind legs folded beside the body
+  // the blue legs: forelegs splayed out in front, hind legs folded in a Z beside the body, round toe pads
+  const pads = (x, y, z, yaw) => { for (let t = -1; t <= 1; t++) K.mesh(K.sphere(1, 6, 4), blue, [x + Math.sin(yaw + t * 0.5) * 0.014, y, z + Math.cos(yaw + t * 0.5) * 0.014], body, null, [0.0055, 0.003, 0.0055]); };
   for (const s of [-1, 1]) {
-    K.mesh(K.capsule(0.007, 0.03, 2, 5), blue, [s * 0.024, 0.008, 0.04], body, [0.5, 0, s * 0.2]);
-    K.mesh(K.sphere(1, 6, 4), blue, [s * 0.027, -0.004, 0.056], body, null, [0.01, 0.004, 0.012]);
-    K.mesh(K.sphere(1, 9, 7), blue, [s * 0.035, 0.014, -0.03], body, [0.3, s * 0.4, 0], [0.012, 0.014, 0.032]);
-    K.mesh(K.capsule(0.006, 0.04, 2, 5), blue, [s * 0.04, 0.004, -0.008], body, [PI / 2 - 0.1, s * -0.35, 0]);
-    K.mesh(K.sphere(1, 6, 4), blue, [s * 0.042, 0.0, 0.016], body, null, [0.01, 0.003, 0.016]);
+    K.mesh(K.capsule(0.0075, 0.03, 2, 6), blue, [s * 0.03, 0.016, 0.042], body, [0.75, 0, s * 0.75]);           // foreleg
+    pads(s * 0.042, 0.002, 0.056, s * 0.5);
+    K.mesh(K.sphere(1, 9, 7), blue, [s * 0.034, 0.022, -0.035], body, [0, s * 0.35, 0], [0.016, 0.017, 0.034]);   // thigh
+    K.mesh(K.capsule(0.008, 0.042, 2, 6), blue, [s * 0.05, 0.01, -0.02], body, [PI / 2 + 0.2, s * 0.5, 0]);       // shin, folded forward
+    K.mesh(K.capsule(0.006, 0.03, 2, 5), blue, [s * 0.058, 0.003, 0.005], body, [PI / 2, s * -0.4, 0]);           // foot
+    pads(s * 0.062, 0.002, 0.024, s * -0.2);
   }
   K.mesh(K.sphere(1, 8, 6), red, [0, bedY + 0.035, 0], far, null, [0.04, 0.032, 0.06]);
   near.scale.setScalar(1.25); far.scale.setScalar(1.25);
