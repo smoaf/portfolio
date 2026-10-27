@@ -10,6 +10,7 @@ import { makeKit } from '../kit.js';
 import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, instanced, addSway, shaftMaterial, motes, pacing } from '../terrain.js';
 import * as FOREST from '../fauna/forest.js';
 import * as ESTUARY from '../fauna/estuary.js';
+import { planPoses } from '../poses.js';
 
 const WATER = 0;
 const N1 = noise2(5), N2 = noise2(17), N3 = noise2(29);
@@ -44,6 +45,29 @@ const ROAD = [
   // up the north bank and on through the forest
   [86, 190], [56, 232], [62, 280], [36, 326], [6, 372], [-14, 420], [-20, 470],
 ];
+
+// What sets off each species' rare pose (see safari/poses.js). The pose is the species' own:
+const POSES = {
+  // the forest
+  tarsier: 'near',                   // a leap up its stem, the huge eyes flaring
+  treehopper: 'feed',                // after feeding it hops on its twig and its helmet lights up
+  'giant-panda': 'feed',             // after eating it tumbles head over heels and rolls on its back
+  'flower-mantis': 'feed',           // it strikes at the food, then opens its arms and wings like a bloom
+  'bongo-antelope': 'near',          // the alarm: a stamp and a bark at the van, the stripes flaring
+  'giant-anteater': 'startle',       // feed landing close startles it: it rears up, tail propped, claws spread
+  'eyespot-moth': 'near',            // flashes its eyespots and flutters
+  'poodle-moth': 'near',             // flies up to the van and hovers right in front of it (night only)
+  // the river
+  heron: 'near',                     // the catch: a fish in the bill, tossed and swallowed
+  mudskipper: 'feed',                // after feeding two males leap at each other, fins up
+  'fiddler-crab': 'near',            // the whole colony waves its big claws together
+  crocodile: 'feed',                 // after eating: two jaw claps, head up, then the death roll
+  'river-dolphin': 'near',           // a leap out of the water, over and back in
+  archerfish: 'near',                // lines up under an insect and shoots it down with a jet of water
+  'moon-jelly': 'near',              // the swarm rises and every bell pulses bright
+  frigatebird: 'near',               // the male inflates his red throat pouch, glowing, and swoops
+  'frigatebird:flock': 'feed',       // the birds riding the thermal: feed on the water makes them dive for it
+};
 
 export const ROUTE = {
   id: 'jungle',
@@ -574,6 +598,9 @@ export const ROUTE = {
     clear(ferns, 2); clear(bigLeaves, 2); clear(shrubs, 2.5); clear(bamboo, 0.3, [[bambooLeaves, 1]]);
     clear(trunks, 3, [[crownA, 1], [crownB, 2]]); clear(palmTrunks, 0.5, [[fronds, 1]]); clear(lianas, 0.2);
 
+    // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
+    const poses = planPoses({ creatures, path, plan: POSES });
+
     const colliders = [ground, trunks, crownA, crownB, shrubs, palmTrunks, bigLeaves, mangroveRoots, mangroveCrowns, perchTrunks];
     const open = ROUTE.open[tod] || ROUTE.open.day;
     const AMB = {
@@ -585,7 +612,7 @@ export const ROUTE = {
     const openness = (u) => smooth(uIn - 0.05, uIn + 0.04, u) * (1 - smooth(uOut - 0.04, uOut + 0.05, u));
 
     return {
-      path, groundY, creatures, colliders, palette: P,
+      path, groundY, creatures, colliders, palette: P, poses,
       waterY: () => WATER,
       floats: true,
       sections,
