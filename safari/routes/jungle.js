@@ -593,7 +593,7 @@ export const ROUTE = {
     spawn('strawberry-poison-frog', beside(uF + 0.004, -3.9), { bed: 'leaf', yaw: frogYaw + 0.2 }, { seeAt: 60 });
 
     // the hornbills: by day the pair waits on a bough in the forest on the left, ahead of the van, and
-    // once the van is ~50 m off they cross the road low in front of it and land on a tall tree's bough
+    // once the van is ~45 m off they cross the road low in front of it and land on a tall tree's bough
     // over the right side of the road. After dark both roost on that bough.
     const uH = uC(0.27), sH = side(uH);
     const footL = beside(uH + 0.004, 13), toRoad = sH.clone().negate();
@@ -608,7 +608,7 @@ export const ROUTE = {
         [startB.start.clone().addScaledVector(sH, 3.4).setY(startB.top(3.4)), lift(uH + 0.009, -10, 6.5), lift(uH, 0, 4.4), lift(uH + 0.0015, 3.5, 6.8), landAt[0]],
         [startB.start.clone().addScaledVector(sH, 2.6).setY(startB.top(2.6)), lift(uH + 0.0105, -11, 7.4), lift(uH + 0.0015, 0.6, 5.3), lift(uH + 0.0025, 3, 7.6), landAt[1]],
       ];
-      paths.forEach((pts, i) => spawn('rhinoceros-hornbill', landAt[i], { mode: 'cross', path: pts, at: uH, length: roadLen, lead: 52, delay: i * 0.5, landYaw: landYaw + (i ? 0.3 : -0.2), yaw: 0 }, { seeAt: 260 }));
+      paths.forEach((pts, i) => spawn('rhinoceros-hornbill', landAt[i], { mode: 'cross', path: pts, at: uH, length: roadLen, lead: 46, delay: i * 0.5, landYaw: landYaw + (i ? 0.3 : -0.2), yaw: 0 }, { seeAt: 260 }));
     }
 
     // the jaguar: waits in the undergrowth on the right, walks out onto the road ahead of the van and
@@ -619,7 +619,7 @@ export const ROUTE = {
     const boughJ = bough(footJ, dirJ, 3.1, 3.2, 1.7, 1.1, sJ.clone().multiplyScalar(0.5));   // from the road side of the trunk
     const lieAt = boughJ.start.clone().addScaledVector(dirJ, 1.6).setY(boughJ.top(1.6));
     spawn('jaguar', lieAt, { from: beside(uJ + 0.004, 9.5), cross: beside(uJ, 0), foot: footJ, bough: { start: boughJ.start, dir: dirJ, y: boughJ.top(0.6) },
-      trunkR: 0.6, at: uJ, length: roadLen, lead: 62, leave: 22, yaw: 0 });
+      trunkR: 0.6, at: uJ, length: roadLen, lead: 85, leave: 42, yaw: 0 });
 
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);

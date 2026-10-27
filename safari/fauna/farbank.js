@@ -124,19 +124,18 @@ export function buildJaguar(K, home, opts = {}) {
 
   // legs: short and thick, big round paws, spotted
   const paw = (g, y) => K.mesh(K.sphere(1, 10, 8), coat, [0, y - 0.02, 0.04], g, null, [0.075, 0.05, 0.095]);
-  const spotLeg = (L) => { for (let i = 0; i < 3; i++) K.mesh(dotGeo, ink, [(i % 2 ? 1 : -1) * 0.05, -0.06 - i * 0.07, 0.05], L.knee, null, [0.014, 0.016, 0.01]); return L; };
-  const front = (x, ph) => ({ ...spotLeg(leg(K, body, [x, 0.58, 0.4], { r1: 0.085, l1: 0.26, r2: 0.066, l2: 0.25, m1: coat, foot: paw })), ph, front: true });
-  const hind = (x, ph) => ({ ...spotLeg(leg(K, body, [x, 0.6, -0.42], { r1: 0.1, l1: 0.28, r2: 0.064, l2: 0.27, m1: coat, foot: paw })), ph, front: false });
+  const front = (x, ph) => ({ ...leg(K, body, [x, 0.58, 0.4], { r1: 0.085, l1: 0.26, r2: 0.066, l2: 0.25, m1: coat, foot: paw }), ph, front: true });
+  const hind = (x, ph) => ({ ...leg(K, body, [x, 0.6, -0.42], { r1: 0.1, l1: 0.28, r2: 0.064, l2: 0.27, m1: coat, foot: paw }), ph, front: false });
   // the walk: a lateral sequence, left hind, left fore, right hind, right fore
   const legs = [front(-0.14, PI / 2), front(0.14, PI * 1.5), hind(-0.13, 0), hind(0.13, PI)];
-  // the tail: long and thick, in three pieces so it can swing, curl and hang; black rings to the tip
+  // the tail: long and thick, in three pieces so it can swing, curl and hang; black rings towards the tip
   const tails = [];
   let parent = body, at = [0, 0.66, -0.62];
   for (let i = 0; i < 3; i++) {
     const g = K.group(at, parent, [[-0.75, -0.25, 0.45][i], 0, 0]);
     const r = 0.05 - i * 0.008;
     K.mesh(K.capsule(r, 0.22, 3, 7), coat, [0, 0, -0.13], g, [PI / 2, 0, 0]);
-    K.mesh(K.torus(1, 0.25, 3, 9), ink, [0, 0, -0.2], g, null, [r * 1.02, r * 1.02, r * 1.4]);
+    if (i) K.mesh(K.torus(1, 0.25, 3, 9), ink, [0, 0, -0.2], g, null, [r * 1.02, r * 1.02, r * 1.4]);
     tails.push(g); parent = g; at = [0, 0, -0.26];
   }
   K.mesh(K.sphere(1, 8, 6), ink, [0, 0, -0.06], tails[2], null, [0.04, 0.04, 0.07]);
@@ -237,7 +236,7 @@ export function buildJaguar(K, home, opts = {}) {
         // crouched in the undergrowth, watching the road
         r.y = K.groundY(r.x, r.z);
         if (ahead < 8) settle();                                  // the van is already past (a test skip)
-        else if (ahead < (opts.lead ?? 62)) { to('out', 'rare'); if (env.call) env.call(c, 'rare'); }
+        else if (ahead < (opts.lead ?? 85)) { to('out', 'rare'); if (env.call) env.call(c, 'rare'); }
         break;
       case 'out':
         if (walk(cross, 2.3, dt)) to('look');
@@ -247,26 +246,26 @@ export function buildJaguar(K, home, opts = {}) {
         const want = yawTo(r, env.camPos);
         const turn = clamp(wrap(want - crossYaw), -0.55, 0.55);
         c.root.rotation.y += wrap(crossYaw + turn - c.root.rotation.y) * Math.min(1, dt * 1.5);
-        if (S.t > 1.6 && (ahead < (opts.leave ?? 22) || S.t > 7)) to('off');
+        if (S.t > 1.6 && (ahead < (opts.leave ?? 42) || S.t > 7)) to('off');
         break;
       }
       case 'off':
-        if (walk(climbAt, 2.6, dt)) { to('climb'); S.y0 = r.y; }
+        if (walk(climbAt, 3.0, dt)) { to('climb'); S.y0 = r.y; }
         break;
       case 'climb': {
         // up the road side of the trunk, in bounds
         c.root.rotation.y += wrap(trunkYaw - c.root.rotation.y) * Math.min(1, dt * 8);
-        const k = ease((S.t - 0.35) / 1.5);
+        const k = ease((S.t - 0.3) / 1.2);
         r.set(climbAt.x, S.y0 + (bough.y - S.y0) * k, climbAt.z).addScaledVector(toTrunk, CLOSE * ease(S.t / 0.45));
-        if (S.t > 1.9) { to('onto', 'idle'); S.p0 = r.clone(); }
+        if (S.t > 1.6) { to('onto', 'idle'); S.p0 = r.clone(); }
         break;
       }
       case 'onto': {
         // turns along the branch and walks out to its spot
         c.root.rotation.y += wrap(lieYaw - c.root.rotation.y) * Math.min(1, dt * 4);
-        const k = ease((S.t - 0.5) / 1.3);
+        const k = ease((S.t - 0.35) / 1.1);
         r.lerpVectors(S.p0, lieAt, k);
-        if (S.t > 1.9) to('lie');
+        if (S.t > 1.5) to('lie');
         break;
       }
       case 'lie':
@@ -296,8 +295,8 @@ export function buildRhinocerosHornbill(K, home, opts = {}) {
   const night = Math.max(0, K.glowLevel - 0.25);                  // 0 by day, ~2 at night
   const billM = K.sheen(0xf1e2a8, { roughness: 0.35 });
   const casqueM = K.sheen(0xe2501e, { roughness: 0.32, emissive: 0xff5a1e, emissiveIntensity: night * 0.35 }), casqueY = K.sheen(0xf2b437, { roughness: 0.32, emissive: 0xffb43a, emissiveIntensity: night * 0.3 });
-  const legM = K.mat(0x5b5c56, { roughness: 0.8 }), skinM = K.mat(0x2a2422, { roughness: 0.7 });
-  const feather = two(K, 0x141212, { roughness: 0.65 }), cov = two(K, 0x1d1a19, { roughness: 0.7 }), tailW = two(K, 0xf0ece4, { roughness: 0.8 });
+  const legM = K.mat(0x5b5c56, { roughness: 0.8 });
+  const feather = two(K, 0x141212, { roughness: 0.65 }), tailW = two(K, 0xf0ece4, { roughness: 0.8 });
   // the glow along the casque and the wing edges: dark by day (the wings are all black), lit after dark
   const lum = K.mat(0x1c1612, { emissive: 0xffbe6a, emissiveIntensity: Math.max(0.03, night) * 1.1, roughness: 0.5, side: THREE.DoubleSide });
   const lumBase = lum.emissiveIntensity;
@@ -321,11 +320,10 @@ export function buildRhinocerosHornbill(K, home, opts = {}) {
   K.mesh(K.tube('fb-casque', [[0, 0.04, 0.03], [0, 0.065, 0.12], [0, 0.07, 0.2], [0, 0.11, 0.25], [0, 0.15, 0.22]], 0.035, 0.012, 8, 12), casqueM, null, head);
   K.mesh(K.tube('fb-casqueY', [[0, 0.035, 0.12], [0, 0.04, 0.2], [0, 0.07, 0.25]], 0.028, 0.012, 7, 8), casqueY, null, head);
   K.mesh(K.tube('fb-casqueLum', [[0, 0.09, 0.05], [0, 0.103, 0.13], [0, 0.107, 0.2], [0, 0.145, 0.25], [0, 0.18, 0.22]], 0.011, 0.006, 5, 12), lum, null, head);
-  for (const s of [-1, 1]) K.mesh(K.sphere(0.02, 8, 6), skinM, [s * 0.05, 0.012, 0.035], head);   // the bare skin round the eye
   const eyes = birdEyes(K, head, { x: 0.058, y: 0.014, z: 0.038, r: 0.012, iris: 0xd0261a, glow: 0.4, dir: 0.9 });
   // broad wings, black with the glowing edge; the white tail with a black band
   const WS = { at: [0.13, 0.08, 0.17], arm: 0.36, hand: 0.42, chord: 0.3, bone: 0.03, sec: 7, prim: 7, primLen: 0.34, primW: 0.075,
-    mats: { wing: feather, cov, prim: feather, tip: lum, edge: lum } };
+    mats: { wing: feather, cov: feather, prim: feather, tip: lum, edge: lum } };
   const wings = [wing(K, body, -1, WS), wing(K, body, 1, WS)];
   const tail = fanTail(K, body, [0, 0.0, -0.22], 8, 0.42, 0.085, 0.4, tailW, feather, [0.42], 0.24);
   // legs: short and grey, tucked away in flight
@@ -483,6 +481,10 @@ export function buildPoisonFrog(K, home, opts = {}) {
     K.mesh(K.capsule(0.006, 0.03, 2, 5), blue, [s * 0.058, 0.003, 0.005], body, [PI / 2, s * -0.4, 0]);           // foot
     pads(s * 0.062, 0.002, 0.024, s * -0.2);
   }
+  // the body's still parts go into the legs' group, so each colour of the frog is one draw
+  trunk.updateMatrix();
+  for (const m of [...trunk.children]) { m.applyMatrix4(trunk.matrix); body.add(m); }
+  body.remove(trunk);
   K.mesh(K.sphere(1, 8, 6), red, [0, bedY + 0.035, 0], far, null, [0.04, 0.032, 0.06]);
   near.scale.setScalar(1.25); far.scale.setScalar(1.25);
   K.place(root, home);
@@ -492,10 +494,9 @@ export function buildPoisonFrog(K, home, opts = {}) {
     species: SPECIES['strawberry-poison-frog'], root, home, radius: 0.12, eye: new THREE.Vector3(0, (bedY + 0.05) * 1.25, 0.04),
     ground: K.groundY, speed: 0, roam: 0, fleeAt: 0, curiousAt: 10, shy: 0, rareChance: 0, yaw: opts.yaw,
     pose(c, dt, env) {
-      // the throat pumps, the body breathes; now and then a little hop on the spot
+      // the throat pumps; now and then a little hop on the spot
       const pump = Math.max(0, Math.sin(env.t * 9 + c.bob)) * (Math.sin(env.t * 0.6 + c.bob) > 0.2 ? 1 : 0.2);
       throat.scale.set(0.024 * (1 + 0.5 * pump), 0.016 * (1 + 0.7 * pump), 0.022 * (1 + 0.4 * pump));
-      trunk.scale.y = 1 + Math.sin(env.t * 3.1 + c.bob) * 0.04;
       if (hop <= 0 && Math.random() < dt * 0.05) hop = 0.4;
       if (hop > 0) {
         hop -= dt;
@@ -504,7 +505,7 @@ export function buildPoisonFrog(K, home, opts = {}) {
       } else body.position.y = bedY;
     },
   }));
-  return K.lod(c, near, far, 16);
+  return K.lod(c, near, far, 11);
 }
 
 export const BUILDERS = {
