@@ -61,7 +61,7 @@ const POSES = {
   heron: 'near',                     // the catch: a fish in the bill, tossed and swallowed
   mudskipper: 'feed',                // after feeding two males leap at each other, fins up
   'fiddler-crab': 'near',            // the whole colony waves its big claws together
-  crocodile: 'feed',                 // after eating: two jaw claps, head up, then the death roll
+  crocodile: 'near',                 // head up, two jaw claps, then (in the water) the death roll
   'river-dolphin': 'near',           // a leap out of the water, over and back in
   archerfish: 'near',                // lines up under an insect and shoots it down with a jet of water
   'moon-jelly': 'near',              // the swarm rises and every bell pulses bright
