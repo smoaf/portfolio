@@ -11,6 +11,7 @@ import { seeded, smooth, lerp, noise2, roadIndex, heightGrid, instanced, addSway
 import * as FOREST from '../fauna/forest.js';
 import * as ESTUARY from '../fauna/estuary.js';
 import * as FARBANK from '../fauna/farbank.js';
+import * as PARADISE from '../fauna/paradise.js';
 import { planPoses } from '../poses.js';
 
 const WATER = 0;
@@ -71,6 +72,8 @@ const POSES = {
   // the far bank
   jaguar: 'always',                  // steps onto the road, looks at the van, climbs the tree beside it (FEAT-004)
   'rhinoceros-hornbill': 'always',   // the pair crossing low over the road and landing in a tall tree (FEAT-004)
+  // the first stretch
+  'superb-bird-of-paradise': 'near', // the full dance: fast bouncing and clicking, the female leaning in (FEAT-007)
 };
 
 export const ROUTE = {
@@ -444,7 +447,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 808 });
-    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS };
+    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS };
     const creatures = [];
     // everything starts out turned towards the road (give or take), so a perched animal never
     // shows the van its back for the whole drive
@@ -620,6 +623,23 @@ export const ROUTE = {
     const lieAt = boughJ.start.clone().addScaledVector(dirJ, 1.6).setY(boughJ.top(1.6));
     spawn('jaguar', lieAt, { from: beside(uJ + 0.004, 9.5), cross: beside(uJ, 0), foot: footJ, bough: { start: boughJ.start, dir: dirJ, y: boughJ.top(0.6) },
       trunkR: 0.6, at: uJ, length: roadLen, lead: 85, leave: 42, yaw: 0 });
+
+    // the superb birds-of-paradise (FEAT-007): a male and a female on a mossy low branch at eye height
+    // on the right of the road in the first stretch, between the flower mantis and the bongo pair. The
+    // branch reaches from its tree out towards the road, so from the van the two sit side by side: he
+    // sits out near the road, she further in; he faces her, turned more than half towards the oncoming
+    // van, so his display shows from the road. After dark he roosts facing the road, his shield lit.
+    // No random numbers here.
+    {
+      const uP = uA(0.4), toRoad = side(uP).negate(), tP = path.getTangentAt(uP).setY(0).normalize();
+      const footP = beside(uP, 6.9), limb = bough(footP, toRoad, 1.7, 3.0, 0.75, 0.8);
+      const at = (d) => limb.start.clone().addScaledVector(toRoad, d).setY(limb.top(d));
+      const yawOf = (v) => Math.atan2(v.x, v.z);
+      const toHim = yawOf(toRoad), toHer = toHim + Math.PI, van = yawOf(tP) + Math.PI;
+      const mix = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
+      const male = spawn('superb-bird-of-paradise', at(2.5), { yaw: night ? mix(toHim, van, 0.5) : mix(toHer, van, 0.6), moss: true, along: toHer, len: 1.8 }, { seeAt: 90 });
+      spawn('superb-bird-of-paradise-female', at(1.1), { yaw: mix(toHim, van, 0.3), mate: male }, { seeAt: 90 });
+    }
 
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);
