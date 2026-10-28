@@ -628,7 +628,7 @@ export const ROUTE = {
     // on the right of the road in the first stretch, between the flower mantis and the bongo pair. The
     // branch reaches from its tree out towards the road, so from the van the two sit side by side: he
     // sits out near the road, she further in; he faces her, turned more than half towards the oncoming
-    // van, so his display shows from the road.
+    // van, so his display shows from the road. After dark he roosts facing the road, his shield lit.
     // No random numbers here.
     {
       const uP = uA(0.4), toRoad = side(uP).negate(), tP = path.getTangentAt(uP).setY(0).normalize();
@@ -637,7 +637,7 @@ export const ROUTE = {
       const yawOf = (v) => Math.atan2(v.x, v.z);
       const toHim = yawOf(toRoad), toHer = toHim + Math.PI, van = yawOf(tP) + Math.PI;
       const mix = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
-      const male = spawn('superb-bird-of-paradise', at(2.5), { yaw: mix(toHer, van, 0.6), moss: true, along: toHer, len: 1.8 }, { seeAt: 90 });
+      const male = spawn('superb-bird-of-paradise', at(2.5), { yaw: night ? mix(toHim, van, 0.5) : mix(toHer, van, 0.6), moss: true, along: toHer, len: 1.8 }, { seeAt: 90 });
       spawn('superb-bird-of-paradise-female', at(1.1), { yaw: mix(toHim, van, 0.3), mate: male }, { seeAt: 90 });
     }
 

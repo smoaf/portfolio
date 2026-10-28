@@ -161,6 +161,7 @@ export function buildBirdOfParadise(K, home, opts = {}) {
     },
   }));
   c.display = () => S.open;
+  c.rareOff = K.night;                                                 // roosting after dark: no dance
   return K.lod(c, near, far, 26);
 }
 
