@@ -593,7 +593,7 @@ export const ROUTE = {
     const onGround = creatures.filter((c) => c.home.y - groundY(c.home.x, c.home.z) < 3).map((c) => ({ p: c.home, r: 2 }));
     const sometimes = [runStand, runEdge, P3(-125, -61), P3(-185, lipD(-185)), P3(-170, lipD(-170)), P3(-200, -98.5),
       P3(-418, -14.5), P3(-334, -15), P3(-268, -14), P3(516, 14)].map((p) => ({ p, r: 2 }));
-    plantCanyon({
+    const plants = plantCanyon({
       scene, path, road, groundY, water: WATER, flatRoad: FLAT, roadEdge: HALF + 1, keep, lam, T, night, rim: RIM,
       zone: (u, p) => (p.y < WATER - 0.3 ? null : u > uClimb && u < uDown ? (p.y > 40 ? 'top' : 'climb') : 'rest'),
       away: (p, side) => Math.abs(p.x + side.x * 4 - XC(p.z)) > Math.abs(p.x - XC(p.z)),
@@ -631,6 +631,7 @@ export const ROUTE = {
       update(dt, env) {
         T.time.value = env.t;
         fallTex.offset.y = env.t * 0.9;
+        plants.cull(env.camPos);
         const under = env.under > 0.5;
         spray.visible = !under;
         shaftMesh.visible = under || env.camPos.y < 6;

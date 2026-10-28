@@ -314,20 +314,33 @@ export function plantCanyon({ scene, path, road, groundY, water, flatRoad, roadE
     succ: succulentShapes(rng),
   };
   Object.values(shapes).flat().forEach(keep);
+  // each shape in chunks of ground, so what is behind the van or far off is not drawn at all
+  const CELL = 150, FAR = { grass: 170, succ: 200, juniper: 300, dragon: 520 };
   const meshes = [];
   const tints = [C(0xffffff), C(0xf2eccf), C(0xe4ead0), C(0xfff4dc)];
   for (const kind of Object.keys(G)) {
     G[kind].forEach((items, k) => {
-      if (!items.length) return;
-      const m = instanced(shapes[kind][k], kind === 'grass' ? grassMat : plantMat, items);
-      // a little colour difference from plant to plant, so no two look copied
-      items.forEach((_, i) => m.setColorAt(i, tints[Math.floor(rng() * tints.length)]));
-      m.instanceColor.needsUpdate = true;
-      m.name = 'plants-' + kind + k;
-      scene.add(m);
-      meshes.push(m);
+      const cells = new Map();
+      items.forEach((it) => {
+        const key = Math.floor(it.p.x / CELL) + ',' + Math.floor(it.p.z / CELL);
+        if (!cells.has(key)) cells.set(key, []);
+        cells.get(key).push(it);
+      });
+      for (const list of cells.values()) {
+        const m = instanced(shapes[kind][k], kind === 'grass' ? grassMat : plantMat, list);
+        m.userData.scenery = false;                            // already in chunks
+        // a little colour difference from plant to plant, so no two look copied
+        list.forEach((_, i) => m.setColorAt(i, tints[Math.floor(rng() * tints.length)]));
+        m.instanceColor.needsUpdate = true;
+        m.name = 'plants-' + kind + k;
+        m.userData.far = FAR[kind];
+        scene.add(m);
+        meshes.push(m);
+      }
     });
   }
   const count = Object.fromEntries(Object.entries(G).map(([k, v]) => [k, v.reduce((n, a) => n + a.length, 0)]));
-  return { meshes, count };
+  // hide the chunks that lie wholly beyond the distance their plants still read at
+  const cull = (eye) => { for (const m of meshes) m.visible = m.boundingSphere.center.distanceTo(eye) - m.boundingSphere.radius < m.userData.far; };
+  return { meshes, count, cull };
 }
