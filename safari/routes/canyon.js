@@ -14,6 +14,7 @@ import * as CLIFFS from '../fauna/cliffs.js';
 import * as DEEP from '../fauna/deep.js';
 import * as WATERFOLK from '../fauna/pool.js';
 import { planPoses } from '../poses.js';
+import { plantCanyon } from './canyon-plants.js';
 
 const WATER = -0.7;                                        // the river's surface
 const RIM = 74;                                            // the plateau above the walls
@@ -586,6 +587,20 @@ export const ROUTE = {
       spawn('cassowary', foot, { roam: 3, keep: (x, z) => Math.hypot(x - tx, z - tz) > 1 });
     }
 
+    // the plants (FEAT-005): greener up the cliff path and along the top, sparse spots elsewhere above
+    // water. They keep clear of every animal's spot, also of those that are only there at some times of
+    // day, so the same plants grow at every time of day.
+    const onGround = creatures.filter((c) => c.home.y - groundY(c.home.x, c.home.z) < 3).map((c) => ({ p: c.home, r: 2 }));
+    const sometimes = [runStand, runEdge, P3(-125, -61), P3(-185, lipD(-185)), P3(-170, lipD(-170)), P3(-200, -98.5),
+      P3(-418, -14.5), P3(-334, -15), P3(-268, -14), P3(516, 14)].map((p) => ({ p, r: 2 }));
+    const plants = plantCanyon({
+      scene, path, road, groundY, water: WATER, flatRoad: FLAT, roadEdge: HALF + 1, keep, lam, T, night, rim: RIM,
+      zone: (u, p) => (p.y < WATER - 0.3 ? null : u > uClimb && u < uDown ? (p.y > 40 ? 'top' : 'climb') : 'rest'),
+      away: (p, side) => Math.abs(p.x + side.x * 4 - XC(p.z)) > Math.abs(p.x - XC(p.z)),
+      clearOf: [...onGround, ...sometimes, { p: acacia.base, r: 12 }],
+      dragons: [[uLook - 0.025, 13, 1.15], [0.47, 12, 1], [uLook + 0.03, 34, 1.2], [0.5, 40, 1.1], [0.585, 30, 0.95]],
+    });
+
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
     const poses = planPoses({ creatures, path, plan: POSES });
 
@@ -616,6 +631,7 @@ export const ROUTE = {
       update(dt, env) {
         T.time.value = env.t;
         fallTex.offset.y = env.t * 0.9;
+        plants.cull(env.camPos);
         const under = env.under > 0.5;
         spray.visible = !under;
         shaftMesh.visible = under || env.camPos.y < 6;
