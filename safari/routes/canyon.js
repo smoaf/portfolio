@@ -603,13 +603,15 @@ export const ROUTE = {
       dragons: [[uLook - 0.025, 13, 1.15], [0.47, 12, 1], [uLook + 0.03, 34, 1.2], [0.5, 40, 1.1], [0.585, 30, 0.95]],
     });
 
-    // the ground pangolin (FEAT-006): by a termite mound on the floor in the first stretch, before the
-    // first animals, on the side of the road away from the river. By day it lies curled up at its burrow
+    // the ground pangolin (FEAT-006): by a termite mound on the floor near the end of the first stretch,
+    // between the tortoise and the second saiga herd, on the side of the road away from the river where
+    // no other animal is within 18 m. By day it lies curled up at its burrow
     // at the foot of the mound, wakes as the van comes and digs; at night it forages along the road
     // between the mound and three spots. Spawned after the plants, so they and every other animal stay
     // exactly where they were (the spot has no plant on it). No random numbers here.
+    let pangolin = null;
     {
-      const uG = 0.023, rp = path.getPointAt(uG), tg = path.getTangentAt(uG).setY(0).normalize();
+      const uG = 0.15, rp = path.getPointAt(uG), tg = path.getTangentAt(uG).setY(0).normalize();
       const side = new THREE.Vector3(-tg.z, 0, tg.x);
       if (Math.abs(rp.x + side.x * 4 - XC(rp.z)) < Math.abs(rp.x - XC(rp.z))) side.negate();    // away from the river
       const on = (off, along) => { const p = rp.clone().addScaledVector(side, off).addScaledVector(tg, along); p.y = groundY(p.x, p.z); return p; };
@@ -618,11 +620,14 @@ export const ROUTE = {
       const toMound = dig.clone().negate(), across = new THREE.Vector3(-dig.z, 0, dig.x);
       const at = mound.clone().addScaledVector(dig, 1.15).addScaledVector(across, 0.1);
       at.y = groundY(at.x, at.z);
-      spawn('ground-pangolin', at, { mound, dig: at.clone(), yaw: Math.atan2(toMound.x, toMound.z), spots: [on(6.6, 5.5), on(7.4, 11), on(6.4, -5)] });
+      pangolin = spawn('ground-pangolin', at, { mound, dig: at.clone(), yaw: Math.atan2(toMound.x, toMound.z), spots: [on(6.8, 3.5), on(7.3, 7), on(6.6, -3.5)] });
     }
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
     const poses = planPoses({ creatures, path, plan: POSES });
+    // the pangolin stands up a little earlier than the others (12 m more), so its pose lasts a few
+    // seconds before it rolls up as the van comes close
+    if (pangolin && pangolin._lead !== undefined) pangolin._lead += 12;
 
     const colliders = [ground, boulders, slabs, hoodoos, overhangs, crowns, poolRocks, ...acacia.tree.children];
     const AMB = {

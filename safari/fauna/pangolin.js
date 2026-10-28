@@ -42,7 +42,7 @@ const BALL = {
 };
 const POSE = {
   walk: { h: 0.215, lean: -0.5, j: [0.1, 0.1, 0.16, 0.3], t: [0.42, 0.06, 0.02, -0.03, -0.06] },
-  dig: { h: 0.2, lean: 0.3, j: [0.1, 0.12, 0.16, 0.22], t: [-0.5, -0.05, 0.03, 0.05, 0.05] },
+  dig: { h: 0.2, lean: 0.12, j: [0.06, 0.06, 0.04, 0.06], t: [-0.32, -0.05, 0.03, 0.05, 0.05] },
   stand: { h: 0.205, lean: -1.4, j: [0.04, 0.04, 0.12, 1.0], t: [1.16, 0.1, 0.05, 0.02, 0] },
   ball: BALL,
 };
@@ -88,8 +88,9 @@ function scales(K, g, { c, r, rows, n, phi, w, l, mat, glow, glowEvery = 0, tilt
 // the side the pangolin digs into (towards `dig`, a direction on the ground) and its burrow at the
 // foot beside it. Static: baked into a few draw calls.
 export function buildTermiteMound(K, base, dig) {
-  const clay = K.mat(0xa4673f, { roughness: 1, flatShading: true }), crust = K.mat(0x8c5434, { roughness: 1, flatShading: true });
-  const hole = K.mat(0x1a0f09, { roughness: 1 }), loose = K.mat(0x7a4a2e, { roughness: 1, flatShading: true });
+  // (after dark in the moonlit rock's colours, like the boulders round it)
+  const clay = K.mat(K.night ? 0x6a5250 : 0xa4673f, { roughness: 1, flatShading: true }), crust = K.mat(K.night ? 0x5a4442 : 0x8c5434, { roughness: 1, flatShading: true });
+  const hole = K.mat(0x1a0f09, { roughness: 1 }), loose = K.mat(K.night ? 0x4e3c38 : 0x7a4a2e, { roughness: 1, flatShading: true });
   const g = K.group();
   const tower = (key, h, r) => K.lathe('mound' + key, [[r, -0.1], [r * 0.96, 0.1 * h], [r * 0.82, 0.3 * h], [r * 0.64, 0.52 * h], [r * 0.5, 0.7 * h], [r * 0.34, 0.86 * h], [r * 0.16, 0.97 * h], [0.001, h]], 9);
   K.mesh(tower('a', 1.42, 0.72), clay, [0, 0, 0], g, [0, 0.3, 0.04]);
@@ -225,20 +226,18 @@ export function buildPangolin(K, home, opts = {}) {
   //   wander  walking on its hind legs to the next spot
   //   ball    rolled up tight while the van is close
   //   rare    standing upright on its hind legs, the tail on the ground, sniffing (planPoses)
-  const BALL_AT = 9.5, WAKE_AT = 33;
+  const BALL_AT = 9.5, WAKE_AT = 70;
   const spots = (opts.spots || []).map((p) => p.clone());
-  const S = { p: clone(POSE.ball), minD: Infinity, calm: 0, ph: 0, dig: 0, sniff: 0, look: 0, after: 0, call: 2, lastSpot: night ? -1 : 0, passed: false };
+  const S = { p: clone(POSE.ball), minD: Infinity, calm: 0, ph: 0, dig: 0, sniff: 0, look: 0, after: 0, call: 2, lastSpot: 0, passed: false };
   const c = K.makeCreature({
     species: SPECIES['ground-pangolin'], root, home, radius: 0.45, eye: new THREE.Vector3(0, 0.26, 0.1),
-    ground: K.groundY, speed: night ? 0.36 : 0.26, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, yaw: opts.yaw,
+    ground: K.groundY, speed: night ? 0.45 : 0.26, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, yaw: opts.yaw,
   });
-  c.state = night ? 'wander' : 'rest';
-  c.hold = 99;
+  c.state = night ? 'dig' : 'rest';
+  c.hold = night ? 3 : 99;
   c.air = !night;                                     // a ball is no animal to turn round to the feed
-  if (night) c.target = (spots[0] || home).clone();
 
-  // the next place to dig at: the mound first, then the spots in turn (by day it has dug at the mound
-  // already, so it walks on to the first spot)
+  // the next place to dig at: the spots in turn, then the mound again (it starts at the mound)
   const next = () => {
     const all = [opts.dig, ...spots].filter(Boolean);
     S.lastSpot = (S.lastSpot + 1) % all.length;
@@ -280,7 +279,8 @@ export function buildPangolin(K, home, opts = {}) {
         if (done || c.t > c.hold) startDig(night ? 2 + Math.random() * 2 : 3);
         break;
       }
-      case 'rare':
+      case 'rare':                                      // turns to the van, the nose up, sniffing
+        c.turnTo(env.camPos.x, env.camPos.z, dt, 1.4);
         if (c.t > c.hold) c.go('idle', 2);
         break;
       default:
@@ -336,7 +336,7 @@ export function buildPangolin(K, home, opts = {}) {
     if (puff.visible) { const k = 0.6 + 0.5 * Math.abs(Math.sin(t * 9)); puff.scale.set(k, k * 1.2, k); puff.position.y = 0.03 + k * 0.03; }
     // the head: pushes into the hole to lick, sniffs while it stands, glances about while it walks
     const head = F[3];
-    const lickDip = licking ? 0.18 + Math.sin(t * 5) * 0.04 : 0;
+    const lickDip = licking ? -0.08 + Math.sin(t * 5) * 0.04 : 0.25;          // scraping: the nose down at the claws
     const sniff = st === 'rare' ? Math.sin(t * 9) * 0.05 + Math.sin(t * 2.1) * 0.12 : 0;
     head.rotation.x = P.j[3] + lickDip + sniff;
     S.look -= dt;
@@ -365,8 +365,8 @@ export function buildPangolin(K, home, opts = {}) {
     return S.spd;
   }
 
-  // start in the right shape: a ball by day, walking at night
-  if (night) Object.assign(S.p, clone(POSE.walk));
+  // start in the right shape: a ball by day, digging at night
+  if (night) Object.assign(S.p, clone(POSE.dig));
   pose(0, { t: 0, dist: 99 });
   return K.lod(c, near, far, 30);
 }
