@@ -126,7 +126,7 @@ export function buildPangolin(K, home, opts = {}) {
   const under = K.mat(0x45372a, { roughness: 0.9 });                         // between the scales
   const claw = K.sheen(0x2c241d, { roughness: 0.35 }), tongueM = K.mat(0xc9787a, { roughness: 0.45 });
   const eyeM = K.sheen(0x090706, { roughness: 0.1 }), dirt = K.mat(0x8a5634, { roughness: 1 });
-  const glow = K.glow(0xa6f2d6, 0.45);
+  const glow = K.glow(0xa6f2d6, 0.6);
 
   const root = K.group(), near = K.group(null, root), far = K.group(null, root);
   K.shadow(root, 0.22, 0.42);
@@ -196,7 +196,8 @@ export function buildPangolin(K, home, opts = {}) {
     // three big curved claws, the middle one longest
     for (let i = -1; i <= 1; i++) {
       const c = K.group([i * 0.011, -0.05, 0.004], el, [0.5, 0, i * 0.12]);
-      K.mesh(K.cone(0.007, i ? 0.045 : 0.06, 5), claw, [0, -(i ? 0.02 : 0.027), 0.008], c, [PI - 0.35, 0, 0]);
+      const m = K.mesh(K.cone(0.007, i ? 0.045 : 0.06, 5), claw, [0, -(i ? 0.02 : 0.027), 0.008], c, [PI - 0.35, 0, 0]);
+      el.updateMatrixWorld(true); el.attach(m); el.remove(c);          // one still mesh in the forearm (bakes into one draw)
     }
     return { sh, el, s };
   });
