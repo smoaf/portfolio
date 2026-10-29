@@ -344,3 +344,20 @@ export function plantCanyon({ scene, path, road, groundY, water, flatRoad, roadE
   const cull = (eye) => { for (const m of meshes) m.visible = m.boundingSphere.center.distanceTo(eye) - m.boundingSphere.radius < m.userData.far; };
   return { meshes, count, cull };
 }
+
+// A patch of the same dry grass for an animal to graze on (FEAT-008, the geladas): tufts at the given
+// spots ([x, z, size]), one instanced mesh per shape, with its own random numbers so nothing else moves.
+export function grassPatch({ scene, spots, groundY, keep, lam, T, night, seed = 20261029 }) {
+  const rng = seeded(seed);
+  const shapes = [grassShape(rng, 16, 0.75), grassShape(rng, 11, 0.55)].map(keep);
+  const mat = addSway(lam({ vertexColors: true, side: THREE.DoubleSide, color: night ? 0x6c7484 : 0xffffff }), T, { amp: 0.06, speed: 1.3, height: 0.9 });
+  const lists = [[], []];
+  spots.forEach(([x, z, s = 1]) => lists[rng() < 0.5 ? 0 : 1].push({ p: v3(x, groundY(x, z) - 0.03, z), ry: rng() * 6.28, s: s * (0.75 + rng() * 0.6) }));
+  return lists.map((list, k) => {
+    if (!list.length) return null;
+    const m = instanced(shapes[k], mat, list);
+    m.name = 'plants-patch' + k;
+    scene.add(m);
+    return m;
+  }).filter(Boolean);
+}
