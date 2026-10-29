@@ -660,7 +660,7 @@ export const ROUTE = {
             if (p.y - rp.y > 4 && Math.max(Math.abs(q.y - p.y), Math.abs(r.y - p.y), Math.abs(l.y - p.y), Math.abs(m.y - p.y)) < 0.35) { best = [o, a]; break; }
           }
         }
-        const [o0, a0] = best || [9, 0];
+        const [o0, a0] = [(best ? best[0] : 9) - 0.35, best ? best[1] : 0];          // right at the lip, in view from below
         // in a row along the ledge, facing out over the road, shoulder to shoulder, the young one tucked
         // in against its mother
         const ROW = [['male', -1.0, 0, 0.12], ['female', -0.6, 0.06, -0.1], ['female', -0.27, 0, 0.08], ['young', 0.0, 0.14, 0.15], ['female', 0.26, 0.02, -0.12]];

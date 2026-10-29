@@ -17,6 +17,7 @@
 // The behaviour is their own (not the shared state machine): they stay where they are, the van
 // never sends them off, and they leave feed alone.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const SPECIES = {
   gelada: { id: 'gelada', name: 'Gelada', points: 200, call: { hz: 300, kind: 'hoot' } },
@@ -135,9 +136,12 @@ export function buildGelada(K, home, opts = {}) {
     K.mesh(K.sphere(1, 12, 9), cape, [0, 0.015, -0.05], head, null, [0.095, 0.1, 0.06]);
     ring(head, 0.05, 0.07, 0.055, PI / 2 + 0.2, 3 * PI / 2 - 0.2, 9, 0.2, 0.045, 0.45, [cape, furLight]);
   }
-  const eyes = [-1, 1].map((sd) => K.eye(head, { pos: [sd * 0.021, 0.03, 0.079], r: 0.011, iris: 0x7a4a24, dir: [sd * 0.25, 0, 1] }));
+  // the eyes: wet dark brown, both in one group (it shuts them)
+  const eyeG = K.group([0, 0.03, 0.079], head), eyeM = K.sheen(0x2a160b, { roughness: 0.12 });
+  for (const sd of [-1, 1]) K.mesh(K.sphere(1, 10, 8), eyeM, [sd * 0.021, 0, 0], eyeG, null, [0.011, 0.011, 0.009]).userData.wet = true;
+  const eyes = [eyeG];
   // the teeth and the gums, hidden under the upper lip and behind the lower jaw until the mouth opens
-  K.mesh(K.box(0.034, 0.011, 0.01), tooth, [0, -0.047, 0.142], head);
+  K.mesh(K.box(0.03, 0.01, 0.008), tooth, [0, -0.046, 0.134], head);
   K.mesh(K.sphere(1, 8, 6), pink, [0, -0.04, 0.118], head, null, [0.04, 0.012, 0.04]);
   for (const sd of [-1, 1]) K.mesh(K.cone(male ? 0.0065 : 0.0045, male ? 0.036 : 0.018, 6), tooth, [sd * 0.021, male ? -0.066 : -0.056, 0.118], head, [PI, 0, 0]);
   K.mesh(K.sphere(1, 8, 6), mouth, [0, -0.052, 0.09], head, null, [0.03, 0.022, 0.05]);
@@ -161,6 +165,7 @@ export function buildGelada(K, home, opts = {}) {
   if (male) K.mesh(K.cone(0.24, 0.42, 7), cape, [0, 0.42, -0.04], far);
   else K.mesh(K.cone(0.05, 0.4, 5), fur, [0, 0.04, -0.3], far, [PI / 2 + 0.1, 0, 0]);
 
+  paint(K, root);
   K.place(root, home);
   const patches = [];
   root.traverse((o) => { if (o.isMesh && o.material === patchMat) patches.push(o); });
@@ -171,6 +176,7 @@ export function buildGelada(K, home, opts = {}) {
   });
   c.state = 'idle'; c.hold = 99;
   const act = night || opts.sleep ? 'sleep' : opts.act || 'graze';
+  c.air = act !== 'graze';                            // asleep or busy with each other: no pose, no turn to the feed
   // a pose: the lean of the body, the bow of the neck, the mouth and the arms; blended to each frame
   const P = { lean: 0.2, bow: 0.1, jaw: 0, lip: 0, seat: 0, arms: [[-0.3, 0, -0.5], [-0.3, 0, -0.5]], flush: 0 };
   const S = {
@@ -193,6 +199,7 @@ export function buildGelada(K, home, opts = {}) {
       W.lean = 0.42 + br * 0.02; W.bow = 0.75; eyesShut = true;
       W.arms = [[-0.25, 0.4, -1.25], [-0.25, -0.4, -1.25]];
       c.air = true;
+      if (c.state !== 'idle') c.go('idle', 99);
     } else if (act === 'young') {
       youngStep(dt, env, W);
     } else {
@@ -373,6 +380,36 @@ export function buildGelada(K, home, opts = {}) {
   // start in the right shape
   if (act === 'sleep') { P.lean = 0.42; P.bow = 0.75; arms.forEach((A) => { A.sh.rotation.x = -0.25; A.el.rotation.x = -1.25; }); }
   return K.lod(c, near, far, 30);
+}
+
+// Merge every group's still, matt meshes into one mesh coloured per vertex, whatever their material:
+// a gelada is many small pieces in eight colours, and one draw per moving part keeps the troop of
+// five cheap. The glowing patch and the wet eyes keep their own materials (K.bake merges those).
+const glows = (m) => m.emissiveIntensity > 0 && (m.emissive.r + m.emissive.g + m.emissive.b) > 0;
+function paint(K, root) {
+  const mat = K.mat(0xffffff, { vertexColors: true, roughness: 0.88 });
+  const groups = [];
+  root.traverse((o) => { if (!o.isMesh) groups.push(o); });
+  for (const gr of groups) {
+    const list = gr.children.filter((ch) => ch.isMesh && !ch.userData.keep && !ch.userData.wet && !ch.children.length && !glows(ch.material));
+    if (list.length < 2) continue;
+    const parts = list.map((ch) => {
+      ch.updateMatrix();
+      const g = ch.geometry.index ? ch.geometry.toNonIndexed() : ch.geometry.clone();
+      for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k);
+      g.applyMatrix4(ch.matrix);
+      const c = ch.material.color, n = g.attributes.position.count, col = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      return g;
+    });
+    const merged = mergeGeometries(parts, false);
+    parts.forEach((g) => g.dispose());
+    if (!merged) continue;
+    K.keep(merged);
+    list.forEach((ch) => gr.remove(ch));
+    gr.add(new THREE.Mesh(merged, mat));
+  }
 }
 
 export const BUILDERS = {
