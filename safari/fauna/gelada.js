@@ -191,7 +191,7 @@ export function buildGelada(K, home, opts = {}) {
       // huddled: leaning forward, the head sunk on the chest, the arms folded in, slow breathing
       const br = Math.sin(t * 1.1 + S.breath);
       W.lean = 0.42 + br * 0.02; W.bow = 0.75; eyesShut = true;
-      W.arms = [[-0.5, 0, -1.5], [-0.5, 0, -1.5]];
+      W.arms = [[-0.25, 0.4, -1.25], [-0.25, -0.4, -1.25]];
       c.air = true;
     } else if (act === 'young') {
       youngStep(dt, env, W);
@@ -199,7 +199,13 @@ export function buildGelada(K, home, opts = {}) {
       c.air = act !== 'graze';
       // the male: watches the van as it comes, yawns wide as it passes, the lip flip when posing
       if (male) {
-        watch = d < 34;
+        watch = d < 46;
+        // the yawn as the van passes comes in every run: it ends the lip flip if that is still going
+        if (!S.yawned && d < 15 && c.t > 0.5) {
+          S.yawned = true; S.yawn = 0;
+          if (c.state === 'rare') c.go('idle', 99);
+          if (env.call) env.call(c, 'rare');
+        }
         if (c.state === 'rare') {
           // the lip flip, three times over: up over the nose, held, down; the patch flushes red
           const k = c.t % 1.9, up = ease(k / 0.25) * ease((1.6 - k) / 0.3);
@@ -212,9 +218,6 @@ export function buildGelada(K, home, opts = {}) {
           const k = ease(S.yawn / 0.55) * ease((2.3 - S.yawn) / 0.6);
           W.jaw = 0.7 * k; W.lip = -0.35 * k; W.bow = -0.2 * k; W.lean = 0.08; eyesShut = k > 0.6;
           if (S.yawn > 2.3) S.yawn = -1;
-        } else if (!S.yawned && d < 15 && c.t > 0.5) {
-          S.yawned = true; S.yawn = 0;
-          if (env.call) env.call(c, 'rare');
         }
       }
       const busy = c.state === 'rare' || S.yawn >= 0;
@@ -273,7 +276,7 @@ export function buildGelada(K, home, opts = {}) {
     P.jaw = damp(P.jaw, W.jaw + chew * Math.max(0, Math.sin(t * 14)) * 0.12, 12, dt); P.lip = damp(P.lip, W.lip, 9, dt);
     P.seat = W.seat; P.flush = damp(P.flush, W.flush, 4, dt);
     seat.position.y = P.seat;
-    body.rotation.x = P.lean;
+    body.rotation.x = P.lean; body.rotation.z = opts.lean || 0;         // (asleep: leaning on a neighbour)
     body.scale.y = 1 + Math.sin(t * (act === 'sleep' ? 1.1 : 1.6) + S.breath) * 0.012;
     neck.rotation.x = P.bow;
     jaw.rotation.x = P.jaw; lip.rotation.x = P.lip;
@@ -296,6 +299,7 @@ export function buildGelada(K, home, opts = {}) {
     // a contact grunt now and then while the van is near
     S.call -= dt;
     if (S.call <= 0) { if (env.call && act !== 'sleep' && d < 40) env.call(c, 'idle'); S.call = 6 + Math.random() * 8; }
+    c.yawning = S.yawn >= 0;
     c.root.updateMatrixWorld();
   };
 
@@ -367,7 +371,7 @@ export function buildGelada(K, home, opts = {}) {
 
   c._body = body;
   // start in the right shape
-  if (act === 'sleep') { P.lean = 0.42; P.bow = 0.75; arms.forEach((A) => { A.sh.rotation.x = -0.5; A.el.rotation.x = -1.5; }); }
+  if (act === 'sleep') { P.lean = 0.42; P.bow = 0.75; arms.forEach((A) => { A.sh.rotation.x = -0.25; A.el.rotation.x = -1.25; }); }
   return K.lod(c, near, far, 30);
 }
 

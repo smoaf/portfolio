@@ -642,14 +642,14 @@ export const ROUTE = {
       const sp = (role, p, opts) => { const c = spawn('gelada', p, { role, keep: offRoad, ...opts }, { seeAt: 140 }); if (c) troop.push(c); return c; };
       if (!night) {
         const mix = (a, b, k) => a.clone().multiplyScalar(1 - k).addScaledVector(b, k).normalize();
-        sp('male', on(5.6, 0.4), { act: 'graze', yaw: face(mix(toRoad, upRoad, 0.45)) });
-        const groomed = on(4.5, -2.6), dirG = mix(toRoad, upRoad, 0.75);
+        sp('male', on(5.5, 0.2), { act: 'graze', yaw: face(mix(toRoad, upRoad, 0.45)) });
+        const groomed = on(4.4, -1.7), dirG = mix(toRoad, upRoad, 0.75);
         const B = sp('female', groomed, { act: 'groomed', yaw: face(dirG) });
-        sp('female', on(4.5, -2.6).addScaledVector(dirG, -0.36).setY(groundY(groomed.x - dirG.x * 0.36, groomed.z - dirG.z * 0.36)), { act: 'groom', yaw: face(dirG), partner: B });
-        const mum = sp('female', on(4.6, 2.9), { act: 'graze', yaw: face(mix(toRoad, tg, 0.5)) });
-        sp('young', on(4.4, 3.6), { act: 'young', mother: mum });
+        sp('female', on(4.4, -1.7).addScaledVector(dirG, -0.36).setY(groundY(groomed.x - dirG.x * 0.36, groomed.z - dirG.z * 0.36)), { act: 'groom', yaw: face(dirG), partner: B });
+        const mum = sp('female', on(4.5, 1.9), { act: 'graze', yaw: face(mix(toRoad, tg, 0.5)) });
+        sp('young', on(4.3, 2.6), { act: 'young', mother: mum });
         const tufts = [];
-        for (let i = 0; i < 26; i++) tufts.push([4.1 + ((i * 7) % 11) / 10 * 2.4, -4.4 + (i / 25) * 9 + ((i * 3) % 5) * 0.12, 0.9]);
+        for (let i = 0; i < 22; i++) tufts.push([4.0 + ((i * 7) % 11) / 10 * 1.7, -3.4 + (i / 21) * 6.8 + ((i * 3) % 5) * 0.12, 0.85]);
         grassPatch({ scene, spots: tufts.map(([o, a, s]) => { const p = on(o, a); return [p.x, p.z, s]; }), groundY, keep, lam, T, night });
       } else {
         // the night ledge: the first flat stretch up the cut face above the road (sampled, not random)
@@ -661,18 +661,20 @@ export const ROUTE = {
           }
         }
         const [o0, a0] = best || [9, 0];
-        const along = [-0.95, -0.5, -0.12, 0.2, 0.62], roles = ['male', 'female', 'female', 'young', 'female'];
-        along.forEach((a, i) => sp(roles[i], on(o0 + (i % 2) * 0.12, a0 + a), { sleep: true, yaw: face(toRoad) + (i - 2) * 0.12 }));
+        // in a row along the ledge, facing out over the road, shoulder to shoulder, the young one tucked
+        // in against its mother
+        const ROW = [['male', -1.0, 0, 0.12], ['female', -0.6, 0.06, -0.1], ['female', -0.27, 0, 0.08], ['young', 0.0, 0.14, 0.15], ['female', 0.26, 0.02, -0.12]];
+        ROW.forEach(([role, a, o, lean], i) => sp(role, on(o0 + o, a0 + a), { sleep: true, lean, yaw: face(toRoad) + (i - 2) * 0.1 }));
       }
     }
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
     const poses = planPoses({ creatures, path, plan: POSES });
-    // the geladas: only the male shows the pose (the lip flip); he starts it a little earlier, so it is
-    // in view while the van comes down to him
+    // the geladas: only the male shows the pose (the lip flip); he starts it earlier (20 m more), so it
+    // plays while the van comes down to him and ends in his yawn as it passes
     for (const g of troop) {
       if (g !== troop[0]) g._posed = true;
-      else if (g._lead !== undefined) g._lead += 10;
+      else if (g._lead !== undefined) g._lead += 20;
     }
     // the pangolin stands up a little earlier than the others (12 m more), so its pose lasts a few
     // seconds before it rolls up as the van comes close
