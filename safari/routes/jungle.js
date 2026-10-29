@@ -586,30 +586,33 @@ export const ROUTE = {
       branchItems.push({ p: start.clone().addScaledVector(dir, len / 2), s: [thick, len, thick], rz: Math.PI / 2, ry: Math.atan2(dir.z, -dir.x) });
       return { start, dir, top: (d) => start.y + thick * (0.2 - 0.09 * Math.min(1, d / len)) };
     };
-    // the frogs: three on a mossy log and one on a broad leaf, right at the road side, facing it
+    // the frogs: three on a chest-high mossy stump and one on a broad leaf on a tall stalk beside it,
+    // right at the road side and facing it, so they sit near the height of the lens and show against
+    // the forest behind, not down on the ground
     const uF = uNear(56, 236) - 0.008, tF = path.getTangentAt(uF).setY(0).normalize();
-    const frogYaw = Math.atan2(-tF.z, tF.x);
-    const logAt = beside(uF, -4.4);
-    spawn('strawberry-poison-frog', logAt, { bed: 'log', yaw: frogYaw }, { seeAt: 60 });
-    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, 1.05).setY(logAt.y + 0.57), { yaw: frogYaw - 0.5 }, { seeAt: 60 });
-    spawn('strawberry-poison-frog', logAt.clone().addScaledVector(tF, -0.7).setY(logAt.y + 0.57), { yaw: frogYaw + 0.4 }, { seeAt: 60 });
-    spawn('strawberry-poison-frog', beside(uF + 0.004, -3.9), { bed: 'leaf', yaw: frogYaw + 0.2 }, { seeAt: 60 });
+    const frogYaw = Math.atan2(-tF.z, tF.x), sF = side(uF);
+    const stumpAt = beside(uF, -4.0), topY = stumpAt.y + 1.14 * 1.25 + 0.02;
+    spawn('strawberry-poison-frog', stumpAt, { bed: 'stump', yaw: frogYaw }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', stumpAt.clone().addScaledVector(tF, 0.2).addScaledVector(sF, -0.13).setY(topY), { yaw: frogYaw - 0.5 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', stumpAt.clone().addScaledVector(tF, -0.2).addScaledVector(sF, -0.1).setY(topY), { yaw: frogYaw + 0.4 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', beside(uF + 0.0012, -3.7), { bed: 'leaf', stalk: 1.15, yaw: frogYaw + 0.2 }, { seeAt: 60 });
 
     // the hornbills: by day the pair waits on a bough in the forest on the left, ahead of the van, and
-    // once the van is ~45 m off they cross the road low in front of it and land on a tall tree's bough
-    // over the right side of the road. After dark both roost on that bough.
+    // once the van is ~45 m off they cross the road low in front of it, then fly on ahead along the
+    // right side of the road and land on a tall tree's low bough there, still in front of the van and
+    // low enough to stay in the frame as it comes up to them. After dark both roost on that bough.
     const uH = uC(0.27), sH = side(uH);
-    const footL = beside(uH + 0.004, 13), toRoad = sH.clone().negate();
-    const landB = bough(footL, toRoad, 9, 7, 1.3);
+    const uL = uH + 0.03, footL = beside(uL, 13), toRoad = side(uL).negate();
+    const landB = bough(footL, toRoad, 5.2, 7, 1.3);
     const landAt = [6.2, 5.3].map((d) => landB.start.clone().addScaledVector(toRoad, d).setY(landB.top(d)));
-    const landYaw = headTo(uH) + Math.PI;                       // looking back down the road at the van
+    const landYaw = headTo(uL) + Math.PI;                       // looking back down the road at the van
     if (night) landAt.forEach((p, i) => spawn('rhinoceros-hornbill', p, { mode: 'roost', yaw: landYaw + (i ? 0.3 : -0.2) }, { seeAt: 260 }));
     else {
       const footS = beside(uH + 0.016, -21), startB = bough(footS, sH, 8, 4, 1.1);
       const lift = (u, sd, h) => beside(u, sd).setY(beside(u, sd).y + h);
       const paths = [
-        [startB.start.clone().addScaledVector(sH, 3.4).setY(startB.top(3.4)), lift(uH + 0.009, -10, 6.5), lift(uH, 0, 4.4), lift(uH + 0.0015, 3.5, 6.8), landAt[0]],
-        [startB.start.clone().addScaledVector(sH, 2.6).setY(startB.top(2.6)), lift(uH + 0.0105, -11, 7.4), lift(uH + 0.0015, 0.6, 5.3), lift(uH + 0.0025, 3, 7.6), landAt[1]],
+        [startB.start.clone().addScaledVector(sH, 3.4).setY(startB.top(3.4)), lift(uH + 0.009, -10, 6.5), lift(uH, 0, 4.4), lift(uH + 0.004, 5, 5.2), lift(uH + 0.015, 8, 5.6), lift(uL - 0.009, 7.5, 5.8), landAt[0]],
+        [startB.start.clone().addScaledVector(sH, 2.6).setY(startB.top(2.6)), lift(uH + 0.0105, -11, 7.4), lift(uH + 0.0015, 0.6, 5.3), lift(uH + 0.0055, 5.5, 6), lift(uH + 0.0165, 8.5, 6.2), lift(uL - 0.008, 8, 6.2), landAt[1]],
       ];
       paths.forEach((pts, i) => spawn('rhinoceros-hornbill', landAt[i], { mode: 'cross', path: pts, at: uH, length: roadLen, lead: 46, delay: i * 0.5, landYaw: landYaw + (i ? 0.3 : -0.2), yaw: 0 }, { seeAt: 260 }));
     }

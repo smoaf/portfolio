@@ -5,7 +5,7 @@
 //                           walks off, climbs the tree beside the road and lies down on a branch
 //   rhinoceros-hornbill     a pair crosses low over the road ahead of the van on loud, whooshing
 //                           wingbeats and lands in a tall tree (after dark they roost on its branch)
-//   strawberry-poison-frog  a few sit on a mossy log and a broad leaf right by the road
+//   strawberry-poison-frog  a few sit on a chest-high mossy stump and a broad leaf right by the road
 //
 // The set pieces are laid out by the route (safari/routes/jungle.js): it hands each one the points
 // on the ground and in the trees, and the road progress `at` where it happens. They are timed by how
@@ -430,8 +430,8 @@ export function buildRhinocerosHornbill(K, home, opts = {}) {
 // Strawberry poison frog: shiny bright red with blue-black legs and small dark speckles. The real
 // frog is about 2 cm; like the insects of the run it is scaled up (to ~14 cm here), so the long lens
 // can still make it out at the road side. The twist: some of the speckles on the back glow faintly.
-// opts.bed: 'log' (a mossy log under it), 'leaf' (a broad leaf on a stalk) or nothing (the route
-// sets it on another frog's log).
+// opts.bed: 'log' (a mossy log under it), 'stump' (a chest-high mossy stump), 'leaf' (a broad leaf
+// on a stalk, opts.stalk high) or nothing (the route sets it on another frog's log or stump).
 export function buildPoisonFrog(K, home, opts = {}) {
   const red = K.sheen(0xd9221c, { roughness: 0.25 }), blue = K.sheen(0x1d3a8c, { roughness: 0.3 });
   const dot = K.mat(0x1a0d0c, { roughness: 0.5 }), lumDot = K.mat(0x2a1210, { roughness: 0.4, emissive: 0x7ff3ff, emissiveIntensity: Math.max(0.03, K.glowLevel - 0.25) * 0.9 });
@@ -447,9 +447,24 @@ export function buildPoisonFrog(K, home, opts = {}) {
     K.mesh(K.sphere(1, 9, 6), moss, [0.15, 0.42, 0.02], near, null, [0.45, 0.04, 0.18]);
     K.mesh(K.sphere(1, 7, 5), moss, [0.9, 0.4, 0.06], near, null, [0.32, 0.07, 0.16]);
     K.mesh(K.cyl(0.24, 0.27, 2.2, 5), bark, [0.3, 0.22, 0], far, [0, 0, PI / 2]);
+  } else if (opts.bed === 'stump') {
+    // a broken-off stump at the road side, about chest high, so the frogs on its mossy top sit near
+    // the height of the lens and show against the forest behind instead of down on the ground
+    bedY = 1.14;
+    K.mesh(K.cyl(0.27, 0.34, 1.1, 9), bark, [0, 0.55, 0], near);
+    for (let i = 0; i < 5; i++) {
+      const a = i * 1.3 + 0.4, h = 0.12 + (i % 3) * 0.07;
+      K.mesh(K.cone(0.08, h, 4), bark, [Math.cos(a) * 0.22, 1.1 + h / 2, Math.sin(a) * 0.22], near, [0, a, 0]);
+    }
+    K.mesh(K.sphere(1, 11, 6), moss, [0, 1.1, 0], near, null, [0.28, 0.05, 0.28]);
+    K.mesh(K.sphere(1, 7, 5), moss, [0.2, 0.62, 0.22], near, null, [0.14, 0.2, 0.08]);
+    K.mesh(K.cyl(0.27, 0.34, 1.1, 5), bark, [0, 0.55, 0], far);
   } else if (opts.bed === 'leaf') {
-    bedY = 0.62;
-    K.mesh(K.cyl(0.012, 0.018, 0.64, 5), leafM, [0, 0.31, -0.06], near, [0.1, 0, 0]);
+    // the leaf on its stalk, opts.stalk high (a low one by default)
+    const st = opts.stalk ?? 0.64;
+    bedY = st - 0.02;
+    K.mesh(K.cyl(0.012, 0.018, st, 5), leafM, [0, st / 2 - 0.01, -0.06], near, [0.1, 0, 0]);
+    if (st > 0.8) K.mesh(K.cyl(0.012, 0.018, st, 4), leafM, [0, st / 2 - 0.01, -0.06], far, [0.1, 0, 0]);
     const leafPts = [[0, -0.05], [0.13, 0.0], [0.2, 0.14], [0.16, 0.3], [0, 0.4], [-0.16, 0.3], [-0.2, 0.14], [-0.13, 0.0]];
     K.mesh(K.shape('fb-frogleaf', leafPts), leafM, [0, bedY - 0.01, -0.12], near, [-PI / 2 + 0.06, 0, 0]);
     K.mesh(K.shape('fb-frogleaf', leafPts), leafM, [0.08, bedY - 0.12, -0.2], near, [-PI / 2 + 0.5, 0.9, 0], 0.8);
