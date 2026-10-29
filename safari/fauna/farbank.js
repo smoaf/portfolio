@@ -452,9 +452,10 @@ export function buildPoisonFrog(K, home, opts = {}) {
     // the height of the lens and show against the forest behind instead of down on the ground
     bedY = 1.14;
     K.mesh(K.cyl(0.27, 0.34, 1.1, 9), bark, [0, 0.55, 0], near);
-    for (let i = 0; i < 5; i++) {
-      const a = i * 1.3 + 0.4, h = 0.12 + (i % 3) * 0.07;
-      K.mesh(K.cone(0.08, h, 4), bark, [Math.cos(a) * 0.22, 1.1 + h / 2, Math.sin(a) * 0.22], near, [0, a, 0]);
+    // a few low splinters round the back of the break (+z faces the road), none in front of the frogs
+    for (let i = 0; i < 3; i++) {
+      const a = -PI / 2 - 0.9 + i * 0.9, h = 0.07 + (i % 2) * 0.05;
+      K.mesh(K.cone(0.06, h, 4), bark, [Math.cos(a) * 0.24, 1.1 + h / 2, Math.sin(a) * 0.24], near, [0, a, 0]);
     }
     K.mesh(K.sphere(1, 11, 6), moss, [0, 1.1, 0], near, null, [0.28, 0.05, 0.28]);
     K.mesh(K.sphere(1, 7, 5), moss, [0.2, 0.62, 0.22], near, null, [0.14, 0.2, 0.08]);
