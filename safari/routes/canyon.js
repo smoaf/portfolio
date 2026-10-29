@@ -14,8 +14,9 @@ import * as CLIFFS from '../fauna/cliffs.js';
 import * as DEEP from '../fauna/deep.js';
 import * as WATERFOLK from '../fauna/pool.js';
 import * as PANGOLIN from '../fauna/pangolin.js';
+import * as GELADA from '../fauna/gelada.js';
 import { planPoses } from '../poses.js';
-import { plantCanyon } from './canyon-plants.js';
+import { plantCanyon, grassPatch } from './canyon-plants.js';
 
 const WATER = -0.7;                                        // the river's surface
 const RIM = 74;                                            // the plateau above the walls
@@ -109,6 +110,7 @@ const POSES = {
   ladybird: 'feed',                  // feed sets the swarm spiralling up
   'fire-salamander': 'near',         // rears up, its yellow markings flaring (dawn and dusk only)
   'ground-pangolin': 'near',         // stands right up on its hind legs, the tail on the ground, sniffing (FEAT-006)
+  gelada: 'near',                    // the male's lip flip, his red chest patch flushing (FEAT-008)
   // the cliffs and the rim
   markhor: 'near',                   // rears up on its hind legs
   'fallow-deer': 'near',             // the buck groans: head up, neck stretched
@@ -430,7 +432,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 404 });
-    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS };
+    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS, ...GELADA.BUILDERS };
     const creatures = [];
     const spawn = (id, home, opts = {}, extra = {}) => {
       if (!B[id]) return null;
@@ -623,8 +625,57 @@ export const ROUTE = {
       pangolin = spawn('ground-pangolin', at, { mound, dig: at.clone(), yaw: Math.atan2(toMound.x, toMound.z), spots: [on(6.8, 3.5), on(7.3, 7), on(6.6, -3.5)] });
     }
 
+    // the gelada troop (FEAT-008): on "Down the wall", between the two markhor (about 28 m from each),
+    // on the uphill side of the road: by day on the road's shelf and the foot of the slope above it,
+    // grazing on a patch of grass (the big male a little up the slope, two females grooming, a mother
+    // with her young one); after dark asleep, huddled on the narrow ledge of the cliff right above.
+    // Spawned after the plants and with no random numbers, so everything else stays where it was.
+    const troop = [];
+    {
+      const uT = 0.72, rp = path.getPointAt(uT), tg = path.getTangentAt(uT).setY(0).normalize();
+      const side = new THREE.Vector3(-tg.z, 0, tg.x);
+      if (Math.abs(rp.x + side.x * 4 - XC(rp.z)) < Math.abs(rp.x - XC(rp.z))) side.negate();    // uphill, away from the river
+      const on = (off, along) => { const p = rp.clone().addScaledVector(side, off).addScaledVector(tg, along); p.y = groundY(p.x, p.z); return p; };
+      const face = (dir) => Math.atan2(dir.x, dir.z);
+      const toRoad = side.clone().negate(), upRoad = tg.clone().negate();          // the van comes from up the road
+      const offRoad = (x, z) => road.at(x, z).d > HALF + 0.5;
+      const sp = (role, p, opts) => { const c = spawn('gelada', p, { role, keep: offRoad, ...opts }, { seeAt: 140 }); if (c) troop.push(c); return c; };
+      if (!night) {
+        const mix = (a, b, k) => a.clone().multiplyScalar(1 - k).addScaledVector(b, k).normalize();
+        sp('male', on(5.5, 0.2), { act: 'graze', yaw: face(mix(toRoad, upRoad, 0.45)) });
+        const groomed = on(4.4, -1.7), dirG = mix(toRoad, upRoad, 0.75);
+        const B = sp('female', groomed, { act: 'groomed', yaw: face(dirG) });
+        sp('female', on(4.4, -1.7).addScaledVector(dirG, -0.36).setY(groundY(groomed.x - dirG.x * 0.36, groomed.z - dirG.z * 0.36)), { act: 'groom', yaw: face(dirG), partner: B });
+        const mum = sp('female', on(4.5, 1.9), { act: 'graze', yaw: face(mix(toRoad, tg, 0.5)) });
+        sp('young', on(4.3, 2.6), { act: 'young', mother: mum });
+        const tufts = [];
+        for (let i = 0; i < 22; i++) tufts.push([4.0 + ((i * 7) % 11) / 10 * 1.7, -3.4 + (i / 21) * 6.8 + ((i * 3) % 5) * 0.12, 0.85]);
+        grassPatch({ scene, spots: tufts.map(([o, a, s]) => { const p = on(o, a); return [p.x, p.z, s]; }), groundY, keep, lam, T, night });
+      } else {
+        // the night ledge: the first flat stretch up the cut face above the road (sampled, not random)
+        let best = null;
+        for (let a = -4; a <= 4 && !best; a += 0.5) {
+          for (let o = 6.5; o < 14; o += 0.25) {
+            const p = on(o, a), q = on(o + 0.6, a), r = on(o - 0.6, a), l = on(o, a - 1.2), m = on(o, a + 1.2);
+            if (p.y - rp.y > 4 && Math.max(Math.abs(q.y - p.y), Math.abs(r.y - p.y), Math.abs(l.y - p.y), Math.abs(m.y - p.y)) < 0.35) { best = [o, a]; break; }
+          }
+        }
+        const [o0, a0] = [(best ? best[0] : 9) - 0.35, best ? best[1] : 0];          // right at the lip, in view from below
+        // in a row along the ledge, facing out over the road, shoulder to shoulder, the young one tucked
+        // in against its mother
+        const ROW = [['male', -1.0, 0, 0.12], ['female', -0.6, 0.06, -0.1], ['female', -0.27, 0, 0.08], ['young', 0.0, 0.14, 0.15], ['female', 0.26, 0.02, -0.12]];
+        ROW.forEach(([role, a, o, lean], i) => sp(role, on(o0 + o, a0 + a), { sleep: true, lean, yaw: face(toRoad) + (i - 2) * 0.1 }));
+      }
+    }
+
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
     const poses = planPoses({ creatures, path, plan: POSES });
+    // the geladas: only the male shows the pose (the lip flip); he starts it earlier (20 m more), so it
+    // plays while the van comes down to him and ends in his yawn as it passes
+    for (const g of troop) {
+      if (g !== troop[0]) g._posed = true;
+      else if (g._lead !== undefined) g._lead += 20;
+    }
     // the pangolin stands up a little earlier than the others (12 m more), so its pose lasts a few
     // seconds before it rolls up as the van comes close
     if (pangolin && pangolin._lead !== undefined) pangolin._lead += 12;
