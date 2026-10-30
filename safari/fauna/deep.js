@@ -399,7 +399,7 @@ export function buildNautilus(K, home, opts = {}) {
   K.place(root, home);
   let pulse = 0;
   const c = K.makeCreature({
-    species: SPECIES.nautilus, root, home, radius: 0.75, eye: new THREE.Vector3(0, -0.2, 0.2), flyer: true,
+    species: SPECIES.nautilus, poseLen: 4.8, root, home, radius: 0.75, eye: new THREE.Vector3(0, -0.2, 0.2), flyer: true,
     speed: 0.9, roam: 9, fleeAt: 6, curiousAt: 24, shy: 0.4, rareChance: 0.6, rareAt: 'dusk',
     pose(c, dt, env) {
       c.ph = (c.ph ?? c.bob) + dt * (c.state === 'flee' ? 3.4 : 1.6);

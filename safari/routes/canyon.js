@@ -669,16 +669,10 @@ export const ROUTE = {
     }
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
-    const poses = planPoses({ creatures, path, plan: POSES });
-    // the geladas: only the male shows the pose (the lip flip); he starts it earlier (20 m more), so it
-    // plays while the van comes down to him and ends in his yawn as it passes
-    for (const g of troop) {
-      if (g !== troop[0]) g._posed = true;
-      else if (g._lead !== undefined) g._lead += 20;
-    }
-    // the pangolin stands up a little earlier than the others (12 m more), so its pose lasts a few
-    // seconds before it rolls up as the van comes close
-    if (pangolin && pangolin._lead !== undefined) pangolin._lead += 12;
+    const poses = planPoses({ creatures, path, plan: POSES, colliders: () => colliders });   // colliders: set further down, read only while driving
+    // the geladas: only the male shows the pose (the lip flip). Like every `near` pose it starts as
+    // soon as the lens can get him from the van (BUG-016), so it plays while the van comes down to him
+    for (const g of troop) if (g !== troop[0]) g._posed = true;
 
     const colliders = [ground, boulders, slabs, hoodoos, overhangs, crowns, poolRocks, ...acacia.tree.children];
     const AMB = {

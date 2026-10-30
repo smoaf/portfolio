@@ -170,7 +170,7 @@ export function buildHeron(K, home, opts = {}) {
   const st = { lift: 0, w: 0, fp: 0, g: 0, px: home.x, pz: home.z, sk: 9, from: new THREE.Vector3(), a1: 0.45, a2: -0.35, hp: 0, tilt: -0.55, fish: 0 };
   const fishOn = (k) => { st.fish = k; FG.visible = k > 0.02; FG.scale.setScalar(Math.max(0.01, k)); };
   const c = K.makeCreature({
-    species: SPECIES.heron, root, home, radius: 0.75, eye: new THREE.Vector3(0, 1.36, 0.3),
+    species: SPECIES.heron, poseLen: 5.4, root, home, radius: 0.75, eye: new THREE.Vector3(0, 1.36, 0.3),
     ground: K.groundY, speed: 0.5, roam: 8, fleeAt: 9, curiousAt: 26, shy: 0.65, rareChance: 0.55, rareAt: opts.rareAt ?? 'dawn',
     onState(c, s) {
       if (s === 'flee') {
@@ -714,7 +714,7 @@ export function buildCrocodile(K, home, opts = {}) {
 
   const st = { px: home.x, pz: home.z, ph: 0, gape: 0, lift: bask ? 0.42 : 0.12, roll: 0, sp: 0, hp: 0, lunge: 0 };
   const c = K.makeCreature({
-    species: SPECIES.crocodile, root, home, radius: 2.1, eye: new THREE.Vector3(0, 0.1, 1.25), flyer: !bask,
+    species: SPECIES.crocodile, poseLen: bask ? 3 : 5.6, root, home, radius: 2.1, eye: new THREE.Vector3(0, 0.1, 1.25), flyer: !bask,
     ground: K.groundY, speed: bask ? 0.5 : 0.6, roam: bask ? 3 : 10, fleeAt: 7, curiousAt: 30, shy: bask ? 0.6 : 0.15, rareChance: 0.5,
     rareAt: opts.rareAt ?? 'night',
     onState(c, s) {
@@ -820,7 +820,7 @@ export function buildRiverDolphin(K, home, opts = {}) {
   const DEPTH = 1.1;
   const st = { px: home.x, pz: home.z, cyc: Math.random(), d: DEPTH, pitch: 0, bl: -1, sp: -1, ph: 0, leapY: 0 };
   const c = K.makeCreature({
-    species: SPECIES['river-dolphin'], root, home, radius: 1.2, eye: new THREE.Vector3(0, 0.05, 0.75), flyer: true,
+    species: SPECIES['river-dolphin'], poseLen: 2.6, root, home, radius: 1.2, eye: new THREE.Vector3(0, 0.05, 0.75), flyer: true,
     speed: 1.6, roam: 14, fleeAt: 4.5, curiousAt: 40, shy: 0.1, rareChance: 0.6, rareAt: opts.rareAt ?? 'dawn',
     onState(c, s) {
       if (s === 'curious') { c.hold = 7 + Math.random() * 3; st.cyc = 0.92; }   // come up beside the van soon

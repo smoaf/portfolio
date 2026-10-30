@@ -700,7 +700,7 @@ export const ROUTE = {
     clear(trunks, 3, [[crownA, 1], [crownB, 2]]); clear(palmTrunks, 0.5, [[fronds, 1]]); clear(lianas, 0.2);
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
-    const poses = planPoses({ creatures, path, plan: POSES });
+    const poses = planPoses({ creatures, path, plan: POSES, colliders: () => colliders });   // colliders: set further down, read only while driving
 
     const colliders = [ground, trunks, crownA, crownB, shrubs, palmTrunks, bigLeaves, mangroveRoots, mangroveCrowns, perchTrunks];
     const open = ROUTE.open[tod] || ROUTE.open.day;

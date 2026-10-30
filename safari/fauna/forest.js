@@ -821,7 +821,7 @@ export function buildEyespotMoth(K, home, opts = {}) {
   const spots = wingsG.map((g) => ({ amb: withMat(g, amber), blu: withMat(g, blue) }));
 
   const c = K.makeCreature({
-    species: SPECIES['eyespot-moth'], onState: needTarget, root, home, radius: 0.75, eye: new THREE.Vector3(0, 0.1, 0.1), flyer: true,
+    species: SPECIES['eyespot-moth'], poseLen: 4, onState: needTarget, root, home, radius: 0.75, eye: new THREE.Vector3(0, 0.1, 0.1), flyer: true,
     speed: 0.0001, roam: 0, fleeAt: 4, curiousAt: 18, shy: 0.3, rareChance: 0.8, rareAt: 'dusk', yaw: opts.yaw,
     pose(c, dt, env) {
       rareCue(c, env);

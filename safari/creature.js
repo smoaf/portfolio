@@ -36,6 +36,7 @@ export function makeCreature(def) {
     shy: def.shy ?? 0.5,                                // 0 = bold, 1 = never comes closer
     rareChance: def.rareChance ?? 0.5,                  // after eating
     rareAt: def.rareAt || null,                         // a time of day that makes it show off by itself
+    poseLen: def.poseLen || 0,                          // s its rare pose's own animation lasts (0: as the trigger asks)
     state: 'idle', t: 0, hold: 1 + Math.random() * 2,
     yaw: def.yaw ?? Math.random() * Math.PI * 2,
     target: null, pellet: null, bob: Math.random() * 6.28,
@@ -53,6 +54,12 @@ export function makeCreature(def) {
   const go = (state, hold) => {
     if (state === 'rare' && c.rareOff) { state = 'idle'; hold = 2; }
     if (c.state === state) return;
+    // safari/poses.js: a pose starts only where it can be photographed and when its herd has a turn
+    // free; otherwise it waits (the gate remembers it) and the animal carries on calmly
+    if (state === 'rare' && c.rareGate) {
+      const h = c.rareGate(hold);
+      if (!h) { state = 'idle'; hold = 1.5; if (c.state === state) return; } else hold = h;
+    }
     c.state = state; c.t = 0; c.hold = hold;
     if (c.onState) c.onState(c, state);
   };
@@ -166,7 +173,7 @@ export function makeFlock({ species, root, bodies, centre, radius = 26, height =
     c.t += dt;
     // one shared circle; a dive is the rare behaviour, and feed on the ground starts it
     const feeding = env.pellets.some((p) => p.landed && !p.eaten && p.pos.distanceTo(centre) < 40 * FEED_REACH);
-    if (feeding && c.state !== 'rare' && !c.rareOff) { c.state = 'rare'; c.t = 0; if (env.call) env.call(c, 'rare'); }
+    if (feeding && c.state !== 'rare' && !c.rareOff && (!c.rareGate || c.rareGate(7))) { c.state = 'rare'; c.t = 0; if (env.call) env.call(c, 'rare'); }
     if (c.state === 'rare' && c.t > 7) c.state = 'idle';
     const dip = c.state === 'rare' ? (0.5 - 0.5 * Math.cos(Math.min(1, c.t / 7) * Math.PI * 2)) : 0;
     let best = null, bestD = Infinity;
