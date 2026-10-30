@@ -59,18 +59,18 @@ function antParts(soldier, detail) {
   const hd = soldier ? 1.55 : 1;                    // the head: much bigger on a soldier
   const rest = [], front = [], head = [], face = [];
   // gaster (the round rear) and the two waist nodes
-  rest.push(part(sph(detail ? 7 : 4, detail ? 5 : 3), [0, 0.17, -0.31], [0.25, 0, 0], [0.15, 0.13, 0.18]));
-  if (detail) { rest.push(part(sph(5, 3), [0, 0.18, -0.1], 0, 0.045)); rest.push(part(sph(5, 3), [0, 0.19, -0.04], 0, 0.05)); }
+  rest.push(part(sph(detail ? 6 : 4, detail ? 5 : 3), [0, 0.17, -0.31], [0.25, 0, 0], [0.15, 0.13, 0.18]));
+  if (detail) { rest.push(part(sph(4, 3), [0, 0.18, -0.1], 0, 0.045)); rest.push(part(sph(4, 3), [0, 0.19, -0.04], 0, 0.05)); }
   // the thorax, with its paired spines (leafcutters are spiny)
-  front.push(part(sph(detail ? 6 : 4, detail ? 5 : 3), [0, 0.21, 0.08], [-0.25, 0, 0], [0.075, 0.08, 0.15]));
+  front.push(part(sph(detail ? 6 : 4, detail ? 4 : 3), [0, 0.21, 0.08], [-0.25, 0, 0], [0.075, 0.08, 0.15]));
   if (detail) for (const x of [-1, 1]) {
     front.push(part(new THREE.ConeGeometry(0.018, 0.08, 3), [x * 0.04, 0.3, 0.13], [-0.5, 0, x * 0.45]));
     front.push(part(new THREE.ConeGeometry(0.015, 0.07, 3), [x * 0.03, 0.28, 0.01], [-0.95, 0, x * 0.3]));
   }
   // the head: two lobes at the back (the heart shape) and the face in front
   const hy = 0.22 + (hd - 1) * 0.06, hz = 0.28 + (hd - 1) * 0.06;
-  if (detail || soldier) for (const x of [-1, 1]) head.push(part(sph(detail ? 6 : 4, detail ? 5 : 3), [x * 0.05 * hd, hy + 0.01 * hd, hz - 0.02 * hd], 0, [0.075 * hd, 0.085 * hd, 0.085 * hd]));
-  head.push(part(sph(detail ? 6 : 4, detail ? 5 : 3), [0, hy - 0.01, hz + 0.03 * hd], 0, detail || soldier ? [0.08 * hd, 0.072 * hd, 0.075 * hd] : [0.11, 0.09, 0.1]));
+  if (detail || soldier) for (const x of [-1, 1]) head.push(part(sph(detail ? 5 : 4, detail ? 4 : 3), [x * 0.05 * hd, hy + 0.01 * hd, hz - 0.02 * hd], 0, [0.075 * hd, 0.085 * hd, 0.085 * hd]));
+  head.push(part(sph(detail ? 6 : 4, detail ? 4 : 3), [0, hy - 0.01, hz + 0.03 * hd], 0, detail || soldier ? [0.08 * hd, 0.072 * hd, 0.075 * hd] : [0.11, 0.09, 0.1]));
   const hinge = [0.035 * hd, hy - 0.04 * hd, hz + 0.09 * hd];
   const jaw = (x) => part(new THREE.ConeGeometry(0.024 * hd, 0.11 * hd, 4), [0, 0, 0.05 * hd], [PI / 2, 0, x * 0.45]);
   const jaws = [jaw(1), jaw(-1)];                   // [the one on +x, the one on -x], each at its hinge
@@ -82,7 +82,7 @@ function antParts(soldier, detail) {
       (z === 0 ? rest : front).push(part(tube([[x * 0.04, 0.16, z], [x * 0.17, 0.25, z + fz * 0.35], [x * 0.27, 0.0, z + fz]], 0.014, 2, 3)));
     }
   } else {
-    // far away: the legs as one flat bar each side
+    // far away: the legs as one flat bar across
     front.push(part(new THREE.BoxGeometry(0.5, 0.02, 0.3), [0, 0.07, 0.04]));
   }
   return { rest, front, head, face, jaws, hinge, S };
@@ -152,7 +152,7 @@ function treeLeaf(bites) {
 // ({ foot, r: trunk radius at the foot, taper: radius lost per metre up }), mound ({ at, r }).
 export function buildLeafcutters(K, home, opts) {
   const phone = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-  const N = phone ? { loaded: 140, empty: 50, soldiers: 12 } : { loaded: 300, empty: 110, soldiers: 28 };
+  const N = phone ? { loaded: 170, empty: 60, soldiers: 14 } : { loaded: 300, empty: 110, soldiers: 28 };
   let seed = 9091;
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const lum = Math.max(0.03, K.glowLevel - 0.25);                         // ~0.05 by day, ~2.2 at night
@@ -399,9 +399,25 @@ export function buildLeafcutters(K, home, opts) {
     arr[o + 12] = P[0]; arr[o + 13] = P[1]; arr[o + 14] = P[2]; arr[o + 15] = 1;
   };
   const P0 = [0, 0, 0], X1 = [0, 0, 0], U1 = [0, 0, 0], F1 = [0, 0, 0], PIV = [0, 0.24, 0.4];
-  let far = false;
-  function stepColumn(t, dt) {
-    const wArr = (far ? mesh.wFar : mesh.wNear).instanceMatrix.array, lArr = mesh.leaf.instanceMatrix.array, vArr = mesh.vein.instanceMatrix.array;
+  // Only the ants inside the view are drawn, and only those that look big (near, or near through
+  // the long lens) get the detailed body; the rest get the plain one. Each frame the visible ants are
+  // packed into the front of the instance lists and the meshes draw that many.
+  const NEAR = phone ? 2.5 : 4;                                           // metres, as the lens makes it look
+  const view = { cam: [0, 0, 0], look: [0, 0, -1], cos: 0, lens: 1 };
+  const n = { w: 0, wf: 0, l: 0, s: 0, sf: 0 };
+  // where an ant at P goes: 0 out of view, 1 near, 2 far
+  const sort = (P) => {
+    const dx = P[0] - view.cam[0], dy = P[1] - view.cam[1], dz = P[2] - view.cam[2], d = Math.hypot(dx, dy, dz) || 1e-6;
+    if ((dx * view.look[0] + dy * view.look[1] + dz * view.look[2]) / d < view.cos && d > 0.6) return 0;
+    return d * view.lens < NEAR ? 1 : 2;
+  };
+  function stepColumn(t, dt, env) {
+    env.camPos.toArray(view.cam); look.toArray(view.look);
+    const tanV = (env.lens || 1) * Math.tan(PI * 31 / 180), aspect = innerWidth / Math.max(1, innerHeight);
+    view.cos = Math.cos(Math.atan(tanV * Math.hypot(1, aspect)) + 0.06);
+    view.lens = env.lens || 1;
+    n.w = n.wf = n.l = n.s = n.sf = 0;
+    const wArr = mesh.wNear.instanceMatrix.array, wfArr = mesh.wFar.instanceMatrix.array, lArr = mesh.leaf.instanceMatrix.array, vArr = mesh.vein.instanceMatrix.array;
     for (let j = 0; j < ants.length; j++) {
       const a = ants[j], back = a.v < 0;
       const s = ((a.s0 + a.v * t) % LEN + LEN) % LEN;
@@ -411,7 +427,9 @@ export function buildLeafcutters(K, home, opts) {
       const st = t * (back ? 19 : 15) + a.ph;                              // the stride
       const wob = Math.sin(st) * 0.004, bob = Math.abs(Math.sin(st)) * 0.0012;
       for (let k = 0; k < 3; k++) P0[k] = F.p[k] + F.x[k] * (a.lat + wob) + F.u[k] * bob;
-      put(wArr, j, F.x, F.u, F.f, P0, sc);
+      const where = sc > 0 ? sort(P0) : 0;
+      if (!where) continue;
+      if (where === 1) put(wArr, n.w++, F.x, F.u, F.f, P0, sc); else put(wfArr, n.wf++, F.x, F.u, F.f, P0, sc);
       if (back) continue;
       // the leaf: held at the jaws (PIV), rocking side to side and nodding with the stride
       const roll = 0.16 * Math.sin(st * 0.5 + a.ph) + 0.05 * Math.sin(st), pitch = 0.07 * Math.sin(st + 1.3) - 0.05;
@@ -429,10 +447,10 @@ export function buildLeafcutters(K, home, opts) {
       const qy = PIV[1] - (c0[1] * PIV[0] + c1[1] * PIV[1] * ls + c2[1] * PIV[2] * ls);
       const qz = PIV[2] - (c0[2] * PIV[0] + c1[2] * PIV[1] * ls + c2[2] * PIV[2] * ls);
       for (let k = 0; k < 3; k++) P0[k] += (F.x[k] * qx + F.u[k] * qy + F.f[k] * qz) * sc;
-      put(lArr, j, X1, U1, F1, P0, sc);
-      put(vArr, j, X1, U1, F1, P0, sc);
+      put(lArr, n.l, X1, U1, F1, P0, sc);
+      put(vArr, n.l++, X1, U1, F1, P0, sc);
     }
-    const sArr = (far ? mesh.sFar : mesh.sNear).instanceMatrix.array, hArr = (far ? mesh.sHeadFar : mesh.sHead).instanceMatrix.array;
+    const sArr = mesh.sNear.instanceMatrix.array, hArr = mesh.sHead.instanceMatrix.array, sfArr = mesh.sFar.instanceMatrix.array, hfArr = mesh.sHeadFar.instanceMatrix.array;
     for (let j = 0; j < soldiers.length; j++) {
       const a = soldiers[j];
       // soldiers stroll, stop now and then to stand guard, and stroll on
@@ -443,9 +461,12 @@ export function buildLeafcutters(K, home, opts) {
       const F = frameAt(s, a.v < 0);
       const sc = SOLDIER * a.sc, st = t * 9 + a.ph;
       for (let k = 0; k < 3; k++) P0[k] = F.p[k] + F.x[k] * a.lat * (a.v < 0 ? -1 : 1) + F.u[k] * Math.abs(Math.sin(st)) * 0.0015 * walk;
-      put(sArr, j, F.x, F.u, F.f, P0, sc);
-      put(hArr, j, F.x, F.u, F.f, P0, sc);
+      const where = sort(P0);
+      if (where === 1) { put(sArr, n.s, F.x, F.u, F.f, P0, sc); put(hArr, n.s++, F.x, F.u, F.f, P0, sc); }
+      else if (where === 2) { put(sfArr, n.sf, F.x, F.u, F.f, P0, sc); put(hfArr, n.sf++, F.x, F.u, F.f, P0, sc); }
     }
+    mesh.wNear.count = n.w; mesh.wFar.count = n.wf; mesh.leaf.count = mesh.vein.count = n.l;
+    mesh.sNear.count = mesh.sHead.count = n.s; mesh.sFar.count = mesh.sHeadFar.count = n.sf;
     for (const m of Object.values(mesh)) m.instanceMatrix.needsUpdate = true;
   }
 
@@ -492,9 +513,6 @@ export function buildLeafcutters(K, home, opts) {
   }));
   const R = { up: 0, open: 0 };
   K.lod(c, near, null, 30);
-  const lod = c.lod;
-  c.lod = (d) => { lod(d); far = d > 10; mesh.wNear.visible = mesh.sNear.visible = mesh.sHead.visible = !far; mesh.wFar.visible = mesh.sFar.visible = mesh.sHeadFar.visible = far; };
-  c.lod(100);
   c.seeAt = 130;
   // the subject of a frame: while the soldier rears, its head; otherwise the stretch of column the
   // lens is aimed at (the point nearest the middle of the view, worked out once per frame)
@@ -508,9 +526,9 @@ export function buildLeafcutters(K, home, opts) {
     inner(dt, calm);
     colony.visible = env.dist < c.seeAt * 0.92;
     if (!colony.visible) return;
-    stepColumn(env.t, dt);
-    // which bit of the column the lens is on: the trail point closest to the line of sight
     if (env.look) look.copy(env.look); else look.subVectors(spot, env.camPos).normalize();
+    stepColumn(env.t, dt, env);
+    // which bit of the column the lens is on: the trail point closest to the line of sight
     let best = -2, bi = iH;
     for (let i = 0; i < NS; i += 6) {
       vA.fromArray(PA, i * 3).sub(env.camPos);
