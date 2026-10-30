@@ -93,7 +93,7 @@ export const bonusText = (shot) => (shot.bonuses || []).map((b) => b.label).join
 
 // The score of a shot spelled out for the report's large view: the base, each bonus once (other
 // species with a count) with a one-line meaning and its points, and the total. Bonus points are
-// the rounded shares of the base; the last one takes the rounding so the lines add up to the total.
+// the rounded shares of the base; the biggest one takes the rounding so the lines add up to the total.
 const EXPLAIN = {
   group: { name: 'Same species', meaning: '2 or more of this species in the frame' },
   species: { name: 'Other species', meaning: 'another kind of animal in the frame' },
@@ -110,7 +110,7 @@ export function breakdown(shot) {
     lines.push({ ...EXPLAIN[id], count: n, points: Math.round(base * BONUS[id].share * n) });
   });
   const sum = base + lines.reduce((t, l) => t + l.points, 0);
-  if (lines.length) lines[lines.length - 1].points += shot.points - sum;
+  if (lines.length) lines.reduce((m, l) => (l.points > m.points ? l : m)).points += shot.points - sum;
   return { base: lines.length ? base : shot.points, bonuses: lines, total: shot.points };
 }
 
