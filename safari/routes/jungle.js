@@ -546,7 +546,65 @@ export const ROUTE = {
     spawn('crocodile', onWater(uR(0.22), -16)); wade(spawn('crocodile', shore(uR(0.62), -30, 0.1, 0.8), { bask: true }), -1.2);
     spawn('crocodile', onWater(uR(0.78), -12));
     spawn('river-dolphin', onWater(uR(0.38), 12, -1.2)); spawn('river-dolphin', onWater(uR(0.5), -14, -1.2)); spawn('river-dolphin', onWater(uR(0.56), 18, -1.2));
-    spawn('archerfish', onWater(uR(0.3), 9, -0.3)); spawn('archerfish', onWater(uR(0.8), -9, -0.3));
+    // each archerfish's overhanging twig grows from a mangrove on the nearest bank, mudflat or
+    // island: the same tree as the river's other mangroves, with one long branch out over the water
+    const mangroveFor = (c) => {
+      if (!c || !c.twigBase) return;
+      const tb = c.twigBase;
+      let at = null;
+      for (let r = 2; r < 140 && !at; r += 1.5) {
+        const n = Math.max(6, Math.round(r * 0.8));
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + r, x = tb.x + Math.cos(a) * r, z = tb.z + Math.sin(a) * r;
+          const y = groundY(x, z);
+          if (y > -1.6 && y < 1.4 && road.at(x, z).d > 7) { at = new THREE.Vector3(x, Math.max(y, WATER - 0.6), z); break; }
+        }
+      }
+      if (!at) return;
+      const s = 1.2, ry = tb.x * 0.7;                     // no rand(): the rest of the route stays as it was
+      const rootM = new THREE.Mesh(mangroveRootGeo, mangroveRoots.material);
+      rootM.position.copy(at); rootM.scale.setScalar(s); rootM.rotation.y = ry;
+      const crown = new THREE.Mesh(crownGeo, mangroveCrowns.material);
+      crown.position.copy(at).setY(at.y + 5.6 * s); crown.scale.set(3.4 * s, 2.8 * s, 3.4 * s); crown.rotation.y = tb.z * 0.7;
+      // the branch: out of the crown, sagging a little over the water, ending where the twig begins
+      const from = at.clone().setY(at.y + 5.0 * s), mid = from.clone().lerp(tb, 0.5);
+      mid.y = Math.max(from.y, tb.y) + 0.4;
+      const curve = new THREE.QuadraticBezierCurve3(from, mid, tb.clone());
+      const L = from.distanceTo(tb), segs = Math.max(6, Math.round(L * 1.5));
+      const bg = new THREE.TubeGeometry(curve, segs, 1, 5);
+      // taper from the trunk (0.3 m) to the twig (0.07 m)
+      const bp = bg.attributes.position, cp = new THREE.Vector3();
+      for (let i = 0; i < bp.count; i++) {
+        const k = Math.floor(i / 6) / segs;
+        curve.getPointAt(Math.min(1, k), cp);
+        const rr = 0.3 + (0.07 - 0.3) * Math.sqrt(k);
+        bp.setXYZ(i, cp.x + (bp.getX(i) - cp.x) * rr, cp.y + (bp.getY(i) - cp.y) * rr, cp.z + (bp.getZ(i) - cp.z) * rr);
+      }
+      bg.deleteAttribute('uv'); bg.computeVertexNormals();
+      const branch = new THREE.Mesh(geo(bg), mangroveRoots.material);
+      // small leaf clumps along a long branch, so it reads as part of the tree; a long limb out over
+      // the water drops aerial roots down into the river bed every few metres, as mangroves do
+      const tufts = [], drops = [];
+      for (let k = 0.15; k < 0.93; k += 3.5 / Math.max(3.5, L)) {
+        const q = curve.getPointAt(k);
+        const t = new THREE.Mesh(crownGeo, mangroveCrowns.material);
+        const big = 2.2 - 1.2 * k;                        // fuller near the tree, lighter towards the twig
+        t.position.copy(q).setY(q.y + 0.5 * big); t.scale.set(1.3 * big, 0.9 * big, 1.3 * big); t.rotation.y = k * 9;
+        tufts.push(t);
+      }
+      if (L > 10) {
+        for (let k = 10 / L; k < 1 - 5 / L; k += 10 / L) {
+          const q = curve.getPointAt(k), bed = groundY(q.x, q.z) - 0.3;
+          const lean = 0.8 + Math.sin(k * 23) * 0.6;            // each root bows out a little, none straight down
+          const dc = new THREE.QuadraticBezierCurve3(q.clone(), new THREE.Vector3(q.x + lean * 1.6, q.y - 0.5, q.z - lean * 1.6), new THREE.Vector3(q.x + lean * 2.2, bed, q.z - lean * 2.2));
+          const dg = new THREE.TubeGeometry(dc, 6, 0.07, 4); dg.deleteAttribute('uv');
+          drops.push(new THREE.Mesh(geo(dg), mangroveRoots.material));
+        }
+      }
+      [rootM, crown, branch, ...tufts, ...drops].forEach((m) => scene.add(m));
+      c.mangrove = { at, reach: L };
+    };
+    mangroveFor(spawn('archerfish', onWater(uR(0.3), 9, -0.3))); mangroveFor(spawn('archerfish', onWater(uR(0.8), -9, -0.3)));
     // moon jellyfish swarms out in the channel: deep by day, up under the surface at dusk, glowing at night
     spawn('moon-jelly', onWater(uR(0.34), -13)); spawn('moon-jelly', onWater(uR(0.47), 15), { count: 10 }); spawn('moon-jelly', onWater(uR(0.66), -12));
     // frigatebirds roost after dark: up in the black sky they could not be made out even in the torch,
@@ -596,8 +654,8 @@ export const ROUTE = {
     const frogYaw = Math.atan2(-tF.z, tF.x), sF = side(uF);
     const stumpAt = beside(uF, -4.0), topY = stumpAt.y + 1.14 * 1.25 + 0.02;
     spawn('strawberry-poison-frog', stumpAt, { bed: 'stump', yaw: frogYaw }, { seeAt: 60 });
-    spawn('strawberry-poison-frog', stumpAt.clone().addScaledVector(tF, 0.2).addScaledVector(sF, -0.13).setY(topY), { yaw: frogYaw - 0.5 }, { seeAt: 60 });
-    spawn('strawberry-poison-frog', stumpAt.clone().addScaledVector(tF, -0.2).addScaledVector(sF, -0.1).setY(topY), { yaw: frogYaw + 0.4 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', stumpAt.clone().addScaledVector(tF, 0.3).addScaledVector(sF, -0.2).setY(topY), { yaw: frogYaw - 0.5 }, { seeAt: 60 });
+    spawn('strawberry-poison-frog', stumpAt.clone().addScaledVector(tF, -0.3).addScaledVector(sF, -0.15).setY(topY), { yaw: frogYaw + 0.4 }, { seeAt: 60 });
     spawn('strawberry-poison-frog', beside(uF + 0.0012, -3.7), { bed: 'leaf', stalk: 1.15, yaw: frogYaw + 0.2 }, { seeAt: 60 });
 
     // the hornbills: by day the pair waits on a bough in the forest on the left, ahead of the van, and

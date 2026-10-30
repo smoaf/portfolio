@@ -888,7 +888,8 @@ export function buildRiverDolphin(K, home, opts = {}) {
 // ARCHERFISH: a little school just under the surface, silver with black bars. Rare: the lead fish
 // shoots a jet of water at an insect on a mangrove leaf overhead, the insect drops, the fish take
 // it. opts.target: a world point (on a real mangrove leaf) to shoot at; without it the creature
-// brings its own overhanging twig (opts.branch !== false).
+// brings its own overhanging twig (opts.branch !== false), and `c.twigBase` says where the twig
+// starts, so the route can grow it from a mangrove.
 function archerGeo(K) {
   return K.geo('archerBody', () => {
     const g = new THREE.SphereGeometry(1, 18, 12);
@@ -1049,6 +1050,8 @@ export function buildArcherfish(K, home, opts = {}) {
       INS.visible = st.ins > 0.02;
     },
   });
+  // where its own twig starts, in the world: the route grows it out of a mangrove's branch
+  if (!target && opts.branch !== false) c.twigBase = twig.localToWorld(new THREE.Vector3(-3.4, 3.9, -1.2));
   return K.lod(c, near, far, 40);
 }
 
