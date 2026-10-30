@@ -428,8 +428,8 @@ export function buildRhinocerosHornbill(K, home, opts = {}) {
 
 // =============================================================================================
 // Strawberry poison frog: shiny bright red with blue-black legs and small dark speckles. The real
-// frog is about 2 cm; like the insects of the run it is scaled up (to ~14 cm here), so the long lens
-// can still make it out at the road side. The twist: some of the speckles on the back glow faintly.
+// frog is about 2 cm; like the insects of the run it is scaled up (to ~28 cm here), so it reads from
+// the road and counts on the wide lens too. The twist: some of the speckles on the back glow faintly.
 // opts.bed: 'log' (a mossy log under it), 'stump' (a chest-high mossy stump), 'leaf' (a broad leaf
 // on a stalk, opts.stalk high) or nothing (the route sets it on another frog's log or stump).
 export function buildPoisonFrog(K, home, opts = {}) {
@@ -439,38 +439,45 @@ export function buildPoisonFrog(K, home, opts = {}) {
   const bark = K.mat(0x4b3b2b, { roughness: 1 }), moss = K.mat(0x3f5e2c, { roughness: 1 }), leafM = K.mat(0x2f6a34, { roughness: 0.7, side: THREE.DoubleSide });
 
   const root = K.group(), near = K.group(null, root), far = K.group(null, root);
+  // the frog is drawn at FROG times its old size; the stump's top and the leaf grow by BED across
+  // (not in height), just enough for the frogs to still sit on them
+  const FROG = 2, BED = 1.5;
+  const bed = K.group(null, near);
+  bed.scale.set(BED, 1, BED);
   let bedY = 0;
   if (opts.bed === 'log') {
     bedY = 0.44;
-    K.mesh(K.cyl(0.24, 0.27, 2.2, 9), bark, [0.3, 0.22, 0], near, [0, 0, PI / 2]);
-    K.mesh(K.cyl(0.245, 0.245, 0.03, 9), K.mat(0x7a5e40, { roughness: 1 }), [1.41, 0.22, 0], near, [0, 0, PI / 2]);
-    K.mesh(K.sphere(1, 9, 6), moss, [0.15, 0.42, 0.02], near, null, [0.45, 0.04, 0.18]);
-    K.mesh(K.sphere(1, 7, 5), moss, [0.9, 0.4, 0.06], near, null, [0.32, 0.07, 0.16]);
+    K.mesh(K.cyl(0.24, 0.27, 2.2, 9), bark, [0.3, 0.22, 0], bed, [0, 0, PI / 2]);
+    K.mesh(K.cyl(0.245, 0.245, 0.03, 9), K.mat(0x7a5e40, { roughness: 1 }), [1.41, 0.22, 0], bed, [0, 0, PI / 2]);
+    K.mesh(K.sphere(1, 9, 6), moss, [0.15, 0.42, 0.02], bed, null, [0.45, 0.04, 0.18]);
+    K.mesh(K.sphere(1, 7, 5), moss, [0.9, 0.4, 0.06], bed, null, [0.32, 0.07, 0.16]);
     K.mesh(K.cyl(0.24, 0.27, 2.2, 5), bark, [0.3, 0.22, 0], far, [0, 0, PI / 2]);
   } else if (opts.bed === 'stump') {
     // a broken-off stump at the road side, about chest high, so the frogs on its mossy top sit near
     // the height of the lens and show against the forest behind instead of down on the ground
     bedY = 1.14;
-    K.mesh(K.cyl(0.27, 0.34, 1.1, 9), bark, [0, 0.55, 0], near);
+    K.mesh(K.cyl(0.27, 0.34, 1.1, 9), bark, [0, 0.55, 0], bed);
     // a few low splinters round the back of the break (+z faces the road), none in front of the frogs
     for (let i = 0; i < 3; i++) {
       const a = -PI / 2 - 0.9 + i * 0.9, h = 0.07 + (i % 2) * 0.05;
-      K.mesh(K.cone(0.06, h, 4), bark, [Math.cos(a) * 0.24, 1.1 + h / 2, Math.sin(a) * 0.24], near, [0, a, 0]);
+      K.mesh(K.cone(0.06, h, 4), bark, [Math.cos(a) * 0.24, 1.1 + h / 2, Math.sin(a) * 0.24], bed, [0, a, 0]);
     }
-    K.mesh(K.sphere(1, 11, 6), moss, [0, 1.1, 0], near, null, [0.28, 0.05, 0.28]);
-    K.mesh(K.sphere(1, 7, 5), moss, [0.2, 0.62, 0.22], near, null, [0.14, 0.2, 0.08]);
+    K.mesh(K.sphere(1, 11, 6), moss, [0, 1.1, 0], bed, null, [0.28, 0.05, 0.28]);
+    K.mesh(K.sphere(1, 7, 5), moss, [0.2, 0.62, 0.22], bed, null, [0.14, 0.2, 0.08]);
     K.mesh(K.cyl(0.27, 0.34, 1.1, 5), bark, [0, 0.55, 0], far);
   } else if (opts.bed === 'leaf') {
     // the leaf on its stalk, opts.stalk high (a low one by default)
     const st = opts.stalk ?? 0.64;
     bedY = st - 0.02;
-    K.mesh(K.cyl(0.012, 0.018, st, 5), leafM, [0, st / 2 - 0.01, -0.06], near, [0.1, 0, 0]);
+    K.mesh(K.cyl(0.012, 0.018, st, 5), leafM, [0, st / 2 - 0.01, -0.06], bed, [0.1, 0, 0]);
     if (st > 0.8) K.mesh(K.cyl(0.012, 0.018, st, 4), leafM, [0, st / 2 - 0.01, -0.06], far, [0.1, 0, 0]);
     const leafPts = [[0, -0.05], [0.13, 0.0], [0.2, 0.14], [0.16, 0.3], [0, 0.4], [-0.16, 0.3], [-0.2, 0.14], [-0.13, 0.0]];
-    K.mesh(K.shape('fb-frogleaf', leafPts), leafM, [0, bedY - 0.01, -0.12], near, [-PI / 2 + 0.06, 0, 0]);
-    K.mesh(K.shape('fb-frogleaf', leafPts), leafM, [0.08, bedY - 0.12, -0.2], near, [-PI / 2 + 0.5, 0.9, 0], 0.8);
+    // the broad leaf reaches a little further forward, so the bigger frog sits on it, not over its tip
+    K.mesh(K.shape('fb-frogleaf', leafPts), leafM, [0, bedY - 0.01, 0.1], bed, [-PI / 2 + 0.06, 0, 0]);
+    K.mesh(K.shape('fb-frogleaf', leafPts), leafM, [0.08, bedY - 0.12, 0.02], bed, [-PI / 2 + 0.5, 0.9, 0], 0.8);
   }
   const body = K.group([0, bedY, 0], near);
+  body.scale.setScalar(FROG);
   // the frog (+z forward): a plump body, a blunt head with big dark eyes, legs folded under it
   const trunk = K.group([0, 0.035, 0], body);
   K.mesh(K.sphere(1, 14, 10), red, [0, 0, -0.01], trunk, [0.25, 0, 0], [0.038, 0.032, 0.055]);
@@ -501,13 +508,13 @@ export function buildPoisonFrog(K, home, opts = {}) {
   trunk.updateMatrix();
   for (const m of [...trunk.children]) { m.applyMatrix4(trunk.matrix); body.add(m); }
   body.remove(trunk);
-  K.mesh(K.sphere(1, 8, 6), red, [0, bedY + 0.035, 0], far, null, [0.04, 0.032, 0.06]);
+  K.mesh(K.sphere(1, 8, 6), red, [0, bedY + 0.035 * FROG, 0], far, null, [0.04 * FROG, 0.032 * FROG, 0.06 * FROG]);
   near.scale.setScalar(1.25); far.scale.setScalar(1.25);
   K.place(root, home);
 
   let hop = 0;
   const c = perch(K.makeCreature({
-    species: SPECIES['strawberry-poison-frog'], root, home, radius: 0.12, eye: new THREE.Vector3(0, (bedY + 0.05) * 1.25, 0.04),
+    species: SPECIES['strawberry-poison-frog'], root, home, radius: 0.12 * FROG, eye: new THREE.Vector3(0, (bedY + 0.05 * FROG) * 1.25, 0.04 * FROG),
     ground: K.groundY, speed: 0, roam: 0, fleeAt: 0, curiousAt: 10, shy: 0, rareChance: 0, yaw: opts.yaw,
     pose(c, dt, env) {
       // the throat pumps; now and then a little hop on the spot
@@ -517,7 +524,7 @@ export function buildPoisonFrog(K, home, opts = {}) {
       if (hop > 0) {
         hop -= dt;
         const k = 1 - hop / 0.4;
-        body.position.y = bedY + Math.sin(k * PI) * 0.04;
+        body.position.y = bedY + Math.sin(k * PI) * 0.04 * FROG;
       } else body.position.y = bedY;
     },
   }));
