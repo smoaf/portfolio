@@ -17,8 +17,8 @@ import * as THREE from 'three';
 import { perch } from './forest.js';
 
 export const SPECIES = {
-  'superb-bird-of-paradise': { id: 'superb-bird-of-paradise', name: 'Superb bird-of-paradise (male)', points: 240, call: { hz: 2600, kind: 'trill' } },
-  'superb-bird-of-paradise-female': { id: 'superb-bird-of-paradise-female', name: 'Superb bird-of-paradise (female)', points: 160, call: { hz: 1900, kind: 'chirp' } },
+  'superb-bird-of-paradise': { id: 'superb-bird-of-paradise', name: 'Bird-of-paradise (m)', points: 240, call: { hz: 2600, kind: 'trill' } },
+  'superb-bird-of-paradise-female': { id: 'superb-bird-of-paradise-female', name: 'Bird-of-paradise (f)', points: 160, call: { hz: 1900, kind: 'chirp' } },
 };
 
 const PI = Math.PI;

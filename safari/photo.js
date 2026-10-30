@@ -91,6 +91,29 @@ export const BONUS = {
 // the bonus words of a shot, e.g. "+ group + feeding"; empty when it earned none
 export const bonusText = (shot) => (shot.bonuses || []).map((b) => b.label).join(' ');
 
+// The score of a shot spelled out for the report's large view: the base, each bonus once (other
+// species with a count) with a one-line meaning and its points, and the total. Bonus points are
+// the rounded shares of the base; the biggest one takes the rounding so the lines add up to the total.
+const EXPLAIN = {
+  group: { name: 'Same species', meaning: '2 or more of this species in the frame' },
+  species: { name: 'Other species', meaning: 'another kind of animal in the frame' },
+  feeding: { name: 'Feeding', meaning: 'the animal is eating or walking to feed' },
+  pose: { name: 'Rare pose', meaning: 'the animal is in a rare pose or behaviour' },
+};
+export function breakdown(shot) {
+  if (!shot.best || !shot.points) return null;
+  const base = shot.parts.base;
+  const lines = [];
+  ['group', 'species', 'feeding', 'pose'].forEach((id) => {
+    const n = (shot.bonuses || []).filter((b) => b.id === id).length;
+    if (!n) return;
+    lines.push({ ...EXPLAIN[id], count: n, points: Math.round(base * BONUS[id].share * n) });
+  });
+  const sum = base + lines.reduce((t, l) => t + l.points, 0);
+  if (lines.length) lines.reduce((m, l) => (l.points > m.points ? l : m)).points += shot.points - sum;
+  return { base: lines.length ? base : shot.points, bonuses: lines, total: shot.points };
+}
+
 // The words under the score when a shot comes in: short, so a phone can read them at a glance.
 export function verdict(shot) {
   if (!shot.best) return 'Nothing in frame';
