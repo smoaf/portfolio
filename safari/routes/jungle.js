@@ -12,6 +12,7 @@ import * as FOREST from '../fauna/forest.js';
 import * as ESTUARY from '../fauna/estuary.js';
 import * as FARBANK from '../fauna/farbank.js';
 import * as PARADISE from '../fauna/paradise.js';
+import * as LEAFCUTTER from '../fauna/leafcutter.js';
 import { planPoses } from '../poses.js';
 
 const WATER = 0;
@@ -74,6 +75,8 @@ const POSES = {
   'rhinoceros-hornbill': 'always',   // the pair crossing low over the road and landing in a tall tree (FEAT-004)
   // the first stretch
   'superb-bird-of-paradise': 'near', // the full dance: fast bouncing and clicking, the female leaning in (FEAT-007)
+  // the far bank, near the end
+  'leafcutter-ant': 'near',          // a soldier by the road rears up at the van, jaws wide open (FEAT-009)
 };
 
 export const ROUTE = {
@@ -447,7 +450,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 808 });
-    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS };
+    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS, ...LEAFCUTTER.BUILDERS };
     const creatures = [];
     // everything starts out turned towards the road (give or take), so a perched animal never
     // shows the van its back for the whole drive
@@ -644,6 +647,20 @@ export const ROUTE = {
       spawn('superb-bird-of-paradise-female', at(1.1), { yaw: mix(toHim, van, 0.3), mate: male }, { seeAt: 90 });
     }
 
+    // the leafcutter ants (FEAT-009): a column crossing the road on the far bank's last stretch, between
+    // the flower mantis and the last anteater (each ~22 m off) and ~75 m past the jaguar's tree. From a
+    // tree on the right with chewed leaves on a low branch, across the road to a low nest mound on the
+    // left; the soldier that rears up stands at the left edge of the road. No random numbers here.
+    let antTrail = null;
+    {
+      const uT = 0.922, footT = beside(uT - 0.002, 7.4);
+      perchItems.push({ p: footT, s: [0.9, 1, 0.9] });
+      const trail = [footT, beside(uT - 0.0014, 5.3), beside(uT - 0.0006, 3.6), beside(uT + 0.0002, 1.1), beside(uT + 0.0007, -1.5), beside(uT + 0.0011, -3.6), beside(uT + 0.0019, -5.1)];
+      const moundAt = beside(uT + 0.0034, -6.9);
+      const ants = spawn('leafcutter-ant', beside(uT + 0.0011, -3.6), { yaw: 0, path: trail, tree: { foot: footT, r: 0.6 * 0.9, taper: (0.2 / 12) * 0.9 }, mound: { at: moundAt, r: 0.85 } }, { seeAt: 130 });
+      if (ants) antTrail = [footT, beside(uT, 0), moundAt];
+    }
+
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);
     scene.add(perchTrunks, branches);
@@ -661,6 +678,8 @@ export const ROUTE = {
         lanes.push({ ax: p.x, az: p.z, bx: h.x, bz: h.z, r: (m ? 0.9 : 1.4) + (c.radius || 0.6) * 1.4 });
       }
     }
+    // and the ant trail itself, from the tree to the mound: nothing grows on it
+    if (antTrail) for (let i = 1; i < antTrail.length; i++) lanes.push({ ax: antTrail[i - 1].x, az: antTrail[i - 1].z, bx: antTrail[i].x, bz: antTrail[i].z, r: 1.2 });
     const blocked = (x, z, pad) => lanes.some((l) => {
       const dx = l.bx - l.ax, dz = l.bz - l.az, L = dx * dx + dz * dz || 1;
       const k = Math.max(0, Math.min(1, ((x - l.ax) * dx + (z - l.az) * dz) / L));

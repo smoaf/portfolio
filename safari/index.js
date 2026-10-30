@@ -262,7 +262,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   // ---- the loop. The van is placed first, then the creatures react to where it now is, then the
   // picture is drawn: that way nothing ever reads a position from the frame before.
-  const env = { camPos: new THREE.Vector3(), t: 0, tod, pellets, call: callFor, dist: 0, under: 0, u: 0, lens: 1 };
+  const env = { camPos: new THREE.Vector3(), look: new THREE.Vector3(0, 0, -1), t: 0, tod, pellets, call: callFor, dist: 0, under: 0, u: 0, lens: 1 };
   let poi = null;
   // one frame of the drive. An error inside it must not end the run: three.js books the next frame
   // only after this one returns, so a throw would freeze the picture for good. It is logged once, and
@@ -283,6 +283,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
     const speed = rig.step(dt, reduceMotion() ? null : poi);
     rig.worldHead(env.camPos);
+    rig.camera.getWorldDirection(env.look);           // where the lens points (the ant column picks its subject by it)
     sky.position.copy(env.camPos);                     // the sky travels with the lens (a long route would leave it behind)
     if (stars) stars.position.copy(env.camPos);
     env.u = rig.progress;
