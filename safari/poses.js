@@ -114,6 +114,9 @@ export function planPoses({ creatures, path, plan, colliders = () => [], roll = 
     let from = null, bt = 0, snapped = false;
     c.step = (dt, env) => {
       c._env = env;
+      // the pose as it was drawn last frame, so a change into or out of the pose can blend from it
+      if (c.root.visible) { save(nodes, snap); snapped = true; } else snapped = false;
+      const was = c.state === 'rare';
       const calm = c.state === 'idle' || c.state === 'wander' || c.state === 'curious';
       if (c.poseKind === 'near' && !c._posed && calm && !c.air && inView(c, env) && turnFree(c)) {
         c._posed = true;
@@ -122,9 +125,6 @@ export function planPoses({ creatures, path, plan, colliders = () => [], roll = 
         if (env.t > c._wait) c._wait = 0;
         else if (inView(c, env) && turnFree(c)) { const h = c._waitHold; c._wait = 0; c.go('rare', h); }
       }
-      // the pose as it was drawn last frame, so a change into or out of the pose can blend from it
-      if (c.root.visible) { save(nodes, snap); snapped = true; } else snapped = false;
-      const was = c.state === 'rare';
       step(dt, env);
       if (was !== (c.state === 'rare') && snapped) { from = from || new Float32Array(snap.length); from.set(snap); bt = 0; }
       if (from && bt < BLEND) {
