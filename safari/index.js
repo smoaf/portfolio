@@ -284,6 +284,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     const speed = rig.step(dt, reduceMotion() ? null : poi);
     rig.worldHead(env.camPos);
     rig.camera.getWorldDirection(env.look);           // where the lens points (the ant column picks its subject by it)
+    env.aspect = rig.camera.aspect;                  // how wide the frame is (a phone held upright sees less to the sides)
     sky.position.copy(env.camPos);                     // the sky travels with the lens (a long route would leave it behind)
     if (stars) stars.position.copy(env.camPos);
     env.u = rig.progress;

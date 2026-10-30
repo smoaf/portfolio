@@ -15,9 +15,9 @@
 // and are left exactly as they are.
 //
 // Whatever sets a pose off (the van, feed, a startle, the time of day, curiosity), it only starts
-// where it can be photographed: ahead of the van, close enough to score on the wide lens and not
-// hidden behind rock or plants. If it can't be seen yet, it waits a while for that (or doesn't
-// happen this time). In a herd or group of one species at most two animals pose at once; the
+// where it can be photographed: ahead of the van (inside the wide lens's view the way the van is
+// heading), close enough to score on the wide lens and not hidden behind rock or plants. If it
+// can't be seen yet, it waits a while for that (or doesn't happen this time). In a herd or group of one species at most two animals pose at once; the
 // others wait their turn. A pose lasts as long as the species' own animation (`c.poseLen`, else
 // the time the trigger asks for), and it blends in and out over half a second, so no part of the
 // animal jumps from one frame to the next.
@@ -29,7 +29,6 @@ const TURNS = 2;                                    // animals of one species po
 const WAIT = 12;                                    // s a held-back pose keeps waiting for its moment
 const BLEND = 0.5;                                  // s to blend into and out of a pose
 const FRAME = 0.07;                                 // the share of the frame height it must fill at 1.0×
-const AHEAD = Math.cos(THREE.MathUtils.degToRad(45));   // within 45° of the way the van is heading (in the view ahead)
 const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vT = new THREE.Vector3();
 const qA = new THREE.Quaternion();
 const ray = new THREE.Raycaster();
@@ -38,6 +37,9 @@ ray.layers.enableAll();                             // the colliders include sce
 export function planPoses({ creatures, path, plan, colliders = () => [], roll = Math.random }) {
   const length = path.getLength();
   const wideHalf = Math.tan(THREE.MathUtils.degToRad(FOV.wide) / 2);
+  // ahead: inside what the wide lens sees to the sides when it looks the way the van is heading
+  // (plus a little), at most 45° (a phone held upright sees much less to the sides than a computer)
+  const aheadCos = (aspect) => Math.cos(Math.min(THREE.MathUtils.degToRad(45), Math.atan(wideHalf * aspect) + THREE.MathUtils.degToRad(8)));
   // the van's heading, worked out once per frame
   const van = { t: -1, dir: new THREE.Vector3() };
   const heading = (env) => {
@@ -58,7 +60,7 @@ export function planPoses({ creatures, path, plan, colliders = () => [], roll = 
     if (ok) {
       vT.set(vB.x, 0, vB.z);
       const h = vT.length();
-      ok = h < 0.5 || vT.dot(heading(env)) / h > AHEAD;
+      ok = h < 0.5 || vT.dot(heading(env)) / h > aheadCos(env.aspect || 1.5);
     }
     if (ok) {
       const cs = colliders();
