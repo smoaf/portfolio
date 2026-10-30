@@ -29,7 +29,7 @@ const TURNS = 2;                                    // animals of one species po
 const WAIT = 12;                                    // s a held-back pose keeps waiting for its moment
 const BLEND = 0.5;                                  // s to blend into and out of a pose
 const FRAME = 0.07;                                 // the share of the frame height it must fill at 1.0×
-const AHEAD = Math.cos(THREE.MathUtils.degToRad(70));   // within 70° of the way the van is heading
+const AHEAD = Math.cos(THREE.MathUtils.degToRad(45));   // within 45° of the way the van is heading (in the view ahead)
 const vA = new THREE.Vector3(), vB = new THREE.Vector3(), vT = new THREE.Vector3();
 const qA = new THREE.Quaternion();
 const ray = new THREE.Raycaster();
