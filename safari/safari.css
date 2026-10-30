@@ -126,11 +126,13 @@
 .safari .sf-card:hover { transform: translateY(-2px); }
 .safari .sf-card:focus-visible { outline: 2px solid var(--vf); outline-offset: 3px; }
 .sf-card canvas, .sf-card img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; }
-.sf-card .sf-name { font: 600 13px/1.2 var(--font-display, sans-serif); margin-top: 7px; }
-.sf-card .sf-meta { display: flex; justify-content: space-between; gap: 6px; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; margin-top: 3px; }
-.sf-card .sf-meta b { color: #1d1b18; font-variant-numeric: tabular-nums; }
+/* title and total under the photo; the title always takes room for two lines, so every card is the same size */
+.sf-card .sf-meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-top: 7px; }
+.sf-card .sf-name { font: 600 13px/1.2 var(--font-display, sans-serif); height: 2.4em; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.sf-card .sf-meta b { font: 700 13px/1.2 var(--font-display, sans-serif); color: #1d1b18; font-variant-numeric: tabular-nums; }
 .safari .sf-card.counts { box-shadow: 0 0 0 2px #d8a542, 0 8px 22px rgba(0,0,0,0.4); }
-.sf-card.counts .sf-meta span { color: #8a5d12; font-weight: 600; }
+.sf-card.counts .sf-meta b { color: #8a5d12; }
 .sf-empty { color: var(--vf-dim); font-size: 13px; margin-bottom: 20px; }
 /* the board: rank, name, and the score in its own column on the right */
 .sf-list { list-style: none; margin: 1em 0; padding: 0; max-width: 300px; font-variant-numeric: tabular-nums; }
@@ -144,11 +146,18 @@
   padding: calc(56px + env(safe-area-inset-top, 0px)) 12px calc(56px + env(safe-area-inset-bottom, 0px)); cursor: zoom-out; touch-action: pan-y; }
 .sf-view.on { opacity: 1; }
 .sf-print { margin: 0; background: #f6f2ea; color: #1d1b18; padding: 10px 10px 12px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6); cursor: default; }
-.sf-pic img, .sf-pic canvas { display: block; width: min(88vw, 960px, calc((100vh - 200px) * 4 / 3)); height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; -webkit-user-drag: none; }
-.sf-print figcaption { display: flex; align-items: baseline; gap: 10px; margin-top: 9px; }
+.sf-pic img, .sf-pic canvas { display: block; width: min(88vw, 960px, calc((100vh - 200px - var(--parts, 0) * 18px) * 4 / 3)); height: auto; aspect-ratio: 4 / 3; background: #cfc7b8; -webkit-user-drag: none; }
+.sf-print figcaption { margin-top: 9px; }
+.sf-vhead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .sf-vname { font: 600 15px/1.2 var(--font-display, sans-serif); }
-.sf-vmeta { flex: 1; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #5e5850; }
 .sf-vpts { font: 700 17px/1 var(--font-display, sans-serif); font-variant-numeric: tabular-nums; }
+/* the score spelled out: base, each bonus with its meaning and points, total */
+.sf-vparts { list-style: none; margin: 6px 0 0; padding: 0; font-size: 12px; line-height: 18px; color: #5e5850; font-variant-numeric: tabular-nums; }
+.sf-vparts:empty { display: none; }
+.sf-vparts li { display: flex; justify-content: space-between; gap: 12px; }
+.sf-vparts em { font-style: normal; font-weight: 600; color: #1d1b18; }
+.sf-vparts b { color: #1d1b18; font-weight: 600; white-space: nowrap; }
+.sf-vparts .sf-vtotal { border-top: 1px solid rgba(29, 27, 24, 0.2); margin-top: 2px; color: #1d1b18; font-weight: 600; }
 .safari .sf-vbtn { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 64px; padding: 0; font-size: 30px; line-height: 1;
   background: rgba(12, 11, 9, 0.45); letter-spacing: 0; }
 .sf-prev { left: max(8px, env(safe-area-inset-left, 0px)); }
