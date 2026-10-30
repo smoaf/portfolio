@@ -4,7 +4,7 @@
 // in the middle, grain and a few specks of dust, and the figures along the bottom edge of the frame.
 // The HUD element is also the input surface: the station's canvas sits behind it, so no drag of
 // the safari ever reaches the station's orbit controls.
-import { bonusText } from './photo.js';
+import { bonusText, breakdown } from './photo.js';
 
 const TOD = { dawn: 'Dawn', day: 'Day', dusk: 'Dusk', night: 'Night' };
 // names on the board come back out of localStorage, so they go in as text, never as markup
@@ -179,17 +179,16 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         <div class="sf-done"><button id="sf-again">Drive it again</button><button id="sf-back">Back to the van</button></div>
       </div>`;
       const grid = report.querySelector('#sf-picks');
-      const name = (s) => (s.best ? s.best.species.name : 'Nothing in frame');
+      const worth = (s) => !!(s.best && s.points);
+      const name = (s) => (worth(s) ? s.best.species.name : 'No animal');
       // one card per shot, in the order they were taken
       shots.forEach((s, i) => {
         const card = el('button', 'sf-card' + (counted.has(s) ? ' counts' : ''));
         card.type = 'button';
-        card.setAttribute('aria-label', `Photo ${i + 1}: ${name(s)}, ${s.points} points${bonusText(s) ? ' ' + bonusText(s) : ''}. Open large`);
+        card.setAttribute('aria-label', `Photo ${i + 1}: ${name(s)}, ${worth(s) ? s.points : 0} points. Open large`);
         try { card.appendChild(copyThumb(s.thumb)); } catch (err) { console.error('Safari photo failed', err); }   // one bad print doesn't stop the report
-        if (s.best && s.points) {       // the same final score and bonus words as the polaroid; an empty frame has no label
-          card.appendChild(el('div', 'sf-name', esc(name(s))));
-          card.appendChild(el('div', 'sf-meta', `<span>${bonusText(s)}</span><b>${s.points}</b>`));
-        }
+        // only the title and the total; every card keeps room for two title lines, so all are the same size
+        card.appendChild(el('div', 'sf-meta', `<span class="sf-name">${esc(name(s))}</span><b>${worth(s) ? s.points : 0}</b>`));
         card.addEventListener('click', () => open(i));
         grid.appendChild(card);
       });
@@ -202,7 +201,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
           viewer = el('div', 'sf-view');
           viewer.setAttribute('role', 'dialog');
           viewer.setAttribute('aria-label', 'Photo');
-          viewer.innerHTML = `<figure class="sf-print"><div class="sf-pic"></div><figcaption><span class="sf-vname"></span><span class="sf-vmeta"></span><b class="sf-vpts"></b></figcaption></figure>
+          viewer.innerHTML = `<figure class="sf-print"><div class="sf-pic"></div><figcaption><div class="sf-vhead"><span class="sf-vname"></span><b class="sf-vpts"></b></div><ol class="sf-vparts"></ol></figcaption></figure>
             <button type="button" class="sf-vbtn sf-prev" aria-label="Previous photo">‹</button>
             <button type="button" class="sf-vbtn sf-next" aria-label="Next photo">›</button>
             <button type="button" class="sf-vclose" aria-label="Close">Close</button>
@@ -229,10 +228,16 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         pic.innerHTML = '';
         if (s.big) { const img = new Image(); img.src = s.big; img.alt = name(s); pic.appendChild(img); }
         else pic.appendChild(copyThumb(s.thumb));
-        const worth = !!(s.best && s.points);
-        viewer.querySelector('.sf-vname').textContent = worth ? name(s) : '';
-        viewer.querySelector('.sf-vmeta').textContent = worth ? bonusText(s) : '';
-        viewer.querySelector('.sf-vpts').textContent = worth ? `${s.points}` : '';
+        viewer.querySelector('.sf-vname').textContent = name(s);
+        viewer.querySelector('.sf-vpts').textContent = `${worth(s) ? s.points : 0}`;
+        // how the score came about: the base, each bonus with what it means and its points, the total
+        const b = breakdown(s), parts = viewer.querySelector('.sf-vparts');
+        parts.innerHTML = b ? [
+          `<li><span>Base</span><b>${b.base}</b></li>`,
+          ...b.bonuses.map((l) => `<li><span><em>${l.name}${l.count > 1 ? ` ×${l.count}` : ''}</em>: ${l.meaning}</span><b>+${l.points}</b></li>`),
+          `<li class="sf-vtotal"><span>Total</span><b>${b.total}</b></li>`,
+        ].join('') : '';
+        viewer.querySelector('.sf-print').style.setProperty('--parts', b ? b.bonuses.length + 2 : 0);
         viewer.querySelector('.sf-vcount').textContent = `${at + 1} / ${shots.length}`;
         viewer.querySelectorAll('.sf-vbtn').forEach((b) => { b.hidden = shots.length < 2; });
         requestAnimationFrame(() => viewer && viewer.classList.add('on'));

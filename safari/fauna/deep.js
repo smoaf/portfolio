@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const SPECIES = {
-  'coconut-octopus-glowing': { id: 'coconut-octopus-glowing', name: 'Glowing coconut octopus', points: 190, call: { hz: 320, kind: 'noise' } },
+  'coconut-octopus-glowing': { id: 'coconut-octopus-glowing', name: 'Coconut octopus', points: 190, call: { hz: 320, kind: 'noise' } },
   nautilus: { id: 'nautilus', name: 'Chambered nautilus', points: 170, call: { hz: 260, kind: 'hoot' } },
   'leafy-seadragon': { id: 'leafy-seadragon', name: 'Leafy seadragon', points: 210, call: { hz: 1300, kind: 'trill' } },
   jellyfish: { id: 'jellyfish', name: 'Lantern jellyfish', points: 140, call: { hz: 520, kind: 'hoot' } },
@@ -20,7 +20,7 @@ export const SPECIES = {
   'sea-slug-nudibranch': { id: 'sea-slug-nudibranch', name: 'Nudibranch', points: 160, call: { hz: 1600, kind: 'chirp' } },
   'feather-duster-worm': { id: 'feather-duster-worm', name: 'Feather duster worms', points: 120, call: { hz: 2100, kind: 'trill' } },
   'sea-pen': { id: 'sea-pen', name: 'Sea pens', points: 130, call: { hz: 1800, kind: 'trill' } },
-  'deep-sea-cucumber': { id: 'deep-sea-cucumber', name: 'Swimming sea cucumber', points: 200, call: { hz: 420, kind: 'hoot' } },
+  'deep-sea-cucumber': { id: 'deep-sea-cucumber', name: 'Sea cucumber', points: 200, call: { hz: 420, kind: 'hoot' } },
 };
 
 const TAU = Math.PI * 2;
