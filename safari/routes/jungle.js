@@ -572,25 +572,36 @@ export const ROUTE = {
       const curve = new THREE.QuadraticBezierCurve3(from, mid, tb.clone());
       const L = from.distanceTo(tb), segs = Math.max(6, Math.round(L * 1.5));
       const bg = new THREE.TubeGeometry(curve, segs, 1, 5);
-      // taper from the trunk (0.16 m) to the twig (0.07 m)
+      // taper from the trunk (0.3 m) to the twig (0.07 m)
       const bp = bg.attributes.position, cp = new THREE.Vector3();
       for (let i = 0; i < bp.count; i++) {
         const k = Math.floor(i / 6) / segs;
         curve.getPointAt(Math.min(1, k), cp);
-        const rr = 0.16 + (0.07 - 0.16) * k;
+        const rr = 0.3 + (0.07 - 0.3) * Math.sqrt(k);
         bp.setXYZ(i, cp.x + (bp.getX(i) - cp.x) * rr, cp.y + (bp.getY(i) - cp.y) * rr, cp.z + (bp.getZ(i) - cp.z) * rr);
       }
       bg.deleteAttribute('uv'); bg.computeVertexNormals();
       const branch = new THREE.Mesh(geo(bg), mangroveRoots.material);
-      // small leaf clumps along a long branch, so it reads as part of the tree
-      const tufts = [];
-      for (let k = 0.3; k < 0.95; k += 6 / Math.max(6, L)) {
+      // small leaf clumps along a long branch, so it reads as part of the tree; a long limb out over
+      // the water drops aerial roots down into the river bed every few metres, as mangroves do
+      const tufts = [], drops = [];
+      for (let k = 0.15; k < 0.93; k += 3.5 / Math.max(3.5, L)) {
         const q = curve.getPointAt(k);
         const t = new THREE.Mesh(crownGeo, mangroveCrowns.material);
-        t.position.copy(q).setY(q.y + 0.35); t.scale.set(1.1, 0.8, 1.1); t.rotation.y = k * 9;
+        const big = 2.2 - 1.2 * k;                        // fuller near the tree, lighter towards the twig
+        t.position.copy(q).setY(q.y + 0.5 * big); t.scale.set(1.3 * big, 0.9 * big, 1.3 * big); t.rotation.y = k * 9;
         tufts.push(t);
       }
-      [rootM, crown, branch, ...tufts].forEach((m) => scene.add(m));
+      if (L > 10) {
+        for (let k = 10 / L; k < 1 - 5 / L; k += 10 / L) {
+          const q = curve.getPointAt(k), bed = groundY(q.x, q.z) - 0.3;
+          const lean = 0.8 + Math.sin(k * 23) * 0.6;            // each root bows out a little, none straight down
+          const dc = new THREE.QuadraticBezierCurve3(q.clone(), new THREE.Vector3(q.x + lean * 1.6, q.y - 0.5, q.z - lean * 1.6), new THREE.Vector3(q.x + lean * 2.2, bed, q.z - lean * 2.2));
+          const dg = new THREE.TubeGeometry(dc, 6, 0.07, 4); dg.deleteAttribute('uv');
+          drops.push(new THREE.Mesh(geo(dg), mangroveRoots.material));
+        }
+      }
+      [rootM, crown, branch, ...tufts, ...drops].forEach((m) => scene.add(m));
       c.mangrove = { at, reach: L };
     };
     mangroveFor(spawn('archerfish', onWater(uR(0.3), 9, -0.3))); mangroveFor(spawn('archerfish', onWater(uR(0.8), -9, -0.3)));
