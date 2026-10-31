@@ -159,8 +159,7 @@ export function openAlbum(root, manifest, { onClose } = {}) {
     const sheet = document.createElement('div'); sheet.className = 'album-sheet';
     for (let k = 0; k < perView(); k++) sheet.appendChild(pageEl(first + k));
     book.appendChild(sheet);
-    const last = Math.min(pages.length, first + perView());
-    count.textContent = pages.length ? (last - first > 1 ? `${first + 1}–${last}` : `${first + 1}`) + ` / ${pages.length}` : 'No photos yet';
+    count.textContent = pages.length ? '' : 'No photos yet';   // no page count (BUG-019); the empty middle keeps the arrows where they were
     prevB.disabled = at <= 0; nextB.disabled = at >= views() - 1;
     preload(at + 1);
   }
