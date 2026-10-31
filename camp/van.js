@@ -375,11 +375,13 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
     for (let k = 0; k < 9; k++) g.fillRect(10 + k * 12, h - 14 - ((k * 37) % 50), 7, 4 + ((k * 37) % 50));
     g.fillRect(10, 10, 60, 5); g.fillRect(10, 20, 36, 4);
   }));
-  const nicheM = keep(new THREE.MeshBasicMaterial({ map: nicheScr, toneMapped: false }));
+  // the picture is drawn a little towards the camera (polygon offset) so it never fights the screen's face (BUG-020)
+  const nicheM = keep(new THREE.MeshBasicMaterial({ map: nicheScr, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
   const scrGeo = keep(new THREE.PlaneGeometry(1, 1)); scrGeo.rotateX(Math.PI / 2); scrGeo.rotateZ(Math.PI);   // faces +y, its up is +z
   for (const x of [-1.78, -1.4]) {
-    span(x - 0.13, x + 0.13, R.y0 + 0.02, R.y0 + 0.045, 2.0, 2.2, M.black);
-    add(scrGeo, nicheM, x, R.y0 + 0.047, 2.1).scale.set(0.24, 1, 0.17);
+    // the face stands 5 mm proud of the wall lining's ledge (its front is at R.y0 + 0.045 up to z 2.025), so no faces coincide (BUG-020)
+    span(x - 0.13, x + 0.13, R.y0 + 0.02, R.y0 + 0.05, 2.0, 2.2, M.black);
+    add(scrGeo, nicheM, x, R.y0 + 0.053, 2.1).scale.set(0.24, 1, 0.17);
   }
   const laptop = new THREE.Group(); laptop.position.set(-1.55, -0.72, R.desk + 0.03); laptop.rotation.z = 0.12; root.add(laptop);
   box(0.3, 0.21, 0.014, 0, 0, 0.007, M.metal, laptop);
