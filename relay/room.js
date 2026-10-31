@@ -405,7 +405,7 @@ export function buildRoom() {
   }));
   const hint = wall(0.17, 0.117, -0.66, 1.6, hintTex, 'hint'); hint.rotation.z = 0.05;
   K.add(new THREE.SphereGeometry(0.008, 8, 6), MAT.red, [X0 + 0.01, 1.65, -0.66]);
-  // the clock: a wooden ring, a printed face, three hands that keep the station's time
+  // the clock: a wooden ring, a printed face, an hour hand that keeps the station's time
   const CL = { y: 1.92, z: 0.02, r: 0.15 };
   K.add(new THREE.CylinderGeometry(CL.r + 0.015, CL.r + 0.015, 0.035, 40), MAT.pine, [X0 + 0.018, CL.y, CL.z], [0, 0, Math.PI / 2]);
   wall(2 * CL.r, 2 * CL.r, CL.z, CL.y, keep(canvasTex(256, 256, (g, w, h) => {
@@ -414,7 +414,7 @@ export function buildRoom() {
     for (let i = 1; i <= 12; i++) { const a = i / 12 * Math.PI * 2 - Math.PI / 2; txt(g, String(i), w / 2 + Math.cos(a) * w * 0.37, h / 2 + Math.sin(a) * h * 0.37 + 2, 26, '#3a2a18', { weight: 600, track: 0 }); }
   }))).position.x = X0 + 0.037;
   const hand = (len, wd, m, z) => { const g = new THREE.Group(); g.position.set(X0 + 0.04 + z, CL.y, CL.z); root.add(g); g.add(new THREE.Mesh(keep(new THREE.BoxGeometry(0.002, len, wd).translate(0, len / 2 - 0.015, 0)), m)); return g; };
-  const hH = hand(0.085, 0.009, MAT.black, 0.002), hM = hand(0.12, 0.006, MAT.black, 0.004), hS = hand(0.13, 0.002, MAT.red, 0.006);
+  const hH = hand(0.085, 0.009, MAT.black, 0.002);
 
   K.build(root, false);
   root.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
@@ -448,8 +448,7 @@ export function buildRoom() {
     },
     setCards(n) { cards.forEach((c, i) => { c.visible = i < n; }); },
     setClock(hours) {                                                // 0..24, the station's time of day
-      const h = hours % 12, m = (hours * 60) % 60, s = (hours * 3600) % 60;
-      hH.rotation.x = -h / 12 * Math.PI * 2; hM.rotation.x = -m / 60 * Math.PI * 2; hS.rotation.x = -Math.floor(s) / 60 * Math.PI * 2;
+      hH.rotation.x = -(hours % 12) / 12 * Math.PI * 2;
     },
     setLight(night, signal = 0) {                                    // night 0..1
       lamp.intensity = 0.8 + 3.2 * night; glow.intensity = (0.04 + 0.4 * night) * (1 + 0.6 * signal);
