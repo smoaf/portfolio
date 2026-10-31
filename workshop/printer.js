@@ -16,6 +16,8 @@ import { register, bar } from './stations.js';
 const MAX_MB = 150, GLTF_MB = 10, MAX_TRIS = 400000;   // own .stl / .glb; a .gltf is read on the page as before
 const FIT = { w: 0.17, h: 0.2 };                       // the build volume a print is scaled into (m)
 const LAYERS = 48, PATH = 40;                          // layers per print, points per layer outline
+const BOTTOM = 3, FAST = 4;                            // the first layers go by this many times quicker (BUG-018)
+const LIFT = 0.0004;                                   // the print sits 0.4 mm above the bed's top, so the two faces never fight
 export const PRN = { bed: null, toy: null, xbar: null, head: null, b0: null, x0: null, h0: null, plane: new THREE.Plane(new THREE.Vector3(0, -1, 0), 0),
   printS: 48, holdS: 7, t: 0, last: 0, speed: 1,
   mode: 'loop',                                        // 'loop' (the robot, again and again) | 'print' | 'done' | 'idle'
@@ -98,18 +100,27 @@ function slice(i) {
   return (PRN.slices[i] = out);
 }
 
+// ---- how long a print takes and how far it is: the bottom layers quickly, then one layer a second (×1)
+const per = () => PRN.printS / LAYERS;
+const dur = () => BOTTOM * per() / FAST + (LAYERS - BOTTOM) * per();
+function uAt(t) {
+  const tb = BOTTOM * per() / FAST;
+  return t < tb ? t / tb * BOTTOM / LAYERS : Math.min(1, (BOTTOM + (t - tb) / per()) / LAYERS);
+}
+function tAt(u) { const tb = BOTTOM * per() / FAST, l = u * LAYERS; return l < BOTTOM ? l / BOTTOM * tb : tb + (l - BOTTOM) * per(); }
+
 // ---- every frame: where the print is, the clip plane, the head over the outline
 const vB = new THREE.Vector3();
 function stepPrinter(now, dt) {
   if (!PRN.print) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const total = PRN.printS + (PRN.mode === 'loop' ? PRN.holdS : 0);
+  const total = dur() + (PRN.mode === 'loop' ? PRN.holdS : 0);
   if (PRN.mode === 'loop' || PRN.mode === 'print') PRN.t += dt * (reduced && PRN.mode === 'loop' ? 0 : PRN.speed);
-  if (reduced && PRN.mode === 'loop') PRN.t = PRN.printS * 0.6;
+  if (reduced && PRN.mode === 'loop') PRN.t = tAt(0.6);
   if (PRN.mode === 'loop') PRN.t %= total;
-  if (PRN.mode === 'print' && PRN.t >= PRN.printS) { PRN.t = PRN.printS; PRN.mode = 'done'; status(); }
-  const printing = (PRN.mode === 'loop' || PRN.mode === 'print') && PRN.t < PRN.printS;
-  const u = PRN.mode === 'idle' ? 0 : Math.min(1, PRN.t / PRN.printS);
+  if (PRN.mode === 'print' && PRN.t >= dur()) { PRN.t = dur(); PRN.mode = 'done'; status(); }
+  const printing = (PRN.mode === 'loop' || PRN.mode === 'print') && PRN.t < dur();
+  const u = PRN.mode === 'idle' ? 0 : uAt(PRN.t);
   const layer = PRN.h * u;
   // the nozzle runs along this layer's outline
   let hx = 0.08, by = -0.06;                           // parked: head to the side, bed forward
@@ -127,7 +138,7 @@ function stepPrinter(now, dt) {
   PRN.xbar.position.set(PRN.x0.x, PRN.x0.y + z, PRN.x0.z);
   PRN.head.position.set(PRN.h0.x + hx, PRN.h0.y + z, PRN.h0.z);
   PRN.bed.updateMatrixWorld(true);
-  PRN.print.position.copy(PRN.bed.getWorldPosition(vB)).add(PRN.bedOff);
+  PRN.print.position.copy(PRN.bed.getWorldPosition(vB)).add(PRN.bedOff); PRN.print.position.y += LIFT;
   PRN.plane.constant = PRN.print.position.y + layer;    // keep what lies below the current layer
   PRN.print.visible = u > 0.002;
   if (printing && PRN.bar && !PRN.bar.el.hidden && (now - (PRN.shown || 0) > 250)) { PRN.shown = now; status(); }
@@ -229,8 +240,8 @@ function status() {
   msg.classList.toggle('note', !!PRN.note); msg.classList.toggle('err', !!PRN.note && PRN.note.kind === 'error');
   if (PRN.note) return say(PRN.note.text);
   PRN.bar.el.querySelectorAll('[data-m]').forEach((b) => b.setAttribute('aria-pressed', String(PRN.mode !== 'idle' && b.dataset.m === PRN.name)));
-  const left = Math.max(0, (PRN.printS - PRN.t) / PRN.speed);
-  if (PRN.mode === 'print') say(`Printing ${PRN.name}: ${Math.floor(PRN.t / PRN.printS * 100)} %, about ${Math.ceil(left)} s to go (speed ×${PRN.speed})`);
+  const left = Math.max(0, (dur() - PRN.t) / PRN.speed);
+  if (PRN.mode === 'print') say(`Printing ${PRN.name}: ${Math.floor(uAt(PRN.t) * 100)} %, about ${Math.ceil(left)} s to go (speed ×${PRN.speed})`);
   else if (PRN.mode === 'done') say(`${PRN.name} is done. It stays on the bed until the next print.`);
   else if (PRN.mode === 'idle') say('Bed cleared. Pick something to print.');
   else say('Pick something to print, or upload your own model. It stays in your browser.');
@@ -285,6 +296,6 @@ register({
   exit: () => { PRN.bar.show(false); },
   update: (dt, now) => stepPrinter(now, dt),
   resume: (now) => { PRN.last = now; },
-  print: (u) => { PRN.t = u * PRN.printS; },            // test hook
+  print: (u) => { PRN.t = tAt(u); },            // test hook
   start: (n) => start(n, MODELS[n]()), upload,          // test hooks
 });
