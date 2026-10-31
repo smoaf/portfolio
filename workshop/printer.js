@@ -3,7 +3,8 @@
 // so that the nozzle runs along the outline of the layer being printed (the model is sliced into
 // layers in the browser). Moved here from index.html in phase W0; phase W1 (WORKSHOP_PLAN) adds:
 //   - a choice of five small prints (robot, vase, rocket, boat, cat) or the visitor's own .glb / .stl
-//     (stays in the browser, nothing is sent anywhere; 10 MB at most, friendly errors for bad files)
+//     (stays in the browser, nothing is sent anywhere; friendly errors for bad files). Since BUG-017 an
+//     own .stl or .glb of up to 150 MB is read and simplified in the background (printer-reader.js)
 //   - a speed slider and Cancel; a finished print stays on the bed until the next one
 // Until a visitor prints something, the printer keeps printing the robot in a loop as before.
 import * as THREE from 'three';
@@ -12,13 +13,13 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { register, bar } from './stations.js';
 
-const MAX_MB = 10, MAX_TRIS = 400000;
+const MAX_MB = 150, GLTF_MB = 10, MAX_TRIS = 400000;   // own .stl / .glb; a .gltf is read on the page as before
 const FIT = { w: 0.17, h: 0.2 };                       // the build volume a print is scaled into (m)
 const LAYERS = 48, PATH = 40;                          // layers per print, points per layer outline
 export const PRN = { bed: null, toy: null, xbar: null, head: null, b0: null, x0: null, h0: null, plane: new THREE.Plane(new THREE.Vector3(0, -1, 0), 0),
   printS: 48, holdS: 7, t: 0, last: 0, speed: 1,
   mode: 'loop',                                        // 'loop' (the robot, again and again) | 'print' | 'done' | 'idle'
-  print: null, name: 'Robot', slices: [], bedTop: new THREE.Vector3(), nozzle: new THREE.Vector3(), headAxis: null, bedAxis: null, bar: null };
+  print: null, name: 'Robot', slices: [], note: null, reader: null, bedTop: new THREE.Vector3(), nozzle: new THREE.Vector3(), headAxis: null, bedAxis: null, bar: null };
 let parts = [];
 const MODELS = { Robot: null, Vase: vase, Rocket: rocket, Boat: boat, Cat: cat };   // Robot: the toy from the station model
 
@@ -134,16 +135,25 @@ function stepPrinter(now, dt) {
 
 // ---- starting, cancelling, uploading
 function start(name, geo) {
+  stopReading();
   load(name, geo);
   PRN.mode = 'print'; PRN.t = 0; status();
 }
-function cancel() { PRN.mode = 'idle'; PRN.t = 0; status(); }
+function cancel() { stopReading(); if (PRN.mode === 'print') { PRN.mode = 'idle'; PRN.t = 0; } status(); }
+// a notice that stays in the bar until the next choice: reading progress, or why a file can't be used
+function note(text, kind = 'error') { PRN.note = text ? { text, kind } : null; status(); }
+function stopReading() { if (PRN.reader) { PRN.reader.terminate(); PRN.reader = null; } PRN.note = null; }
 async function upload(file) {
   if (!file) return;
+  stopReading();
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  if (!['glb', 'gltf', 'stl'].includes(ext)) return say('That is not a 3D model the printer knows. Try a .glb or an .stl file.');
-  if (file.size > MAX_MB * 1024 * 1024) return say(`That file is ${(file.size / 1048576).toFixed(1)} MB; the printer takes up to ${MAX_MB} MB.`);
-  say('Reading ' + file.name + ' …');
+  if (!['glb', 'gltf', 'stl'].includes(ext)) return note('That is not a 3D model the printer knows. Try a .glb or an .stl file.');
+  const mb = (file.size / 1048576).toFixed(1), max = ext === 'gltf' ? GLTF_MB : MAX_MB;
+  if (file.size > max * 1024 * 1024) return note(`That file is ${mb} MB; the printer takes ${ext === 'gltf' ? '.gltf files' : 'files'} up to ${max} MB.`);
+  if (!file.size) return note('That file is empty.');
+  const name = file.name.replace(/\.[^.]+$/, '').slice(0, 24);
+  if (ext !== 'gltf') return read(file, name);
+  note('Reading ' + file.name + ' …', 'busy');
   try {
     const buf = await file.arrayBuffer();
     let geo;
@@ -160,11 +170,33 @@ async function upload(file) {
     const tris = (geo.index ? geo.index.count : geo.attributes.position.count) / 3;
     if (tris > MAX_TRIS) return say(`That model is very detailed (${Math.round(tris).toLocaleString('en')} triangles); the printer takes up to ${MAX_TRIS.toLocaleString('en')}.`);
     if (!tris) return say('That model is empty.');
-    const name = file.name.replace(/\.[^.]+$/, '').slice(0, 24);
     start(name, geo);
   } catch (e) {
-    say('Could not read that file. Is it a working .glb or .stl?');
+    note('Could not read that file. Is it a working .glb or .stl?');
   }
+}
+// .stl and .glb: read and simplified in a worker, piece by piece; the page keeps running meanwhile
+function read(file, name) {
+  const w = PRN.reader = new Worker(new URL('./printer-reader.js', import.meta.url));
+  const label = file.name.length > 32 ? file.name.slice(0, 30) + '…' : file.name;
+  const done = () => { w.terminate(); if (PRN.reader === w) PRN.reader = null; };
+  note(`Reading ${label} … 0 %`, 'busy');
+  w.onmessage = (e) => {
+    if (PRN.reader !== w) return;
+    const d = e.data;
+    if (d.p !== undefined) return note(`Reading ${label} … ${Math.floor(d.p * 100)} %`, 'busy');
+    done();
+    if (d.error) return note(d.error);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(d.pos, 3));
+    if (/\.stl$/i.test(file.name)) geo.rotateX(-Math.PI / 2);   // STL files are z-up
+    start(name, geo);
+  };
+  w.onerror = (e) => {                                 // e.g. the phone ran out of memory for this file
+    e.preventDefault(); if (PRN.reader !== w) return;
+    done(); note('This device could not read that file (it may be too big for it). Try a smaller one.');
+  };
+  w.postMessage({ file });
 }
 
 // ---- the bar: what to print, upload, speed, cancel, and how far it is
@@ -192,7 +224,10 @@ function say(text) { if (!PRN.bar) return; PRN.bar.el.querySelector('.msg').text
 function status() {
   if (!PRN.bar) return;
   const c = PRN.bar.el.querySelector('[data-cancel]');
-  c.disabled = PRN.mode !== 'print';
+  c.disabled = PRN.mode !== 'print' && !PRN.reader;
+  const msg = PRN.bar.el.querySelector('.msg');
+  msg.classList.toggle('note', !!PRN.note); msg.classList.toggle('err', !!PRN.note && PRN.note.kind === 'error');
+  if (PRN.note) return say(PRN.note.text);
   PRN.bar.el.querySelectorAll('[data-m]').forEach((b) => b.setAttribute('aria-pressed', String(PRN.mode !== 'idle' && b.dataset.m === PRN.name)));
   const left = Math.max(0, (PRN.printS - PRN.t) / PRN.speed);
   if (PRN.mode === 'print') say(`Printing ${PRN.name}: ${Math.floor(PRN.t / PRN.printS * 100)} %, about ${Math.ceil(left)} s to go (speed ×${PRN.speed})`);
