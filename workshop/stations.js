@@ -85,6 +85,8 @@ const CSS = `
   .ws-bar .lbl { font: 500 10.5px/1 var(--font-data); letter-spacing: 0.1em; text-transform: uppercase; color: var(--glass-soft); padding: 0 4px; }
   .ws-bar .msg { flex-basis: 100%; text-align: center; font: 400 12px/1.35 var(--font-display); color: var(--glass-soft); padding: 2px 4px 0; }
   .ws-bar .msg:empty { display: none; }
+  .ws-bar .msg.note { font: 600 13.5px/1.35 var(--font-display); color: var(--glass-ink); padding: 6px 4px 2px; }   /* reading progress, or why a file can't be used (printer) */
+  .ws-bar .msg.err { color: var(--accent); }
   .ws-bar input[type=range] { width: 110px; accent-color: var(--glass-ink); }
   body.ws-sub .camp-hint { bottom: calc(var(--ws-bar, 16px) + 12px + env(safe-area-inset-bottom, 0px)); }
 `;
