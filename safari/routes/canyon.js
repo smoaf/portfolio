@@ -15,6 +15,7 @@ import * as DEEP from '../fauna/deep.js';
 import * as WATERFOLK from '../fauna/pool.js';
 import * as PANGOLIN from '../fauna/pangolin.js';
 import * as GELADA from '../fauna/gelada.js';
+import * as LAMMERGEIER from '../fauna/lammergeier.js';
 import { planPoses } from '../poses.js';
 import { plantCanyon, grassPatch } from './canyon-plants.js';
 
@@ -111,6 +112,7 @@ const POSES = {
   'fire-salamander': 'near',         // rears up, its yellow markings flaring (dawn and dusk only)
   'ground-pangolin': 'near',         // stands right up on its hind legs, the tail on the ground, sniffing (FEAT-006)
   gelada: 'near',                    // the male's lip flip, his red chest patch flushing (FEAT-008)
+  lammergeier: 'near',               // on the rocks: the wings spread wide in the sun, the head raised (FEAT-010)
   // the cliffs and the rim
   markhor: 'near',                   // rears up on its hind legs
   'fallow-deer': 'near',             // the buck groans: head up, neck stretched
@@ -432,7 +434,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 404 });
-    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS, ...GELADA.BUILDERS };
+    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS, ...GELADA.BUILDERS, ...LAMMERGEIER.BUILDERS };
     const creatures = [];
     const spawn = (id, home, opts = {}, extra = {}) => {
       if (!B[id]) return null;
@@ -666,6 +668,28 @@ export const ROUTE = {
         const ROW = [['male', -1.0, 0, 0.12], ['female', -0.6, 0.06, -0.1], ['female', -0.27, 0, 0.08], ['young', 0.0, 0.14, 0.15], ['female', 0.26, 0.02, -0.12]];
         ROW.forEach(([role, a, o, lean], i) => sp(role, on(o0 + o, a0 + a), { sleep: true, lean, yaw: face(toRoad) + (i - 2) * 0.1 }));
       }
+    }
+
+    // the lammergeier (FEAT-010): on the first leg of the cliff path, where the road is cut into the
+    // wall about 20 m up, inside the slow stretch there (`PACE` u 0.25). A few flat rocks jut from the
+    // slope just below the road on the canyon side (6.5 m from the road's middle, about a metre down);
+    // the bird drops its bone onto them by day and roosts on the smaller rock beside them at night.
+    // Far from the griffons' set pieces (on the rim and the upper leg) and from the other new
+    // animals (the pangolin on the floor, the geladas on the way down the wall). Spawned last and
+    // with no random numbers, so everything else stays exactly where it was.
+    {
+      const uL = 0.245, rp = path.getPointAt(uL), tg = path.getTangentAt(uL).setY(0).normalize();
+      const out = new THREE.Vector3(-tg.z, 0, tg.x);
+      if (Math.abs(rp.x + out.x * 4 - XC(rp.z)) > Math.abs(rp.x - XC(rp.z))) out.negate();      // towards the river
+      const spot = rp.clone().addScaledVector(out, 6.5);
+      spot.y = groundY(spot.x, spot.z);
+      const boneMat = lam({ color: night ? 0x8f887c : 0xe6dcc4 });
+      const { top, side } = LAMMERGEIER.buildOssuary(K, spot, tg, out, paleRock, boneMat);
+      const L = path.getLength(), face = Math.atan2(-out.x, -out.z);      // facing the road
+      if (!night) {
+        const land = top.clone().addScaledVector(out, -0.25);
+        spawn('lammergeier', land, { top, out, land, landYaw: face, boneMat, ahead: (env) => (uL - env.u) * L }, { seeAt: 320 });
+      } else spawn('lammergeier', side, { top, out, yaw: face - 0.4, boneMat }, { seeAt: 320 });
     }
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
