@@ -2578,6 +2578,41 @@ function closePanel() {
   panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); document.body.classList.remove('panel-open');
 }
 document.getElementById('panel-close').addEventListener('click', closePanel);
+// phones (BUG-021): when the sheet is scrolled to the top, a swipe down anywhere on it drags it down with the
+// finger; past a third of its height or on a quick flick it closes (as Close does), otherwise it springs back.
+// A swipe that starts while the sheet is scrolled down only scrolls it, as before. Computers are unchanged.
+const sheetLayout = matchMedia('(max-width: 720px)');
+const swipe = { on: false, drag: false, x: 0, y: 0, dy: 0, v: 0, t: 0 };
+panel.addEventListener('touchstart', (e) => {
+  swipe.on = sheetLayout.matches && e.touches.length === 1 && panel.classList.contains('open') && panel.scrollTop <= 0;
+  if (!swipe.on) return;
+  const p = e.touches[0];
+  Object.assign(swipe, { drag: false, x: p.clientX, y: p.clientY, dy: 0, v: 0, t: e.timeStamp });
+}, { passive: true });
+panel.addEventListener('touchmove', (e) => {
+  if (!swipe.on) return;
+  const p = e.touches[0], dx = p.clientX - swipe.x, dy = p.clientY - swipe.y;
+  if (!swipe.drag) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;                // a tap or not decided yet
+    if (dy <= 0 || Math.abs(dx) > dy || panel.scrollTop > 0) { swipe.on = false; return; }   // up or sideways: the sheet scrolls as before
+    swipe.drag = true; swipe.y = p.clientY; panel.style.transition = 'none';
+  }
+  e.preventDefault();                                                 // no page bounce while the sheet follows the finger
+  const d = Math.max(0, p.clientY - swipe.y), dt = Math.max(1, e.timeStamp - swipe.t);
+  swipe.v = 0.7 * swipe.v + 0.3 * (d - swipe.dy) / dt;               // px per ms, smoothed
+  swipe.dy = d; swipe.t = e.timeStamp;
+  panel.style.transform = `translateY(${d}px)`;
+}, { passive: false });
+function endSwipe() {
+  if (!swipe.on) return;
+  swipe.on = false;
+  if (!swipe.drag) return;
+  const close = swipe.dy > panel.offsetHeight / 3 || (swipe.v > 0.5 && swipe.dy > 24);
+  panel.style.transition = ''; panel.style.transform = '';            // the sheet slides on from where the finger left it
+  if (close) closePanel();
+}
+panel.addEventListener('touchend', endSwipe);
+panel.addEventListener('touchcancel', () => { swipe.dy = 0; swipe.v = 0; endSwipe(); });
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel.classList.contains('open')) { e.stopImmediatePropagation(); closePanel(); } }, true);
 // settings icon: the old buttons (day/night, roof, places, sky, reset)
 const settingsBox = document.querySelector('.controls');
