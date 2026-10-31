@@ -20,6 +20,7 @@
 // The behaviour is its own (not the shared state machine): the van never sends it off and it leaves
 // feed alone.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { two, plume, eyePair, birdState, birdPose } from './cliffs.js';
 
 export const SPECIES = {
@@ -106,6 +107,7 @@ function boneBody(K, parent, mat) {
 export function buildOssuary(K, at, along, out, rockMat, boneMat) {
   const ry = Math.atan2(-along.z, along.x);              // a slab's local x along the road
   const P = (a, o) => at.clone().addScaledVector(along, a).addScaledVector(out, o);
+  const rocks = K.group();                               // all three in one mesh (one draw)
   const slab = (a, o, ra, ro, turn, sides) => {
     let top = -Infinity;
     for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
@@ -114,15 +116,14 @@ export function buildOssuary(K, at, along, out, rockMat, boneMat) {
     }
     top += 0.22;
     const c = P(a, o).setY(top);
-    const g = K.group();
-    K.mesh(K.cyl(1, 1.7, 5, sides), rockMat, [0, -2.5, 0], g, [0, turn, 0], [ra, 1, ro]);   // a slab on a sloping foot, like the rock it broke from
-    K.place(g, c);
-    g.rotation.y = ry;
+    // a slab on a sloping foot, like the rock it broke from
+    K.mesh(K.cyl(1, 1.7, 5, sides), rockMat, [c.x, top - 2.5, c.z], rocks, [0, ry + turn, 0], [ra, 1, ro]);
     return c;
   };
   const top = slab(0, 0, 1.6, 0.9, 0.3, 7);
   const side = slab(-2.35, 0.15, 0.85, 0.7, 1.1, 6);
   slab(2.25, -0.1, 0.8, 0.65, 0.5, 6);
+  K.place(rocks);
   // old splinters, bleached, lying where earlier bones broke
   const OLD = [[1.05, 0.5, 0.4, 0.07], [-0.95, 0.45, 2.1, 0.09], [0.6, -0.55, 1.2, 0.06], [-0.3, -0.6, 2.8, 0.05]];
   const old = K.group();
@@ -209,6 +210,7 @@ export function buildLammergeier(K, home, opts = {}) {
   K.mesh(K.shape('lg-far', [[-1.35, -0.12], [-0.6, 0.1], [0, 0.16], [0.6, 0.1], [1.35, -0.12], [1.15, -0.27], [0.5, -0.3], [0, -0.24], [-0.5, -0.3], [-1.15, -0.27]]), flight, [0, 0, 0], fw, [-PI / 2, 0, 0]);
   K.mesh(K.shape('lg-fartail', [[-0.05, 0], [0.05, 0], [0.12, 0.3], [0, 0.48], [-0.12, 0.3]]), flight, [0, 0.02, -0.25], fb, [PI / 2, PI, 0]);
 
+  paint(K, root);
   K.place(root, home);
   root.rotation.y = opts.yaw ?? 0;
 
@@ -229,9 +231,8 @@ export function buildLammergeier(K, home, opts = {}) {
     return { g, x, z, ry, from: new THREE.Vector3(), to: new THREE.Vector3(), t: -1 };
   });
   const dustMat = K.keep(new THREE.MeshLambertMaterial({ color: night ? 0x6a5c52 : 0xd9c0a0, transparent: true, opacity: 0, depthWrite: false }));
-  const dust = K.group();
   const PUFF = [[0, 0.2, 0, 0.6], [0.35, 0.15, 0.2, 0.45], [-0.3, 0.12, 0.25, 0.5], [0.1, 0.25, -0.35, 0.5], [-0.2, 0.3, -0.15, 0.4], [0.25, 0.35, -0.05, 0.35], [0, 0.45, 0.1, 0.4]];
-  const puffs = PUFF.map(([x, y, z, r]) => K.mesh(K.sphere(1, 8, 6), dustMat, [x, y, z], dust, null, r));
+  const dust = new THREE.Mesh(K.keep(mergeGeometries(PUFF.map(([x, y, z, r]) => new THREE.SphereGeometry(r, 8, 6).translate(x, y, z)), false)), dustMat);   // one draw
   K.scene.add(dust);
   dust.visible = false;
   const top = opts.top ? opts.top.clone() : home.clone();
@@ -294,6 +295,18 @@ export function buildLammergeier(K, home, opts = {}) {
     bone.position.set(0, -0.27, 0.02).applyMatrix4(body.matrixWorld);
     body.getWorldQuaternion(qA);
     bone.quaternion.copy(qA);
+  };
+  // once they lie still, the pieces it leaves are one mesh (one draw); the one it swallows stays apart
+  const settle = () => {
+    const parts = [];
+    for (const q of pieces.slice(1)) {
+      q.g.updateMatrixWorld(true);
+      q.g.traverse((o) => { if (o.isMesh) parts.push(o.geometry.clone().applyMatrix4(o.matrixWorld)); });
+      q.g.visible = false;
+    }
+    const merged = mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)), false);
+    parts.forEach((g) => g.dispose());
+    if (merged) K.scene.add(new THREE.Mesh(K.keep(merged), boneMat));
   };
   const letGo = () => {
     B.ph = 'fall'; B.t = 0; B.from.copy(bone.position);
@@ -448,13 +461,14 @@ export function buildLammergeier(K, home, opts = {}) {
       q.g.position.lerpVectors(q.from, q.to, ease(q.t));
       q.g.position.y = top.y + Math.sin(q.t * PI) * (0.18 + 0.1 * Math.abs(q.x));
       q.g.rotation.x = (1 - q.t) * 2.2 * q.x;
+      if (q === pieces[pieces.length - 1] && q.t >= 1) settle();
     }
     if (B.dust >= 0 && B.dust < 1) {
       B.dust = Math.min(1, B.dust + dt / 1.8);
       const s = 0.35 + 1.1 * ease(Math.min(1, B.dust * 1.6));
       dust.scale.set(s, 0.6 + 0.8 * B.dust, s);
       dustMat.opacity = 0.55 * (1 - ease(B.dust));
-      for (let i = 0; i < puffs.length; i++) puffs[i].position.y = PUFF[i][1] + B.dust * 0.35 * (1 + i * 0.1);
+      dust.position.y = top.y + B.dust * 0.4;
       if (B.dust >= 1) dust.visible = false;
     }
     if (B.gulp >= 0) {                                    // the swallow: the first piece goes to the bill, then down
@@ -473,6 +487,41 @@ export function buildLammergeier(K, home, opts = {}) {
   };
   c.phase = () => ({ bird: m.ph, bone: B.ph, at: bone.position, top });   // tests: where the set piece is
   return K.lod(c, near, far, 42);
+}
+
+// Merge every group's still, matt pieces into one mesh coloured per vertex, whatever their material
+// (feathers, down, bill and toes are many small pieces in eight colours; one draw per moving part keeps
+// the bird cheap on a phone). The glowing lines, the eye ring and the catchlights keep their own
+// materials (K.bake merges those).
+const glows = (m) => m.emissiveIntensity > 0 && (m.emissive.r + m.emissive.g + m.emissive.b) > 0;
+function paint(K, root) {
+  const mats = {};
+  const groups = [];
+  root.traverse((o) => { if (!o.isMesh) groups.push(o); });
+  for (const gr of groups) {
+    const list = gr.children.filter((ch) => ch.isMesh && !ch.userData.keep && !ch.children.length && !glows(ch.material));
+    if (list.length < 2) continue;
+    const both = list.some((ch) => ch.material.side === THREE.DoubleSide);
+    const parts = list.map((ch) => {
+      ch.updateMatrix();
+      const g = ch.geometry.index ? ch.geometry.toNonIndexed() : ch.geometry.clone();
+      for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k);
+      if (!g.attributes.normal) g.computeVertexNormals();
+      g.applyMatrix4(ch.matrix);
+      const c = ch.material.color, n = g.attributes.position.count, col = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      return g;
+    });
+    const merged = mergeGeometries(parts, false);
+    parts.forEach((g) => g.dispose());
+    if (!merged) continue;
+    K.keep(merged);
+    const key = both ? 'two' : 'one';
+    mats[key] = mats[key] || K.mat(0xffffff, { vertexColors: true, roughness: 0.85, side: both ? THREE.DoubleSide : THREE.FrontSide });
+    list.forEach((ch) => gr.remove(ch));
+    gr.add(new THREE.Mesh(merged, mats[key]));
+  }
 }
 
 export const BUILDERS = {
