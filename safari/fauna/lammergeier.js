@@ -54,8 +54,8 @@ function pointedWing(K, body, s, W) {
     const u = (i + 0.5) / ns, x = s * u * W.arm, len = W.chord * (1.0 - 0.14 * u), yaw = s * 0.1 * (1 - u);
     plume(K, arm, M.wing, [x, -0.004, W.bone * 0.4], yaw, (W.arm / ns) * 1.8, len);
     plume(K, arm, M.cov, [s * (u - 0.04) * W.arm, W.bone * 0.35, W.bone * 0.5], yaw * 0.6, (W.arm / ns) * 2, len * 0.55);
-    plume(K, arm, M.shaft, [x, -0.001, W.bone * 0.4], yaw, (W.arm / ns) * 0.18, len * 0.86, true);
-    plume(K, arm, M.shaft, [x, -0.007, W.bone * 0.4], yaw, (W.arm / ns) * 0.18, len * 0.86, true);
+    plume(K, arm, M.shaft, [x, -0.001, W.bone * 0.4], yaw, (W.arm / ns) * 0.3, len * 0.86, true);
+    plume(K, arm, M.shaft, [x, -0.007, W.bone * 0.4], yaw, (W.arm / ns) * 0.3, len * 0.86, true);
   }
   const hand = K.group([s * W.arm, 0, 0], arm);
   hand.rotation.order = 'YXZ';
@@ -66,8 +66,8 @@ function pointedWing(K, body, s, W) {
     const x = s * W.hand * (0.08 + 0.6 * u), z = W.bone * 0.3;
     const len = W.primLen * (0.68 + 0.42 * Math.sin(u * PI * 0.62));
     plume(K, hand, M.prim, [x, -0.003 * i, z], yaw, W.primW, len, true);
-    plume(K, hand, M.shaft, [x, 0.001 - 0.003 * i, z], yaw, W.primW * 0.16, len * 0.9, true);
-    plume(K, hand, M.shaft, [x, -0.006 - 0.003 * i, z], yaw, W.primW * 0.16, len * 0.9, true);
+    plume(K, hand, M.shaft, [x, 0.001 - 0.003 * i, z], yaw, W.primW * 0.28, len * 0.9, true);
+    plume(K, hand, M.shaft, [x, -0.006 - 0.003 * i, z], yaw, W.primW * 0.28, len * 0.9, true);
   }
   for (let i = 0; i < 3; i++) plume(K, hand, M.cov, [s * W.hand * (0.06 + 0.2 * i), W.bone * 0.3, W.bone * 0.5], -s * 0.1 * i, W.hand * 0.32, W.chord * 0.5);
   return { arm, hand, s };
@@ -150,7 +150,8 @@ export function buildLammergeier(K, home, opts = {}) {
   const rust = K.mat(0xc4692a, { roughness: 0.95 }), rustLight = K.mat(0xd98f4e, { roughness: 0.95 });
   const cream = K.mat(0xe8cfa8, { roughness: 0.9 }), black = K.mat(0x111111, { roughness: 0.85 });
   const beakM = K.sheen(0x6c6862, { roughness: 0.4 }), legM = K.mat(0x7d7a76, { roughness: 0.8 });
-  const lum = K.glow(0x8ff2d4, 0.9, { side: THREE.DoubleSide, roughness: 0.41 });   // its own (the griffons flicker theirs)
+  // the glowing lines: dark by day with a faint teal light of their own, clearly lit after dark
+  const lum = K.mat(0x2f4844, { emissive: 0x8ff2d4, emissiveIntensity: K.glowLevel * 1.1, roughness: 0.41, side: THREE.DoubleSide });
   const ringM = K.glow(0xd8342c, 0.8, { roughness: 0.4 });            // the red ring round the eye
   const lumBase = lum.emissiveIntensity;
   const boneMat = opts.boneMat || K.mat(0xe6dcc4, { roughness: 0.75 });
@@ -215,8 +216,9 @@ export function buildLammergeier(K, home, opts = {}) {
   const bone = boneBody(K, null, boneMat);
   K.place(bone);
   bone.visible = !night;
-  const PIECES = [[0.12, 0.022, -0.1, 0.05, 0.5], [0.16, 0.026, 0.42, -0.12, 1.4], [0.2, 0.02, -0.45, -0.3, 2.4], [0.1, 0.03, 0.15, -0.45, 0.9],
-    [0.08, 0.018, 0.7, 0.05, 2.0], [0.07, 0.016, -0.7, -0.1, 0.2]];          // [length, radius, along, out, turn]
+  // [length, radius, along, out, turn]: they fly to the road side of the slab, in front of where it lands
+  const PIECES = [[0.12, 0.022, -0.1, -0.6, 0.5], [0.16, 0.026, 0.42, -0.68, 1.4], [0.2, 0.02, -0.45, -0.78, 2.4], [0.1, 0.03, 0.15, -0.85, 0.9],
+    [0.08, 0.018, 0.7, -0.55, 2.0], [0.07, 0.016, -0.7, -0.62, 0.2]];
   const pieces = PIECES.map(([len, r, x, z, ry]) => {
     const g = K.group();
     K.mesh(K.cyl(r, r * 0.9, len, 6), boneMat, [0, r * 0.8, 0], g, [PI / 2, 0, 0]);

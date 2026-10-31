@@ -671,14 +671,14 @@ export const ROUTE = {
     }
 
     // the lammergeier (FEAT-010): on the first leg of the cliff path, where the road is cut into the
-    // wall about 17 m up, inside the slow stretch there (`PACE` u 0.25). A few flat rocks jut from the
+    // wall about 20 m up, inside the slow stretch there (`PACE` u 0.25). A few flat rocks jut from the
     // slope just below the road on the canyon side (6.5 m from the road's middle, about a metre down);
     // the bird drops its bone onto them by day and roosts on the smaller rock beside them at night.
     // Far from the griffons' set pieces (on the rim and the upper leg) and from the other new
     // animals (the pangolin on the floor, the geladas on the way down the wall). Spawned last and
     // with no random numbers, so everything else stays exactly where it was.
     {
-      const uL = 0.235, rp = path.getPointAt(uL), tg = path.getTangentAt(uL).setY(0).normalize();
+      const uL = 0.245, rp = path.getPointAt(uL), tg = path.getTangentAt(uL).setY(0).normalize();
       const out = new THREE.Vector3(-tg.z, 0, tg.x);
       if (Math.abs(rp.x + out.x * 4 - XC(rp.z)) > Math.abs(rp.x - XC(rp.z))) out.negate();      // towards the river
       const spot = rp.clone().addScaledVector(out, 6.5);
@@ -687,7 +687,7 @@ export const ROUTE = {
       const { top, side } = LAMMERGEIER.buildOssuary(K, spot, tg, out, paleRock, boneMat);
       const L = path.getLength(), face = Math.atan2(-out.x, -out.z);      // facing the road
       if (!night) {
-        const land = top.clone().addScaledVector(out, 0.5);
+        const land = top.clone().addScaledVector(out, -0.25);
         spawn('lammergeier', land, { top, out, land, landYaw: face, boneMat, ahead: (env) => (uL - env.u) * L }, { seeAt: 320 });
       } else spawn('lammergeier', side, { top, out, yaw: face - 0.4, boneMat }, { seeAt: 320 });
     }
