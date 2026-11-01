@@ -79,7 +79,7 @@ const POSES = {
   // the far bank, near the end
   'leafcutter-ant': 'near',          // a soldier by the road rears up at the van, jaws wide open (FEAT-009)
   // the far bank, the climb from the river
-  'golden-silk-orb-weaver': 'near',  // an insect flies into the web: she rushes to it and wraps it in silk (FEAT-011)
+  'golden-silk-orb-weaver': 'always', // her catch (half the runs, its own trigger in orbweaver.js): an insect flies into the web, she wraps it (FEAT-011)
 };
 
 export const ROUTE = {

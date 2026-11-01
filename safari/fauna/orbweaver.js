@@ -32,8 +32,11 @@ const damp = (a, b, k, dt) => a + (b - a) * Math.min(1, k * dt);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = THREE.MathUtils.clamp;
 const LIFT = 0.035;                                       // her body's middle in front of the silk
-const POSE = 6.5;                                         // s the rare pose (the catch) lasts
+const POSE = 6;                                           // s the rare pose (the catch) lasts
+// the catch, in s from its start: the insect hits, she runs to it, she wraps it
+const HIT = 0.6, RUN0 = 0.85, RUN1 = 1.6, WRAP0 = 1.6, WRAP1 = 4.9;
 const PULL_AT = 7.5;                                      // m: the van this close, she pulls the web taut
+const CATCH_AT = 22;                                      // m: in a run with the catch, it starts from this close
 
 // the web's outline in its own plane (x along it, y up, the hub at 0,0): an oval hung low, so the hub
 // sits in its upper part as in a real orb-weaver's web
@@ -413,13 +416,28 @@ export function buildOrbWeaver(K, home, opts = {}) {
     speed: 0, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, poseLen: POSE, yaw,
   });
   c.state = 'idle'; c.hold = 99; c.air = false;
+  // The catch is her own set piece, rolled here for about half of the runs (the route marks her
+  // `always`, so safari/poses.js leaves her be). It starts once the van is within CATCH_AT and she is
+  // inside what the wide lens takes in where it looks now: the shared gate asks for 7% of the wide
+  // frame and a narrow cone ahead, which a spider this size beside the road never meets at once on a
+  // phone held upright.
+  c.poseRun = Math.random() < 0.5;
+  const wideHalf = Math.tan(THREE.MathUtils.degToRad(62) / 2);
+  const inLens = (env) => {
+    if (!env.look) return true;
+    c.photoPoint(vA).sub(env.camPos).setY(0);
+    vB.copy(env.look).setY(0);
+    if (vA.lengthSq() < 1e-6 || vB.lengthSq() < 1e-6) return true;
+    return vA.normalize().dot(vB.normalize()) > Math.cos(Math.atan(wideHalf * (env.aspect || 1.5)));
+  };
+  let glow = 0;
   // the lens aims at her, wherever she is on the web
   c.photoPoint = (out) => out.set(m.x, m.y, LIFT + m.z).applyMatrix4(root.matrixWorld);
 
   // her place on the web (x, y in its plane), her heading in it (0: head down), the web's own motion
   const m = { x: 0, y: 0, z: 0, turn: 0, want: 0, ph: 'sit', t: 0, next: 2 + Math.random() * 3, act: null, at: 0, leg: 0, pulled: false, buzz: 0, vib: 0, vibAt: new THREE.Vector2(), gait: 0 };
   const P = new THREE.Vector2(), from = new THREE.Vector2();
-  const prey = { from: new THREE.Vector3(), mid: new THREE.Vector3(), at: new THREE.Vector3(), t: -1, stuck: false };
+  const prey = { from: new THREE.Vector3(), mid: new THREE.Vector3(), at: new THREE.Vector3(), t: -1, stuck: false, done: false };
   // how far a point of the web moves out of its plane just now (the shader does the same)
   const disp = (x, y, t) => {
     const r = Math.hypot(x, y), f = web.flex(x, y);
@@ -441,6 +459,7 @@ export function buildOrbWeaver(K, home, opts = {}) {
     const t = env.t;
     U.uTime.value = t;
     // ---- the van close by: she pulls the web taut, it shivers (once)
+    if (c.poseRun && !prey.done && c.state === 'idle' && m.ph === 'sit' && env.dist < CATCH_AT && env.dist > 6 && inLens(env)) c.go('rare', POSE);
     if (!m.pulled && env.dist < PULL_AT && c.state !== 'rare') { m.pulled = true; m.buzz = 1; m.act = { kind: 'pull', t: 0 }; if (env.call) env.call(c, 'idle'); }
     m.buzz = Math.max(0, m.buzz - dt / 2.2);
     U.uBuzz.value = 0.022 * m.buzz * m.buzz;
@@ -449,14 +468,27 @@ export function buildOrbWeaver(K, home, opts = {}) {
     U.uVibAt.value.copy(m.vibAt);
     U.uSway.value = damp(U.uSway.value, m.buzz > 0.2 ? 0.012 : 0.03, 2, dt);
 
+    // ---- before the catch: in a run with the pose, the insect is already buzzing about in front of
+    // the web as the van comes, so it can fly straight in once the lens is close enough to see it
+    if (c.poseRun && m.ph === 'sit' && !prey.done && c.state !== 'rare' && env.dist < 40) {
+      if (!bug.g.visible) { bug.g.visible = true; bug.g.scale.setScalar(1); bug.g.rotation.order = 'XYZ'; }
+      const a = t * 1.7;
+      bug.g.position.set(0.35 + Math.cos(a) * 0.55, -0.35 + Math.sin(a * 1.3) * 0.3, 1.2 + Math.sin(a * 0.8) * 0.35);
+      vA.set(0.35 + Math.cos(a + 0.3) * 0.55, -0.35 + Math.sin((a + 0.3) * 1.3) * 0.3, 1.2 + Math.sin((a + 0.3) * 0.8) * 0.35);
+      bug.g.lookAt(vA.applyMatrix4(root.matrixWorld));
+      for (const w of bug.wings) w.rotation.z = Math.sin(t * 90) * 0.9;
+    }
+
     // ---- the catch (the rare pose)
     if (c.state === 'rare') {
-      if (m.ph !== 'catch') { m.ph = 'catch'; m.t = 0; pickSpot(); prey.t = 0; prey.stuck = false; from.set(m.x, m.y);
-        prey.at.set(P.x, P.y, 0.012); prey.from.set(P.x + 0.7 + Math.random() * 0.4, P.y + 1.0, 2.2); prey.mid.set(P.x - 0.5, P.y + 0.35, 1.0);
-        bug.g.visible = true; bug.g.scale.setScalar(1); bundle.visible = false; m.act = null; }
+      if (m.ph !== 'catch') { m.ph = 'catch'; m.t = 0; pickSpot(); prey.t = 0; prey.stuck = false; prey.done = true; from.set(m.x, m.y);
+        prey.at.set(P.x, P.y, 0.012);
+        if (bug.g.visible) prey.from.copy(bug.g.position); else prey.from.set(P.x + 0.5, P.y + 0.6, 1.4);
+        prey.mid.set((prey.from.x + P.x) / 2 - 0.25, (prey.from.y + P.y) / 2 + 0.2, (prey.from.z + 0.012) / 2 + 0.2);
+        bug.g.visible = true; bug.g.scale.setScalar(1); bug.g.rotation.order = 'XYZ'; bundle.visible = false; m.act = null; }
       const k = m.t;
-      if (k < 1.1) {                                      // the insect flies in
-        const u = k / 1.1, a = (1 - u) * (1 - u), b = 2 * u * (1 - u), cc = u * u;
+      if (k < HIT) {                                      // the insect flies in
+        const u = k / HIT, a = (1 - u) * (1 - u), b = 2 * u * (1 - u), cc = u * u;
         bug.g.position.set(prey.from.x * a + prey.mid.x * b + prey.at.x * cc, prey.from.y * a + prey.mid.y * b + prey.at.y * cc + Math.sin(k * 17) * 0.03 * (1 - u), prey.from.z * a + prey.mid.z * b + prey.at.z * cc);
         bug.g.lookAt(vA.set(prey.at.x, prey.at.y, prey.at.z).applyMatrix4(root.matrixWorld));
       } else if (!prey.stuck) {
@@ -467,26 +499,26 @@ export function buildOrbWeaver(K, home, opts = {}) {
         m.want = Math.atan2(to.x, -to.y);
         to.set(P.x - to.x * 0.11, P.y - to.y * 0.11);
       }
-      if (k > 1.45 && k < 2.3) {
-        const u = ease((k - 1.45) / 0.85);
+      if (k > RUN0 && k < RUN1) {
+        const u = ease((k - RUN0) / (RUN1 - RUN0));
         m.x = from.x + (to.x - from.x) * u; m.y = from.y + (to.y - from.y) * u;
         m.gait += dt * 22;
-      } else if (k >= 2.3) { m.x = to.x; m.y = to.y; }
+      } else if (k >= RUN1) { m.x = to.x; m.y = to.y; }
       if (prey.stuck) {                                    // stuck: it struggles, then she wraps it, spinning it
-        const wrapK = clamp((k - 2.3) / 1.8, 0, 1);
+        const wrapK = clamp((k - WRAP0) / 1.8, 0, 1);
         bug.g.position.set(P.x, P.y, 0.012 + disp(P.x, P.y, t));
         // flat in the web, struggling, then spun round and round as she wraps it
-        const spin = clamp(k - 2.3, 0, 3.3) * 9;
+        const spin = clamp(k - WRAP0, 0, WRAP1 - WRAP0) * 9;
         bug.g.rotation.order = 'ZYX';
-        bug.g.rotation.set(PI / 2, 0, 0.6 + (k < 2.3 ? Math.sin(k * 31) * 0.12 : 0) + spin);
+        bug.g.rotation.set(PI / 2, 0, 0.6 + (k < WRAP0 ? Math.sin(k * 31) * 0.12 : 0) + spin);
         bug.g.scale.setScalar(1 - 0.45 * wrapK);
         bug.g.visible = wrapK < 0.98;
-        bundle.visible = k > 2.35;
+        bundle.visible = k > WRAP0 + 0.05;
         bundle.position.copy(bug.g.position);
         bundle.rotation.set(0, 0, bug.g.rotation.z);
         bundle.scale.set(0.024, 0.046, 0.022).multiplyScalar(0.3 + 0.7 * ease(wrapK));
       }
-      for (const w of bug.wings) w.rotation.z = prey.stuck ? (m.t < 2.6 ? Math.sin(t * 70) * 0.5 : 0) : Math.sin(t * 90) * 0.9;
+      for (const w of bug.wings) w.rotation.z = prey.stuck ? (m.t < WRAP0 + 0.3 ? Math.sin(t * 70) * 0.5 : 0) : Math.sin(t * 90) * 0.9;
       if (c.t > c.hold) { c.go('idle', 99); m.ph = 'home'; m.t = 0; from.set(m.x, m.y); }
     } else if (m.ph === 'home') {                          // back up to the hub, leaving the parcel in the web
       m.want = Math.hypot(m.x, m.y) > 0.06 ? headTo(0, 0) : 0;   // she climbs back head first, then turns head down
@@ -514,7 +546,7 @@ export function buildOrbWeaver(K, home, opts = {}) {
 
     // ---- the legs
     const busy = c.state === 'rare' ? m.t : -1;
-    const wrapping = busy > 2.3 && busy < 5.6, running = (busy > 1.45 && busy < 2.3) || (m.ph === 'home' && m.t > 0.6 && m.t < 3.2);
+    const wrapping = busy > WRAP0 && busy < WRAP1, running = (busy > RUN0 && busy < RUN1) || (m.ph === 'home' && m.t > 0.6 && m.t < 3.2);
     for (let j = 0; j < female.legs.length; j++) {
       const l = female.legs[j];
       l.tip.copy(l.base);
@@ -560,7 +592,8 @@ export function buildOrbWeaver(K, home, opts = {}) {
     const creep = Math.max(0, Math.sin(t * 0.21 + 1.3)) * 0.06;
     male.sp.position.set(MALE.x + creep, MALE.y - creep * 0.4, LIFT * 0.17 + disp(MALE.x, MALE.y, t));
     farSp.sp.position.z = LIFT + zHere;
-    dots.emissiveIntensity = K.glowLevel * 1.5 * (0.85 + 0.15 * Math.sin(t * 0.8 + c.bob));
+    glow += ((c.state === 'rare' ? 1 : 0) - glow) * Math.min(1, dt * 3);          // half again as bright in the catch
+    dots.emissiveIntensity = K.glowLevel * 1.5 * (0.85 + 0.15 * Math.sin(t * 0.8 + c.bob)) * (1 + 0.5 * glow);
     root.updateMatrixWorld();
   };
   c.web = { mesh: webMesh, uniforms: U, spot: P, phase: () => ({ ph: m.ph, x: m.x, y: m.y, pulled: m.pulled, prey: prey.stuck }) };   // tests
