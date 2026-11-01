@@ -713,7 +713,7 @@ export const ROUTE = {
       KOMODO.buildDen(K, den.p, toRoad, rockMat, paleRock);
       if (!night) {
         const a = on(0.989, 5.2).p, b = on(0.975, 5.4).p;
-        spawn('komodo-dragon', a, { path: [a, b], yaw: Math.atan2(b.x - a.x, b.z - a.z) });
+        spawn('komodo-dragon', a, { path: [a, b], yaw: Math.atan2(b.x - a.x, b.z - a.z), keep: (x, z) => road.at(x, z).d > HALF + 0.9 });
       } else {
         const lie = den.p.clone().addScaledVector(toRoad, 0.85);
         lie.y = groundY(lie.x, lie.z);

@@ -99,12 +99,13 @@ export function buildDen(K, base, toRoad, rockMat, slabMat) {
 //   path      [a, b]: the two ends of its patrol line beside the road (day; it starts at `a`)
 //   den       where it lies at night (the scrape under the slab), `denYaw` its heading there
 //   yaw       its heading at the start
+//   keep      (x, z) => false where it must not walk (the road)
 export function buildKomodo(K, home, opts = {}) {
   const night = K.night;
   // the colours (painted per face; `mottle` gives each facet its own shade)
   const skin = K.mat(0x6b6152), skinD = K.mat(0x544b40), belly = K.mat(0x8a7e66), lip = K.mat(0x7b705c);
   const mouthM = K.mat(0xb3786e), toothM = K.mat(0xd9d0b5), tongueM = K.mat(0xd8b23e), forkM = K.mat(0xb08a2a);
-  const claw = K.sheen(0x2a2420, { roughness: 0.35 }), eyeM = K.sheen(0x0b0907, { roughness: 0.1 });
+  const claw = K.mat(0x2a2420, { roughness: 0.55 }), eyeM = K.sheen(0x0b0907, { roughness: 0.1 });
   const iris = K.sheen(0x6a4a22, { roughness: 0.15 });
   const glow = K.glow(0xa6f2d6, 0.7, { color: 0x6f6a5a });
   const bead = beadGeo(K, 3), bead2 = beadGeo(K, 2);
@@ -236,7 +237,7 @@ export function buildKomodo(K, home, opts = {}) {
   };
   const c = K.makeCreature({
     species: SPECIES['komodo-dragon'], root, home, radius: 1.0, eye: new THREE.Vector3(0, 0.32, 0.25),
-    ground: K.groundY, speed: 0.5, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, yaw: opts.yaw, poseLen: 5.6,
+    ground: K.groundY, keep: opts.keep, speed: 0.5, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, yaw: opts.yaw, poseLen: 5.6,
   });
   c.state = night ? 'rest' : 'idle';
   c.hold = night ? 99 : 1e9;
@@ -274,13 +275,15 @@ export function buildKomodo(K, home, opts = {}) {
           // walks briskly to it, the head reaching just short of it
           c.turnTo(p.pos.x, p.pos.z, dt, 1.6);
           vA.subVectors(p.pos, rp).setY(0);
-          if (vA.length() < 0.95) { S.eatT = dt; break; }
-          if (c.walkTo(vA.setLength(vA.length() - 0.94).add(rp), dt, 3.6)) S.eatT = dt;
+          if (vA.length() < 0.95) { S.eatT = dt; S.reach = true; break; }
+          // it stops at the road's edge: feed on the road it only sniffs at from there
+          if (c.walkTo(vA.setLength(vA.length() - 0.94).add(rp), dt, 3.6)) { S.eatT = dt; S.reach = p.pos.distanceTo(rp) < 1.4; }
           if (c.t > c.hold) c.go('idle', 1.5);
         } else {
           // sniffs with fast flicks (1.1 s), then the gulp (it is gone at 1.45 s), then swallows
           S.eatT += dt;
           c.turnTo(p.pos.x, p.pos.z, dt, 1.2);
+          if (!S.reach && S.eatT > 1.1) { S.eat = null; S.eatT = 0; c.go('idle', 2); break; }
           if (S.eatT > 1.45 && !p.eaten) { p.eaten = true; p.eatenAt = env.t; if (env.call) env.call(c, 'eat'); }
           if (S.eatT > 2.8) { S.eat = null; S.eatT = 0; c.go('idle', 1.5 + Math.random()); }
         }
@@ -426,7 +429,7 @@ export function buildKomodo(K, home, opts = {}) {
 
 // Merge every group's still meshes into one mesh coloured per face, whatever their material; skin
 // parts (`mottle`) get a shade of their own per facet, so the scales read as beads of grey and brown.
-// The glowing dots, the wet eyes and the claws keep their own materials (K.bake merges those).
+// The glowing dots and the wet eyes keep their own materials (K.bake merges those).
 const glows = (m) => m.emissiveIntensity > 0 && (m.emissive.r + m.emissive.g + m.emissive.b) > 0;
 function paint(K, root) {
   const mat = K.mat(0xffffff, { vertexColors: true, roughness: 0.9, flatShading: true });
