@@ -13,6 +13,7 @@ import * as ESTUARY from '../fauna/estuary.js';
 import * as FARBANK from '../fauna/farbank.js';
 import * as PARADISE from '../fauna/paradise.js';
 import * as LEAFCUTTER from '../fauna/leafcutter.js';
+import * as ORBWEAVER from '../fauna/orbweaver.js';
 import { planPoses } from '../poses.js';
 
 const WATER = 0;
@@ -77,6 +78,8 @@ const POSES = {
   'superb-bird-of-paradise': 'near', // the full dance: fast bouncing and clicking, the female leaning in (FEAT-007)
   // the far bank, near the end
   'leafcutter-ant': 'near',          // a soldier by the road rears up at the van, jaws wide open (FEAT-009)
+  // the far bank, the climb from the river
+  'golden-silk-orb-weaver': 'near',  // an insect flies into the web: she rushes to it and wraps it in silk (FEAT-011)
 };
 
 export const ROUTE = {
@@ -450,7 +453,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 808 });
-    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS, ...LEAFCUTTER.BUILDERS };
+    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS, ...LEAFCUTTER.BUILDERS, ...ORBWEAVER.BUILDERS };
     const creatures = [];
     // everything starts out turned towards the road (give or take), so a perched animal never
     // shows the van its back for the whole drive
@@ -719,6 +722,36 @@ export const ROUTE = {
       if (ants) antTrail = [footT, beside(uT, 0), moundAt];
     }
 
+    // the golden silk orb-weaver (FEAT-011): her web on the left of the road where it climbs from the
+    // river into the far bank's forest, the first stretch there with nothing close (just past the quick
+    // stretch in PACE), ~20 m before the anteater on the right and ~220 m before the leafcutter ants.
+    // The web hangs between a tree and a vine dropping from one of its boughs, its hub at the height of
+    // the lens ~4.8 m from the road's middle; it is turned 60° to the road, facing the oncoming van, so
+    // its near edge stays off the road. A shaft of light falls through the canopy onto it. No random
+    // numbers here.
+    let webLine = null;
+    {
+      const uW = 0.734, tW = path.getTangentAt(uW).setY(0).normalize(), out = side(uW).negate();   // out: to the left
+      const along = tW.clone().multiplyScalar(Math.cos(Math.PI / 3)).addScaledVector(out, Math.sin(Math.PI / 3));
+      const hubFoot = beside(uW, -4.8), hub = hubFoot.clone().setY(hubFoot.y + 2.45);
+      const at = (x, lift = 0) => { const q = hub.clone().addScaledVector(along, x); q.y = groundY(q.x, q.z) + lift; return q; };
+      const footT = at(2.35), toVine = along.clone().negate();
+      const boughW = bough(footT, toVine, 5.4, 4.7, 1.0);
+      const vineTop = boughW.start.clone().addScaledVector(toVine, 4.5).setY(boughW.top(4.5) - 0.05), vineFoot = at(-2.15);
+      const onVine = (h) => vineTop.clone().lerp(vineFoot, (vineTop.y - h) / (vineTop.y - vineFoot.y));
+      const onTrunk = (h) => footT.clone().addScaledVector(toVine, 0.5).setY(h);
+      const face = new THREE.Vector3(-along.z, 0, along.x);
+      if (face.dot(tW) > 0) face.negate();                 // towards the oncoming van
+      spawn('golden-silk-orb-weaver', hub, {
+        yaw: Math.atan2(face.x, face.z), sun: P.sun, vineColour: dark(0x4a5a2a),
+        vine: { top: vineTop, foot: vineFoot },
+        ties: { trunk: [onTrunk(hub.y + 0.9), onTrunk(hub.y - 1.3)], vine: [onVine(hub.y + 0.7), onVine(hub.y - 1.2)], ground: at(-0.2, 0.05), bough: boughW.start.clone().addScaledVector(toVine, 2.6).setY(boughW.top(2.6) - 0.1) },
+      }, { seeAt: 140 });
+      const tilt = new THREE.Euler(0.12, 0, 0.1);
+      scene.add(instanced(shaftGeo, shaftMesh.material, [{ p: hub.clone().sub(new THREE.Vector3(0, -0.94 * 26, 0).applyEuler(tilt)), s: [1.7, 26, 1.7], rx: tilt.x, ry: 0, rz: tilt.z }]));
+      webLine = [vineFoot, footT];
+    }
+
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
     const branches = instanced(geo(new THREE.CylinderGeometry(0.11, 0.2, 1, 5)), lam({ color: dark(0x5a4c3c) }), branchItems);
     scene.add(perchTrunks, branches);
@@ -738,6 +771,8 @@ export const ROUTE = {
     }
     // and the ant trail itself, from the tree to the mound: nothing grows on it
     if (antTrail) for (let i = 1; i < antTrail.length; i++) lanes.push({ ax: antTrail[i - 1].x, az: antTrail[i - 1].z, bx: antTrail[i].x, bz: antTrail[i].z, r: 1.2 });
+    // and the web, from the vine to the tree: nothing grows through it
+    if (webLine) lanes.push({ ax: webLine[0].x, az: webLine[0].z, bx: webLine[1].x, bz: webLine[1].z, r: 1.4 });
     const blocked = (x, z, pad) => lanes.some((l) => {
       const dx = l.bx - l.ax, dz = l.bz - l.az, L = dx * dx + dz * dz || 1;
       const k = Math.max(0, Math.min(1, ((x - l.ax) * dx + (z - l.az) * dz) / L));
