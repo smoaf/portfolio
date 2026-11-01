@@ -16,6 +16,7 @@ import * as WATERFOLK from '../fauna/pool.js';
 import * as PANGOLIN from '../fauna/pangolin.js';
 import * as GELADA from '../fauna/gelada.js';
 import * as LAMMERGEIER from '../fauna/lammergeier.js';
+import * as KOMODO from '../fauna/komodo.js';
 import { planPoses } from '../poses.js';
 import { plantCanyon, grassPatch } from './canyon-plants.js';
 
@@ -113,6 +114,7 @@ const POSES = {
   'ground-pangolin': 'near',         // stands right up on its hind legs, the tail on the ground, sniffing (FEAT-006)
   gelada: 'near',                    // the male's lip flip, his red chest patch flushing (FEAT-008)
   lammergeier: 'near',               // on the rocks: the wings spread wide in the sun, the head raised (FEAT-010)
+  'komodo-dragon': 'near',           // rears up on its hind legs, propped on its tail; or puffs up and hisses (FEAT-012)
   // the cliffs and the rim
   markhor: 'near',                   // rears up on its hind legs
   'fallow-deer': 'near',             // the buck groans: head up, neck stretched
@@ -434,7 +436,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 404 });
-    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS, ...GELADA.BUILDERS, ...LAMMERGEIER.BUILDERS };
+    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS, ...GELADA.BUILDERS, ...LAMMERGEIER.BUILDERS, ...KOMODO.BUILDERS };
     const creatures = [];
     const spawn = (id, home, opts = {}, extra = {}) => {
       if (!B[id]) return null;
@@ -690,6 +692,33 @@ export const ROUTE = {
         const land = top.clone().addScaledVector(out, -0.25);
         spawn('lammergeier', land, { top, out, land, landYaw: face, boneMat, ahead: (env) => (uL - env.u) * L }, { seeAt: 320 });
       } else spawn('lammergeier', side, { top, out, yaw: face - 0.4, boneMat }, { seeAt: 320 });
+    }
+
+    // the Komodo dragon (FEAT-012): on "Back on the floor", the last stretch after the pool, on the
+    // side of the road away from the river. By day it patrols a line ~5 m from the road's middle
+    // (u 0.975–0.989), walking towards the oncoming van; at night it rests in a scrape under a rock
+    // overhang a little further off (u 0.973, 9 m out), its head out towards the road. The only new
+    // creature on this stretch (the pangolin is on the first floor stretch, far behind). Spawned last
+    // and with no random numbers, so everything else stays exactly where it was.
+    {
+      const on = (u, off) => {
+        const rp = path.getPointAt(u), tg = path.getTangentAt(u).setY(0).normalize();
+        const side = new THREE.Vector3(-tg.z, 0, tg.x);
+        if (Math.abs(rp.x + side.x * 4 - XC(rp.z)) < Math.abs(rp.x - XC(rp.z))) side.negate();    // away from the river
+        const p = rp.addScaledVector(side, off); p.y = groundY(p.x, p.z);
+        return { p, side };
+      };
+      const den = on(0.973, 9);
+      const toRoad = den.side.clone().negate();
+      KOMODO.buildDen(K, den.p, toRoad, rockMat, paleRock);
+      if (!night) {
+        const a = on(0.989, 5.2).p, b = on(0.975, 5.4).p;
+        spawn('komodo-dragon', a, { path: [a, b], yaw: Math.atan2(b.x - a.x, b.z - a.z), keep: (x, z) => road.at(x, z).d > HALF + 0.9 });
+      } else {
+        const lie = den.p.clone().addScaledVector(toRoad, 0.85);
+        lie.y = groundY(lie.x, lie.z);
+        spawn('komodo-dragon', lie, { yaw: Math.atan2(toRoad.x, toRoad.z) - 0.35 });
+      }
     }
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
