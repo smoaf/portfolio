@@ -726,18 +726,18 @@ export const ROUTE = {
     // river into the far bank's forest, the first stretch there with nothing close (just past the quick
     // stretch in PACE), ~20 m before the anteater on the right and ~220 m before the leafcutter ants.
     // The web hangs between a tree and a vine dropping from one of its boughs, its hub at the height of
-    // the lens ~4.8 m from the road's middle; it is turned 60° to the road, facing the oncoming van, so
-    // its near edge stays off the road. A shaft of light falls through the canopy onto it. No random
+    // the lens ~5.1 m from the road's middle; it is turned 55° to the road, facing the oncoming van, so
+    // its near edge (~3.7 m) and the vine (~3.5 m) stay off the road (its half width is 3.2 m). A shaft of light falls through the canopy onto it. No random
     // numbers here.
     let webLine = null;
     {
-      const uW = 0.734, tW = path.getTangentAt(uW).setY(0).normalize(), out = side(uW).negate();   // out: to the left
-      const along = tW.clone().multiplyScalar(Math.cos(Math.PI / 3)).addScaledVector(out, Math.sin(Math.PI / 3));
-      const hubFoot = beside(uW, -4.8), hub = hubFoot.clone().setY(hubFoot.y + 2.45);
+      const uW = 0.734, TURN = THREE.MathUtils.degToRad(55), tW = path.getTangentAt(uW).setY(0).normalize(), out = side(uW).negate();   // out: to the left
+      const along = tW.clone().multiplyScalar(Math.cos(TURN)).addScaledVector(out, Math.sin(TURN));
+      const hubFoot = beside(uW, -5.1), hub = hubFoot.clone().setY(hubFoot.y + 2.45);
       const at = (x, lift = 0) => { const q = hub.clone().addScaledVector(along, x); q.y = groundY(q.x, q.z) + lift; return q; };
       const footT = at(2.35), toVine = along.clone().negate();
       const boughW = bough(footT, toVine, 5.4, 4.7, 1.0);
-      const vineTop = boughW.start.clone().addScaledVector(toVine, 4.5).setY(boughW.top(4.5) - 0.05), vineFoot = at(-2.15);
+      const vineTop = boughW.start.clone().addScaledVector(toVine, 4.5).setY(boughW.top(4.5) - 0.05), vineFoot = at(-2.0);
       const onVine = (h) => vineTop.clone().lerp(vineFoot, (vineTop.y - h) / (vineTop.y - vineFoot.y));
       const onTrunk = (h) => footT.clone().addScaledVector(toVine, 0.5).setY(h);
       const face = new THREE.Vector3(-along.z, 0, along.x);

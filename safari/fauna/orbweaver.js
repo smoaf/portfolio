@@ -76,7 +76,7 @@ const SILK_VS = `
     side = sl > 1e-4 ? side / sl : vec3(0.0, 1.0, 0.0);
     float depth = max(0.1, -(viewMatrix * wp).z);
     float w = max(aW, uPx * depth);
-    vCov = aW / w;
+    vCov = pow(aW / w, 0.55);                              // a thread thinner than a pixel fades, but not all the way
     wp.xyz += side * aSide * w * 0.5;
     vWp = wp.xyz; vT = T; vS = aS;
     vec4 mvPosition = viewMatrix * wp;
