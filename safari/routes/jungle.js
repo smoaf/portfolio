@@ -14,6 +14,7 @@ import * as FARBANK from '../fauna/farbank.js';
 import * as PARADISE from '../fauna/paradise.js';
 import * as LEAFCUTTER from '../fauna/leafcutter.js';
 import * as ORBWEAVER from '../fauna/orbweaver.js';
+import * as SAWFISH from '../fauna/sawfish.js';
 import { planPoses } from '../poses.js';
 
 const WATER = 0;
@@ -80,6 +81,8 @@ const POSES = {
   'leafcutter-ant': 'near',          // a soldier by the road rears up at the van, jaws wide open (FEAT-009)
   // the far bank, the climb from the river
   'golden-silk-orb-weaver': 'always', // her catch (half the runs, its own trigger in orbweaver.js): an insect flies into the web, she wraps it (FEAT-011)
+  // the river, between the mudflat and the first crocodile
+  'largetooth-sawfish': 'near',      // rises so the saw breaks the surface and slashes it from side to side, splashing (FEAT-013)
 };
 
 export const ROUTE = {
@@ -453,7 +456,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 808 });
-    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS, ...LEAFCUTTER.BUILDERS, ...ORBWEAVER.BUILDERS };
+    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS, ...LEAFCUTTER.BUILDERS, ...ORBWEAVER.BUILDERS, ...SAWFISH.BUILDERS };
     const creatures = [];
     // everything starts out turned towards the road (give or take), so a perched animal never
     // shows the van its back for the whole drive
@@ -750,6 +753,33 @@ export const ROUTE = {
       const tilt = new THREE.Euler(0.12, 0, 0.1);
       scene.add(instanced(shaftGeo, shaftMesh.material, [{ p: hub.clone().sub(new THREE.Vector3(0, -0.94 * 26, 0).applyEuler(tilt)), s: [1.7, 26, 1.7], rx: tilt.x, ry: 0, rz: tilt.z }]));
       webLine = [vineFoot, footT];
+    }
+
+    // the largetooth sawfish (FEAT-013): out on the river past the mudflat, on the right of the road,
+    // the quietest stretch of the crossing: ~20 m after the mudskippers and the last heron, ~20 m before
+    // the first crocodile (on the other side), well before the archerfish and the dolphins. By day it
+    // cruises a line ~8 m from the road's middle, just under the surface, with its shoal; at night it
+    // lies on the bottom of the nearest shallows (~1.2 m deep). Spawned last, with no random numbers
+    // from the route (the hunt's roll is its own), so every other animal and plant stays where it was.
+    {
+      const uS = uR(0.14), a = beside(uR(0.115), 8), b = beside(uR(0.165), 8);
+      [a, b].forEach((q) => { q.y = WATER; });
+      const keepS = (x, z) => road.at(x, z).d > 5.2 && groundY(x, z) < -1.5;
+      const yawS = (() => { const t = path.getTangentAt(uS); return Math.atan2(t.x, t.z); })();
+      if (!night) spawn('largetooth-sawfish', a.clone().lerp(b, 0.3), { path: [a, b], yaw: yawS, keep: keepS, hunt: Math.random() < 0.85 }, { seeAt: 120 });
+      else {
+        // the shallows: the nearest bottom 1.0 to 1.5 m down, off the road, from the day line outwards
+        const q0 = beside(uS, 7);
+        let rest = q0;
+        for (let r = 0, found = false; r < 40 && !found; r += 1) {
+          const n = Math.max(1, Math.round(r * 0.8));
+          for (let i = 0; i < n; i++) {
+            const an = (i / n) * Math.PI * 2, x = q0.x + Math.cos(an) * r, z = q0.z + Math.sin(an) * r, y = groundY(x, z);
+            if (y > -1.5 && y < -1.0 && road.at(x, z).d > 6.5) { rest = new THREE.Vector3(x, y, z); found = true; break; }
+          }
+        }
+        spawn('largetooth-sawfish', rest, { rest: true, yaw: yawS + 0.4 }, { seeAt: 120 });
+      }
     }
 
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
