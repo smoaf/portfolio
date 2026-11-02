@@ -94,7 +94,7 @@ export function buildSawfish(K, home, opts = {}) {
   const surf = () => (K.waterY ? K.waterY(home.x, home.z) : 0);
 
   // the colours (painted per face; `mottle` gives the skin a little unevenness)
-  const top = K.mat(0x635f4e), topD = K.mat(0x57543f), belly = K.mat(0xd9d2bd), finM = K.mat(0x625e48);
+  const top = K.mat(0x635f4e), topD = K.mat(0x57543f), finM = K.mat(0x625e48);
   const sawM = K.mat(0x8a8268), tooth = K.mat(0xe4dccb), eyeM = K.sheen(0x0d0c0a, { roughness: 0.12 });
   const glow = K.glow(0x9ff3df, night ? 0.85 : 0.5, { color: 0x6f6d5c });
   const mot = (m) => { m.userData.mottle = true; return m; };
@@ -186,7 +186,7 @@ export function buildSawfish(K, home, opts = {}) {
   const S = {
     ph: 0, spd: 0.55, end: 1, yaw: opts.yaw ?? 0, huntRun: opts.hunt !== false, hunted: false, hT: 0,
     swY: 0, splash: -1,
-    p: { depth: night ? 0 : -0.55, pitch: 0, rise: 0, rest: night ? 1 : 0 },
+    p: { depth: night ? 0 : -0.55, pitch: 0 },
   };
   const c = K.makeCreature({
     species: SPECIES['largetooth-sawfish'], root, home, radius: 1.5, eye: new THREE.Vector3(0, 0, 0.9), flyer: true,
