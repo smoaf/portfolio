@@ -51,7 +51,7 @@ function loft(K, z0, z1, at) {
   return K.geo(`sfLoft${z0},${z1}`, () => {
     const R = 18, L = Math.max(4, Math.round((z1 - z0) / 0.07));
     const pos = [], col = [], idx = [];
-    const topC = new THREE.Color(0x6a6650), bellyC = new THREE.Color(0xd9d2bd), c = new THREE.Color();
+    const topC = new THREE.Color(0x635f4e), bellyC = new THREE.Color(0xd9d2bd), c = new THREE.Color();
     for (let i = 0; i <= L; i++) {
       const z = z0 + (z1 - z0) * (i / L), [w, h] = shapeAt(z);
       for (let j = 0; j <= R; j++) {
@@ -94,9 +94,9 @@ export function buildSawfish(K, home, opts = {}) {
   const surf = () => (K.waterY ? K.waterY(home.x, home.z) : 0);
 
   // the colours (painted per face; `mottle` gives the skin a little unevenness)
-  const top = K.mat(0x6a6650), topD = K.mat(0x57543f), belly = K.mat(0xd9d2bd), finM = K.mat(0x625e48);
+  const top = K.mat(0x635f4e), topD = K.mat(0x57543f), belly = K.mat(0xd9d2bd), finM = K.mat(0x625e48);
   const sawM = K.mat(0x8a8268), tooth = K.mat(0xe4dccb), eyeM = K.sheen(0x0d0c0a, { roughness: 0.12 });
-  const glow = K.glow(0x9ff3df, 0.8, { color: 0x7d7a62 });
+  const glow = K.glow(0x9ff3df, night ? 0.85 : 0.5, { color: 0x6f6d5c });
   const mot = (m) => { m.userData.mottle = true; return m; };
   const part = (geo, mat, p, parent, r, s) => mot(K.mesh(geo, mat, p, parent, r, s));
   const skin = K.mat(0xffffff);                               // the body's own colours are in its geometry (`loft`)
@@ -162,7 +162,7 @@ export function buildSawfish(K, home, opts = {}) {
     const a = (i / 14) * TAU, r = 0.45 + (i % 3) * 0.12;
     K.mesh(K.sphere(1, 6, 5), sprayM, [Math.cos(a) * r, 0.18 + (i % 4) * 0.1, Math.sin(a) * r * 0.6], SPL, null, 0.045 + (i % 2) * 0.02);
   }
-  K.mesh(K.torus(0.55, 0.05, 4, 18), sprayM, [0, 0.02, 0], SPL, [PI / 2, 0, 0], [1, 0.6, 1]);
+  K.mesh(K.torus(0.55, 0.03, 3, 20), K.fin(0xeef6f4, 0.45, 0.3), [0, 0.01, 0], SPL, [PI / 2, 0, 0], [1, 0.6, 0.4]);
   SPL.visible = false;
 
   // ---- far: a long flat body, the saw, the dorsal fins
@@ -197,6 +197,7 @@ export function buildSawfish(K, home, opts = {}) {
   c.air = night;                                      // resting on the bottom: no pose
   c.shoal = shoal;
   c.setHunt = (on) => { S.huntRun = on; S.hunted = false; };   // tests
+  c.huntInfo = () => ({ run: S.huntRun, done: S.hunted, shoal: +shoal.C.distanceTo(c.root.position).toFixed(1) });
 
   const rp = c.root.position;
   const fwd = (out) => out.set(Math.sin(c.root.rotation.y), 0, Math.cos(c.root.rotation.y));
@@ -207,7 +208,9 @@ export function buildSawfish(K, home, opts = {}) {
     const d = env.dist;
     const sy = surf();
     // the hunt: once a run, as the van passes (close and not behind it), the shoal in reach
-    if (S.huntRun && !S.hunted && !night && (c.state === 'wander' || c.state === 'idle') && d < 26) {
+    const coming = d < (S.lastD ?? 1e9) || d < 11;          // the van is still coming, or right beside it
+    S.lastD = d;
+    if (S.huntRun && !S.hunted && !night && (c.state === 'wander' || c.state === 'idle') && d < 17 && coming) {
       vA.subVectors(shoal.C, rp).setY(0);
       if (vA.length() < 6) { S.hunted = true; c.go('hunt', 4.2); S.hT = 0; S.swiped = false; }
     }
@@ -330,7 +333,7 @@ function buildShoal(K, root, N) {
   let seed = 4513;                                                   // its own numbers: the run's others stay as they were
   const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   const silver = K.sheen(0xcfd8dc, { roughness: 0.22, metalness: 0.55 }), finM = K.fin(0xdfe8ea, 0.55, 0.15);
-  const line = K.glow(0x9ff3df, 0.9, { color: 0xb8c4c4 });
+  const line = K.glow(0x9ff3df, 0.6, { color: 0xb8c4c4 });
   const Lf = 0.26;
   const bodyG = K.geo('sfFishBody', () => {
     const parts = [new THREE.SphereGeometry(1, 10, 6).scale(0.028, 0.05, Lf * 0.5),
@@ -363,7 +366,8 @@ function buildShoal(K, root, N) {
       quiet = night;
       c.forward(vA);
       C.copy(c.root.position).addScaledVector(vA, 2.6).add(vB.set(vA.z, 0, -vA.x).multiplyScalar(1.6));
-      C.y = night ? c.root.position.y + 0.75 : (K.waterY ? K.waterY(C.x, C.z) : 0) - 0.5;
+      if (night) C.set(Math.cos(around) * 0.5, 0.75, Math.sin(around) * 0.5).add(c.root.position);
+      else C.y = (K.waterY ? K.waterY(C.x, C.z) : 0) - 0.5;
       F.forEach((f) => f.pos.copy(C).add(f.o));
     },
     // the swipe went through them: each fish darts away from the saw, the closest the fastest

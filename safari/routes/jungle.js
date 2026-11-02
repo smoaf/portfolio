@@ -164,12 +164,14 @@ export const ROUTE = {
     // the banks, and a seam of pale scum marks where they meet
     const WC = { uRiver: dark(0x5c4524, 0.3), uBrack: dark(0x4d6a48, 0.3), uSea: dark(0x2a8aa0, 0.3), uDeep: dark(0x1d6a8e, 0.3), uFoam: dark(0xe6e2cc, 0.6) };
     // no reflections to speak of, so the sky's own colour is lent to the surface instead
+    const clearAt = { value: new THREE.Vector3(0, 0, 0) };            // x, z and radius of the clearer patch round the sawfish
     const waterMat = keep(new THREE.MeshStandardMaterial({ roughness: 0.26, metalness: 0, transparent: true, opacity: 0.92,
       emissive: new THREE.Color(P.horizon).convertSRGBToLinear(), emissiveIntensity: night ? 0.05 : 0.12 }));
     waterMat.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = T.time;
       for (const k in WC) sh.uniforms[k] = { value: WC[k] };
       sh.uniforms.uGlow = { value: night ? 1 : tod === 'dusk' ? 0.45 : 0 };
+      sh.uniforms.uClear = clearAt;
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying vec3 vWp;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -179,7 +181,7 @@ export const ROUTE = {
           vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
-          uniform float uTime, uGlow; uniform vec3 uRiver, uBrack, uSea, uDeep, uFoam;
+          uniform float uTime, uGlow; uniform vec3 uRiver, uBrack, uSea, uDeep, uFoam, uClear;
           varying vec3 vWp;`)
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
           if (uGlow > 0.0) {
@@ -207,6 +209,8 @@ export const ROUTE = {
             diffuseColor.rgb = mix(col, uFoam, front * 0.4);
             // clearer right by the van, so a dolphin or a fish just under the surface still shows
             diffuseColor.a = mix(0.7, 0.94, smoothstep(6.0, 40.0, length(vWp - cameraPosition)));
+            // and clearer round the sawfish (FEAT-013), so its shape shows under the surface
+            if (uClear.z > 0.0) diffuseColor.a = mix(diffuseColor.a, 0.5, 1.0 - smoothstep(0.0, uClear.z, length(vWp.xz - uClear.xy)));
           }`)
         .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
           {
@@ -755,6 +759,8 @@ export const ROUTE = {
       webLine = [vineFoot, footT];
     }
 
+    let sawfish = null;
+    const vS = new THREE.Vector3();
     // the largetooth sawfish (FEAT-013): out on the river past the mudflat, on the right of the road,
     // the quietest stretch of the crossing: ~20 m after the mudskippers and the last heron, ~20 m before
     // the first crocodile (on the other side), well before the archerfish and the dolphins. By day it
@@ -766,7 +772,7 @@ export const ROUTE = {
       [a, b].forEach((q) => { q.y = WATER; });
       const keepS = (x, z) => road.at(x, z).d > 5.2 && groundY(x, z) < -1.5;
       const yawS = (() => { const t = path.getTangentAt(uS); return Math.atan2(t.x, t.z); })();
-      if (!night) spawn('largetooth-sawfish', a.clone().lerp(b, 0.3), { path: [a, b], yaw: yawS, keep: keepS, hunt: Math.random() < 0.85 }, { seeAt: 120 });
+      if (!night) sawfish = spawn('largetooth-sawfish', a.clone().lerp(b, 0.3), { path: [a, b], yaw: yawS, keep: keepS, hunt: Math.random() < 0.85 }, { seeAt: 120 });
       else {
         // the shallows: the nearest bottom 1.0 to 1.5 m down, off the road, from the day line outwards
         const q0 = beside(uS, 7);
@@ -778,7 +784,7 @@ export const ROUTE = {
             if (y > -1.5 && y < -1.0 && road.at(x, z).d > 6.5) { rest = new THREE.Vector3(x, y, z); found = true; break; }
           }
         }
-        spawn('largetooth-sawfish', rest, { rest: true, yaw: yawS + 0.4 }, { seeAt: 120 });
+        sawfish = spawn('largetooth-sawfish', rest, { rest: true, yaw: yawS + 0.4 }, { seeAt: 120 });
       }
     }
 
@@ -852,6 +858,7 @@ export const ROUTE = {
       },
       update(dt, env) {
         T.time.value = env.t;
+        if (sawfish) { sawfish.root.getWorldPosition(vS); clearAt.value.set(vS.x, vS.z, sawfish.visible ? 4.6 : 0); }
         const k = openness(env.u);
         scene.fog.color.copy(fogForest).lerp(fogOpen, k);
         scene.fog.near = lerp(P.near, open[0], k);
