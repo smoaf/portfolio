@@ -75,7 +75,7 @@ function skin(K, U, kind) {
           float n = fract(sin(dot(floor(vCfRoot * 160.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
           c *= 0.86 + 0.26 * n;
           cfLit = bw * 0.8 + by + br * 0.75${kind === 'fin' ? ' + smoothstep(0.5, 1.0, vCfUv.y) * 0.35' : ''};
-          return mix(c, min(c * 1.7 + 0.03, vec3(1.0)), uFlash * cfLit);
+          return mix(c, min(c * 1.45 + 0.02, vec3(1.0)), uFlash * cfLit);
         }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         diffuseColor.rgb = cfPattern();`)
@@ -177,6 +177,7 @@ export function buildCuttlefish(K, home, opts = {}) {
     const tube = K.mesh(K.tube('cf-arm' + k, pts, walk ? 0.032 : 0.028, 0.006, 6, 10), arm, [0, 0, 0], g, null, walk ? [1.5, 0.55, 1] : [1, 1, 1]);
     tube.userData.walk = walk;
     const rest = { x: walk ? 0.55 : 0.18 + k * 0.12, y: s * (0.05 + k * 0.06), z: 0 };
+    g.rotation.order = 'YXZ';                                    // turn first, then lift: the crown points each arm straight
     g.rotation.set(rest.x, rest.y, rest.z);
     arms.push({ g, s, k, walk, rest, th });
   }
@@ -251,9 +252,9 @@ export function buildCuttlefish(K, home, opts = {}) {
     const wave = night ? 0.18 : 0.55 + clamp(spd / 0.12, 0, 1) * 0.25 + S.flash * 0.7 + sh * 2.4;
     U.uPhase.value -= dt * wave;                                  // the bands travel from the head to the tail
     U.uFin.value += dt * (night ? 1.2 : 4 + sh * 3);
-    U.uFlash.value = Math.max(S.flash * 0.75, sh);
+    U.uFlash.value = Math.max(S.flash, sh);
     const pulse = night ? 0.65 + 0.35 * Math.sin(t * 0.9 + c.bob) : 1;
-    U.uGlow.value = K.glowLevel * 0.14 * pulse * (1 + S.flash * 0.8) * (1 + sh * 0.5);
+    U.uGlow.value = K.glowLevel * 0.1 * pulse * (1 + S.flash * 0.8) * (1 + sh * 0.5);
     // the walk: the two walking arms step in turn, the flaps push off in time with them, the body
     // rocks a little; the stride follows its real speed so nothing skates
     S.ph += dt * (spd / 0.05) * PI;
@@ -278,15 +279,17 @@ export function buildCuttlefish(K, home, opts = {}) {
         ry += -a.s * step * 0.18 * w;
         rx += S.sit * 0.18;
       }
-      if (a.k <= 1) rx += -S.raise * (1.25 - a.k * 0.35);              // the front (top) arms up as the van passes
+      if (a.k <= 1) rx += -S.raise * (1.6 - a.k * 0.5);              // the front (top) arms up as the van passes
       if (sh > 0.001) {
-        const spread = a.th - 1.55;                                     // where it sits round the ring
-        const crownX = -1.15 - (a.walk ? 0.2 : 0) + Math.sin(t * 6 + a.k + a.s) * 0.12;
-        rx = rx * (1 - sh) + crownX * sh;
-        ry = ry * (1 - sh) + (-a.s * (0.5 + a.k * 0.18)) * sh;
-        rz = rz * (1 - sh) + (a.s * spread * 0.35) * sh;
+        // the crown: every arm points up, the lower ones splayed wider to the sides, all quivering
+        const lat = a.s * (0.2 + a.k * 0.22), fwd = 0.3 - a.k * 0.05;
+        const cy = Math.atan2(lat, fwd), cx = -Math.atan2(1, Math.hypot(lat, fwd)) + Math.sin(t * 7 + a.k * 1.3 + a.s) * 0.1;
+        rx = rx * (1 - sh) + cx * sh;
+        ry = ry * (1 - sh) + cy * sh;
+        rz = rz * (1 - sh) + Math.sin(t * 5 + a.k) * 0.2 * sh;
       }
       a.g.rotation.set(rx, ry, rz);
+      a.g.scale.z = 1 + sh * 0.25;
     }
     // the eyes: the lids half down while it sits at night, open as the van comes close
     const lid = night ? (c.near !== undefined && c.near < 10 ? 1 : 0.55) : 1;

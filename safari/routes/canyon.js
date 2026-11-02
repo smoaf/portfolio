@@ -723,22 +723,23 @@ export const ROUTE = {
       }
     }
 
-    // the flamboyant cuttlefish (FEAT-014): on the floor of the deep pool where the van first reaches
-    // the bottom (u 0.839–0.846), the quietest stretch of the pool floor (nothing within ~9 m; the
-    // feather duster worms and the first octopus come ~10 m on, the goblin shark's spot at night is
-    // ~80 m further). ~2.8 m from the road's middle, walking slowly along it towards the oncoming van;
-    // at night it sits still at the near end. The only new creature in the pool. Spawned last and with
-    // no random numbers, so everything else stays exactly where it was.
+    // the flamboyant cuttlefish (FEAT-014): on the floor of the deep pool where the van reaches the
+    // bottom (u 0.8375–0.8435), the quietest stretch of the pool floor: on the left of the road, the
+    // first feather duster worms ~10 m on across the road, the first octopus ~20 m on, the goblin
+    // shark's spot at night ~80 m further. ~2.8 m from the road's middle, walking slowly along it
+    // towards the oncoming van; at night it sits still in the middle of that line. The only new
+    // creature in the pool. Spawned last and with no random numbers, so everything else stays exactly
+    // where it was.
     {
       const on = (u, off) => {
         const rp = path.getPointAt(u), tg = path.getTangentAt(u).setY(0).normalize();
         const p = rp.add(new THREE.Vector3(tg.z, 0, -tg.x).multiplyScalar(off)); p.y = groundY(p.x, p.z);
         return p;
       };
-      const a = on(0.846, 2.8), b = on(0.839, 2.7);
+      const a = on(0.8435, -2.8), b = on(0.8375, -2.7);
       const keepC = (x, z) => road.at(x, z).d > 2.3;
       if (!night) spawn('flamboyant-cuttlefish', a, { path: [a, b], yaw: Math.atan2(b.x - a.x, b.z - a.z), keep: keepC });
-      else spawn('flamboyant-cuttlefish', on(0.8415, 2.8), { yaw: Math.atan2(b.x - a.x, b.z - a.z) - 0.6 });
+      else spawn('flamboyant-cuttlefish', on(0.839, -2.8), { yaw: Math.atan2(b.x - a.x, b.z - a.z) - 0.6 });
     }
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
