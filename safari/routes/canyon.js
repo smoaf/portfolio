@@ -17,6 +17,7 @@ import * as PANGOLIN from '../fauna/pangolin.js';
 import * as GELADA from '../fauna/gelada.js';
 import * as LAMMERGEIER from '../fauna/lammergeier.js';
 import * as KOMODO from '../fauna/komodo.js';
+import * as CUTTLE from '../fauna/cuttlefish.js';
 import { planPoses } from '../poses.js';
 import { plantCanyon, grassPatch } from './canyon-plants.js';
 
@@ -140,6 +141,7 @@ const POSES = {
   axolotl: 'feed',                   // after eating it hovers and rears, gills flaring
   'lantern-tetra': 'feed',           // after feeding the shoal balls up and flashes
   'sea-anemone': 'feed',             // after feeding the crowns open wide and light runs along them
+  'flamboyant-cuttlefish': 'always', // its own roll (about half the runs): the warning display, arms raised into a crown (FEAT-014)
 };
 
 export const ROUTE = {
@@ -436,7 +438,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 404 });
-    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS, ...GELADA.BUILDERS, ...LAMMERGEIER.BUILDERS, ...KOMODO.BUILDERS };
+    const B = { ...FLOOR.BUILDERS, ...CLIFFS.BUILDERS, ...DEEP.BUILDERS, ...WATERFOLK.BUILDERS, ...PANGOLIN.BUILDERS, ...GELADA.BUILDERS, ...LAMMERGEIER.BUILDERS, ...KOMODO.BUILDERS, ...CUTTLE.BUILDERS };
     const creatures = [];
     const spawn = (id, home, opts = {}, extra = {}) => {
       if (!B[id]) return null;
@@ -719,6 +721,24 @@ export const ROUTE = {
         lie.y = groundY(lie.x, lie.z);
         spawn('komodo-dragon', lie, { yaw: Math.atan2(toRoad.x, toRoad.z) - 0.35 });
       }
+    }
+
+    // the flamboyant cuttlefish (FEAT-014): on the floor of the deep pool where the van first reaches
+    // the bottom (u 0.839–0.846), the quietest stretch of the pool floor (nothing within ~9 m; the
+    // feather duster worms and the first octopus come ~10 m on, the goblin shark's spot at night is
+    // ~80 m further). ~2.8 m from the road's middle, walking slowly along it towards the oncoming van;
+    // at night it sits still at the near end. The only new creature in the pool. Spawned last and with
+    // no random numbers, so everything else stays exactly where it was.
+    {
+      const on = (u, off) => {
+        const rp = path.getPointAt(u), tg = path.getTangentAt(u).setY(0).normalize();
+        const p = rp.add(new THREE.Vector3(tg.z, 0, -tg.x).multiplyScalar(off)); p.y = groundY(p.x, p.z);
+        return p;
+      };
+      const a = on(0.846, 2.8), b = on(0.839, 2.7);
+      const keepC = (x, z) => road.at(x, z).d > 2.3;
+      if (!night) spawn('flamboyant-cuttlefish', a, { path: [a, b], yaw: Math.atan2(b.x - a.x, b.z - a.z), keep: keepC });
+      else spawn('flamboyant-cuttlefish', on(0.8415, 2.8), { yaw: Math.atan2(b.x - a.x, b.z - a.z) - 0.6 });
     }
 
     // the rare poses: each species shows its own in about half of the runs (safari/poses.js)
