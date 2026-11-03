@@ -140,6 +140,9 @@
 .sf-list .sf-rank { color: var(--vf-dim); }
 .sf-list .sf-score { text-align: right; }
 .sf-list li.sf-none { display: block; color: var(--vf-dim); }
+/* the shared board didn't answer: the local board shows, with this small note under the heading (FEAT-016) */
+.sf-offline { color: var(--vf-dim); font-size: 11px; opacity: 0.7; margin: 2px 0 -0.6em; letter-spacing: 0.04em; }
+.sf-offline[hidden] { display: none; }
 .sf-entry[hidden] { display: none; }
 /* one photo large on top of the report */
 .sf-view { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; background: rgba(8, 7, 6, 0.84); opacity: 0; transition: opacity .25s;

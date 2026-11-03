@@ -17,7 +17,7 @@ import { makeRig, FOV } from './rig.js';
 import { createHud } from './hud.js';
 import { createAudio, mutedByDefault } from './audio.js';
 import { judge, verdict, grab } from './photo.js';
-import { localStore } from './leaderboard.js';
+import { boardStore } from './leaderboard.js';
 import { survey, record } from './fieldlog.js';
 import { chunkScenery } from './terrain.js';
 
@@ -126,7 +126,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   } });
   const audio = createAudio({ ambience: world.ambience, muted: mutedByDefault() });
   hud.setMuted(audio.muted);
-  const store = localStore();
+  const store = boardStore();
   survey(R, world.creatures);                           // the van's field log learns what this route has
 
   // ---- state
