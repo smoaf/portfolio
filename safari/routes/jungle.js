@@ -15,6 +15,7 @@ import * as PARADISE from '../fauna/paradise.js';
 import * as LEAFCUTTER from '../fauna/leafcutter.js';
 import * as ORBWEAVER from '../fauna/orbweaver.js';
 import * as SAWFISH from '../fauna/sawfish.js';
+import * as COCONUTCRAB from '../fauna/coconutcrab.js';
 import { planPoses } from '../poses.js';
 
 const WATER = 0;
@@ -83,6 +84,8 @@ const POSES = {
   'golden-silk-orb-weaver': 'always', // her catch (half the runs, its own trigger in orbweaver.js): an insect flies into the web, she wraps it (FEAT-011)
   // the river, between the mudflat and the first crocodile
   'largetooth-sawfish': 'near',      // rises so the saw breaks the surface and slashes it from side to side, splashing (FEAT-013)
+  // the south bank, where the road goes into the water
+  'coconut-crab': 'always',          // rears up with both claws high and wide at the van (half the runs, its own roll in coconutcrab.js; FEAT-015)
 };
 
 export const ROUTE = {
@@ -460,7 +463,7 @@ export const ROUTE = {
 
     // ---- the animals
     const K = makeKit({ scene, keep, tod, groundY, waterY: () => WATER, seed: 808 });
-    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS, ...LEAFCUTTER.BUILDERS, ...ORBWEAVER.BUILDERS, ...SAWFISH.BUILDERS };
+    const B = { ...FOREST.BUILDERS, ...ESTUARY.BUILDERS, ...FARBANK.BUILDERS, ...PARADISE.BUILDERS, ...LEAFCUTTER.BUILDERS, ...ORBWEAVER.BUILDERS, ...SAWFISH.BUILDERS, ...COCONUTCRAB.BUILDERS };
     const creatures = [];
     // everything starts out turned towards the road (give or take), so a perched animal never
     // shows the van its back for the whole drive
@@ -786,6 +789,31 @@ export const ROUTE = {
         }
         sawfish = spawn('largetooth-sawfish', rest, { rest: true, yaw: yawS + 0.4 }, { seeAt: 120 });
       }
+    }
+
+    // the coconut crab (FEAT-015): at the foot of a leaning palm on the south bank, on the left of the
+    // road just where it goes down into the water, among fallen coconuts and torn husk. The mudflat's
+    // herons, mudskippers and fiddler crabs are all on the right; the sawfish is ~45 m on, out on the
+    // river on the right. The palm is the route's own kind (trunk and swaying fronds), leaning towards
+    // the road. Spawned last, with no random numbers from the route (its rolls are its own), so every
+    // other animal and plant stays where it was.
+    let crabPalm = null;
+    {
+      const uK = 0.418, q0 = beside(uK, -11);
+      let foot = q0;
+      for (let r = 0, found = false; r < 30 && !found; r += 1) {
+        const n = Math.max(1, Math.round(r * 0.8));
+        for (let i = 0; i < n; i++) {
+          const an = (i / n) * Math.PI * 2, x = q0.x + Math.cos(an) * r, z = q0.z + Math.sin(an) * r, y = groundY(x, z);
+          if (y > 0.35 && y < 1.4 && road.at(x, z).d > 9.5 && road.at(x, z).d < 13) { foot = new THREE.Vector3(x, y, z); found = true; break; }
+        }
+      }
+      const toRoad = path.getPointAt(uNear(foot.x, foot.z)).sub(foot).setY(0).normalize();
+      const S = 0.62;
+      crabPalm = { foot, dir: toRoad, S };
+      const it = [{ p: foot, s: S, ry: Math.atan2(-toRoad.z, toRoad.x) }];
+      scene.add(instanced(palmTrunkGeo, palmTrunks.material, it), instanced(frondGeo, fronds.material, it));
+      spawn('coconut-crab', foot, { yaw: 0, palm: crabPalm, night, crack: Math.random() < 0.8, pose: Math.random() < 0.5 }, { seeAt: 120 });
     }
 
     const perchTrunks = instanced(geo(new THREE.CylinderGeometry(0.4, 0.6, 12, 7).translate(0, 6, 0)), lam({ color: dark(0x5a4c3c) }), perchItems);
