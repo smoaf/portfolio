@@ -228,7 +228,7 @@ export function buildCoconutCrab(K, home, opts = {}) {
   };
   const c = K.makeCreature({
     species: SPECIES['coconut-crab'], root, home, radius: 0.5, eye: new THREE.Vector3(0, 0.15, 0.4), flyer: true,
-    speed: 0, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, yaw: root.rotation.y, poseLen: 5.5,
+    speed: 0, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, yaw: root.rotation.y, poseLen: 4.2,
   });
   c.air = true;                                  // on the palm: it neither turns round to feed nor takes part in the shared poses
   c.state = night ? 'climb' : 'idle';
@@ -246,10 +246,11 @@ export function buildCoconutCrab(K, home, opts = {}) {
     const coming = d < st.lastD || d < 12;
     st.lastD = d;
     const down = st.mount < 0.02 && st.face < 0.02;           // sitting on the ground, facing the road
-    // the van coming: the pose (if this run has it), then the cracking as it passes
-    if (!night && coming) {
+    // the van coming: the pose (if this run has it), then the cracking as it passes (right after the
+    // pose, even with the van already beside it)
+    if (!night && (coming || st.posed)) {
       if (st.poseRun && !st.posed && d < 34 && c.state !== 'rare') {
-        if (down) { st.posed = true; go('rare', 5.5); if (env.call) env.call(c, 'rare'); } else if (c.state !== 'descend') go('descend', 1e9);
+        if (down) { st.posed = true; go('rare', 4.2); if (env.call) env.call(c, 'rare'); } else if (c.state !== 'descend') go('descend', 1e9);
       } else if (st.crackRun && !st.cracked && d < 42 && c.state !== 'rare' && (!st.poseRun || st.posed)) {
         if (down) { st.cracked = true; go('eat', 24); st.crack = 0; st.open = 0; } else if (c.state !== 'descend') go('descend', 1e9);
       }
