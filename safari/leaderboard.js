@@ -111,6 +111,7 @@ export function onlineStore(url) {
       }
     },
     async best(route) { const b = await store.list(route); return b.length ? b[0].score : 0; },
+    async localList(route) { return localBoard(route); },   // this browser's own board (after a save the server didn't take)
     // kept locally first (the backup), then sent; `sent` says whether the server took it
     async add(route, entry) {
       const kept = await local.add(route, entry);

@@ -266,11 +266,13 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       const shown = report;
       requestAnimationFrame(() => shown.classList.add('on'));
 
-      const listEl = report.querySelector('#sf-list'), offEl = report.querySelector('#sf-off');
+      const listEl = report.querySelector('#sf-list'), offEl = report.querySelector('#sf-off'), noteEl = report.querySelector('#sf-note');
+      let saved = false;                               // one save per run
       let drawn = 0;                                   // the latest list wins (a slow first answer can't undo a save)
       const draw = (rows, mine) => {
         listEl.innerHTML = '';
         offEl.hidden = !store.offline;
+        if (store.kind === 'online' && !saved) noteEl.textContent = store.offline ? 'Scores stay in this browser for now.' : 'Scores go on the board for every visitor.';
         if (!rows.length) { listEl.innerHTML = '<li class="sf-none">No runs yet</li>'; return; }
         // this run: the stored entry itself, or (from the shared board) the first line with its name and score
         const me = mine ? rows.find((e) => e === mine || e.at === mine.at) || rows.find((e) => e.name === mine.name && e.score === mine.score) : null;
@@ -299,7 +301,6 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       nameEl.value = lastName();
       tidy();
       nameEl.addEventListener('input', tidy);
-      let saved = false;                               // one save per run
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = cleanName(nameEl.value);
@@ -309,9 +310,10 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         rememberName(name);
         const n = ++drawn;
         const mine = await store.add(r.id, { name, score: total(), shots: shots.length, species, runId });
-        const rows = await store.list(r.id);
+        // the server just failed to take it: this browser's board at once, without asking again
+        const rows = await (mine && mine.sent === false && store.offline ? store.localList(r.id) : store.list(r.id));
         if (n === drawn) draw(rows, mine);
-        report.querySelector('#sf-note').textContent = store.kind === 'online' && mine && mine.sent ? 'Saved on the board.' : 'Saved in this browser.';
+        noteEl.textContent = store.kind === 'online' && mine && mine.sent ? 'Saved on the board.' : 'Saved in this browser.';
       });
       setTimeout(() => { const b = report && report.querySelector('#sf-back'); if (b) b.focus({ preventScroll: true }); }, 450);
       return { total: total(), species };
