@@ -1938,15 +1938,92 @@ function stepMarkers() {
 // ---- per frame
 const dTmp = new THREE.Vector3();
 function stepPlaces(now) {
-  if (tween.active) stepTween(now);
+  if (tween.active) { stepTween(now); sway.on = false; }
   else if (nav.mode === 'fixed') { /* camp views: the camera stays where its flight ended */ }
   else if (nav.mode === 'inside') {
     camera.position.copy(look.eye);
     controls.target.copy(look.eye).add(lookDir(dTmp).multiplyScalar(0.5));
     camera.lookAt(controls.target);
     if (Math.abs(camera.fov - look.fov) > 0.01) { camera.fov = look.fov; camera.updateProjectionMatrix(); }
-  } else controls.update();
+  } else { stepSway(now); controls.update(); }
   stepMarkers();
+}
+// ---- FEAT-017: idle sway of the overview. After loading, and after 30 s untouched back at the starting
+// overview, the camera slowly swings a few degrees left and right round the station (eased in, one
+// breath every ~26 s). The first click, tap, drag, scroll or key press lets it glide to a stop where it is
+// (mouse movement alone does not). Never at a place, during a flight, with a panel, menu or settings open,
+// or with "reduce motion" on. Where the station would not fit the frame at every point of the swing
+// (upright phones: the starting view already touches the edges), the camera also eases back a little.
+// The swing is applied as small turns round the target each frame, so a drag that starts while it is
+// gliding out simply adds to it.
+const SWAY = { amp: THREE.MathUtils.degToRad(3), period: 26, easeIn: 5, easeOut: 0.4, idle: 30000, edge: 0.94 };
+const sway = { on: false, t: 0, ang: 0, from: 0, w: 0, back: 1, s0: 1, k: 1, ws: 0, stop: 0, last: 0, input: -Infinity };
+const yAxis = new THREE.Vector3(0, 1, 0), swOff = new THREE.Vector3(), swHome = new THREE.Vector3(), swP = new THREE.Vector3();
+const swCam = new THREE.PerspectiveCamera();
+const STATION = ['hub', 'showroom', 'new-module', 'camp', 'workshop', 'office', 'library'].map((id) => PLACES.find((p) => p.id === id).zone);
+function swayInput() {
+  sway.input = performance.now();
+  if (sway.on && !sway.stop) sway.stop = 1e-6;              // glide out (well under a second)
+}
+['pointerdown', 'wheel', 'keydown'].forEach((t) => window.addEventListener(t, swayInput, { capture: true, passive: true }));
+function swayAllowed() {
+  return !nav.place && nav.mode === 'overview' && !tween.active && !reduceMotion() && !camp.safari &&
+    !panel.classList.contains('open') && !drop.classList.contains('open') && settingsBox.hidden;
+}
+function homeView() {                                  // the view now as a turn and a step back from the starting overview, or null
+  const h = homePose();
+  if (controls.target.distanceTo(h.target) > 0.05 * h.d) return null;
+  swOff.copy(camera.position).sub(controls.target); swHome.copy(h.pos).sub(h.target);
+  const s = swOff.length() / h.d;
+  if (s < 0.94 || s > 1.6 || Math.abs(swOff.y / swOff.length() - swHome.y / h.d) > 0.04) return null;
+  const a = Math.atan2(swOff.x, swOff.z) - Math.atan2(swHome.x, swHome.z), d = Math.atan2(Math.sin(a), Math.cos(a));
+  return Math.abs(d) < SWAY.amp * 2.5 ? { a: d, s, h } : null;   // back at the overview (a stopped swing leaves it a little off)
+}
+function stationFits(h, k) {                           // the modules and the camp inside the frame at both ends and the middle of the swing
+  swCam.fov = camera.fov; swCam.aspect = camera.aspect; swCam.near = camera.near; swCam.far = camera.far; swCam.updateProjectionMatrix();
+  for (const a of [-SWAY.amp, 0, SWAY.amp]) {
+    swCam.position.copy(h.pos).sub(h.target).multiplyScalar(k).applyAxisAngle(yAxis, a).add(h.target);
+    swCam.lookAt(h.target); swCam.updateMatrixWorld();
+    const f = 1 / Math.tan(THREE.MathUtils.degToRad(swCam.fov) / 2) / swCam.aspect;   // ndc per unit of x / depth
+    for (const z of STATION) {
+      swP.set(...z.c).applyMatrix4(swCam.matrixWorldInverse);
+      const r = z.r * f / -swP.z;
+      swP.set(...z.c).project(swCam);
+      if (Math.abs(swP.x) + r > SWAY.edge) return false;
+    }
+  }
+  return true;
+}
+function turnView(da, ds = 1) {
+  if (!da && ds === 1) return;
+  swOff.copy(camera.position).sub(controls.target).applyAxisAngle(yAxis, da).multiplyScalar(ds);
+  camera.position.copy(controls.target).add(swOff);
+}
+function stepSway(now) {
+  const dt = Math.min(0.1, Math.max(0, (now - (sway.last || now)) / 1000)); sway.last = now;   // a hidden tab doesn't jump it
+  if (!sway.on) {
+    if (now - sway.input < SWAY.idle || !swayAllowed()) return;
+    const v = homeView(); if (!v) return;
+    let k = 1; while (k < 1.5 && !stationFits(v.h, k)) k += 0.02;
+    Object.assign(sway, { on: true, t: 0, ang: v.a, from: v.a, back: v.s, s0: v.s, k: Math.max(1, k), w: 0, ws: 0, stop: 0 });
+    return;
+  }
+  if (!sway.stop && !swayAllowed()) sway.stop = 1e-6;
+  if (sway.stop) {                                      // keep the last speeds and let them run down to zero
+    const u0 = sway.stop, u1 = Math.min(1, u0 + dt / SWAY.easeOut), g = SWAY.easeOut * ((u1 - u1 * u1 / 2) - (u0 - u0 * u0 / 2));
+    const back = sway.back + sway.ws * g;
+    turnView(sway.w * g, back / sway.back); sway.back = back;
+    sway.stop = u1;
+    if (u1 >= 1) sway.on = false;
+    return;
+  }
+  sway.t += dt;
+  const e = Math.min(1, sway.t / SWAY.easeIn), env = e * e * (3 - 2 * e);   // eased in from where the view stands
+  const ang = sway.from * (1 - env) + SWAY.amp * env * Math.sin(2 * Math.PI * sway.t / SWAY.period);
+  const back = sway.s0 * (1 - env) + sway.k * env;
+  if (dt > 0) { sway.w = (ang - sway.ang) / dt; sway.ws = (back - sway.back) / dt; }
+  turnView(ang - sway.ang, back / sway.back);
+  sway.ang = ang; sway.back = back;
 }
 overviewControls();
 { const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update(); }
@@ -2793,6 +2870,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__sky = (o) => { Object.assign(SKY, o || {}); applyAccents(); skyState.lastStep = -1e9; return { ...SKY, d: skyState.d, night: skyState.night }; };
   window.__cam = (c) => { if (c.free) { controls.maxPolarAngle = Math.PI; controls.minDistance = 0.01; } camera.position.set(...c.pos); controls.target.set(...c.target); controls.update(); };
   window.__go = (id) => setRoute(id || '');
+  window.__sway = (o) => { if (o && o.t !== undefined) sway.t = o.t; return { ...sway, deg: THREE.MathUtils.radToDeg(sway.ang), dist: camera.position.distanceTo(controls.target), home: homePose().d }; };   // o.t: jump the swing's clock (tests)
   window.__gui = { openDrop, closeDrop, openPanel, closePanel, state: () => ({ drop: dropCat, panel: panel.classList.contains('open'), paused }) };
   window.__print = (u) => workshop.get('printer').print(u);
   window.__lights = () => { const c = {}; scene.traverse((o) => { if (o.isLight) { const k = o.type + (o.castShadow ? '+shadow' : ''); c[k] = (c[k] || 0) + 1; } }); return JSON.stringify(c); };
