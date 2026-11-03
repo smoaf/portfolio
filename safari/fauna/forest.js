@@ -424,10 +424,11 @@ export function buildGiantPanda(K, home, opts = {}) {
       hip.scale.set(br, br, 1);
       // legs: walking gait blended with the sitting pose (arms up to the mouth, hind legs forward)
       gait(legs, ph, w, 0.45, 0.6);
-      const raise = (0.15 + 0.08 * Math.sin(env.t * 2.6 + c.bob)) * hold;
+      const arm = c.state === 'rare' ? 1 : hold;                      // the right arm as it holds the cane (the tumble keeps its old look)
+      const raise = (0.15 + 0.08 * Math.sin(env.t * 2.6 + c.bob)) * arm;
       const wave = back ? Math.sin(c.t * 5) * 0.4 : pBack ? Math.sin(c.t * 6.2) * 0.45 : 0;
       const sw = playing ? swat * 0.7 : 0;
-      const sitPose = [[-0.05 + wave - sw * 0.6, 0.3 - Math.abs(sw) * 0.4], [-0.6 * hold - raise - 0.05 * (1 - hold) + sw, -1.5 * hold + 0.3 * (1 - hold) - Math.abs(sw) * 0.3],
+      const sitPose = [[-0.05 + wave - sw * 0.6, 0.3 - Math.abs(sw) * 0.4], [-0.6 * arm - raise - 0.05 * (1 - arm) + sw, -1.5 * arm + 0.3 * (1 - arm) - Math.abs(sw) * 0.3],
         [-0.2 - wave, 0], [-0.2 + wave, 0]];
       const liePose = [[-0.9, -0.9], [-0.9, -0.9], [-0.7, -0.6], [-0.7, -0.6]];   // on its back: legs loosely folded up
       legs.forEach((L, i) => {
@@ -438,7 +439,7 @@ export function buildGiantPanda(K, home, opts = {}) {
           L.hip.rotation.x += (liePose[i][0] + Math.sin(env.t * 0.5 + i) * 0.05 - L.hip.rotation.x) * lie;
           L.knee.rotation.x += (liePose[i][1] - L.knee.rotation.x) * lie;
         }
-        L.hip.rotation.z = (i % 2 ? 1 : -1) * ((i === 1 ? 0.4 : 0.12) * sitK * hold + 0.12 * sitK * (1 - hold) + 0.35 * recl + 0.3 * lie);
+        L.hip.rotation.z = (i % 2 ? 1 : -1) * ((i === 1 ? 0.4 : 0.12) * sitK * arm + 0.12 * sitK * (1 - arm) + 0.35 * recl + 0.3 * lie);
       });
       // the cane: picked up when it sits down by it, laid down when it gets up
       if (sitting && !resting && !grab && sit < 0.6 && nearCane()) grab = true;
