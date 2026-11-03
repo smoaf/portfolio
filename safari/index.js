@@ -130,7 +130,9 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   survey(R, world.creatures);                           // the van's field log learns what this route has
 
   // ---- state
-  const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, last: 0, paused: false, over: false, dead: false, pending: false,
+  // S.t is the run's own clock (on screen, timed events); it starts at 0 when the briefing card's OK
+  // starts the drive. S.anim drives the animation and keeps running behind the card (FEAT-019).
+  const S = { film: FILM, pellets: PELLETS, shots: [], t: 0, anim: 0, brief: true, last: 0, paused: false, over: false, dead: false, pending: false,
     under: 0, diving: false, section: -1, fresh: 0, zoomed: false, hinted: false,
     drawnAt: performance.now(), doneAt: 0, endedAt: 0, broke: false };
   const pellets = [];
@@ -170,7 +172,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   }
 
   function throwFeed() {
-    if (S.pellets <= 0 || S.over) return;
+    if (S.pellets <= 0 || S.over || S.brief) return;
     S.pellets--; hud.setPellets(S.pellets);
     const m = new THREE.Mesh(pelletGeo, pelletMat);
     rig.worldHead(m.position);
@@ -239,7 +241,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   // ---- the shot: judged on what the lens had, then grabbed off the canvas after the next render
   function shoot() {
-    if (S.over || S.pending) return;
+    if (S.over || S.pending || S.brief) return;
     if (S.film <= 0) { hud.say('No film', 'the run is nearly over'); return; }
     S.pending = true;
   }
@@ -264,6 +266,29 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   // picture is drawn: that way nothing ever reads a position from the frame before.
   const env = { camPos: new THREE.Vector3(), look: new THREE.Vector3(0, 0, -1), t: 0, tod, pellets, call: callFor, dist: 0, under: 0, u: 0, lens: 1 };
   let poi = null;
+  // behind the briefing card (FEAT-019) every animal only idles in place: it is stepped as if the van
+  // were far off (so nothing the van sets off can start: no flee, no curiosity, no near pose, no set
+  // piece), with no feed about, its rare pose blocked (time of day too) and no strolls. Its glance,
+  // breathing and small moves go on. The shared state machine's idle is kept going until OK.
+  const calm = { camPos: new THREE.Vector3(0, 1e5, 0), look: env.look, t: 0, tod, pellets: [], call: null, dist: 1e5, under: 0, u: 0, lens: 1, aspect: 1.5 };
+  function idle(c, dt, d) {
+    const off = c.rareOff;
+    c.rareOff = true;
+    if (c.go && c.state === 'wander') c.go('idle', 2);
+    if (c.go && c.state === 'idle' && typeof c.hold === 'number') c.hold = Math.max(c.hold, c.t + 1);
+    c.near = 1e5;
+    c.step(dt, calm);
+    c.near = d;
+    c.rareOff = off;
+  }
+  // OK on the card: the drive starts, its clock from 0 (the idle animation's own clock runs on)
+  function startDrive() {
+    if (!S.brief || S.dead) return;
+    S.brief = false;
+    audio.start();
+    for (const c of world.creatures) if (c.go && c.state === 'idle' && typeof c.hold === 'number') c.hold = c.t + 0.5 + Math.random() * 2;   // a stagger, not all at once
+  }
+  const brief = hud.brief({ film: FILM, pellets: PELLETS, onOk: startDrive });
   // one frame of the drive. An error inside it must not end the run: three.js books the next frame
   // only after this one returns, so a throw would freeze the picture for good. It is logged once, and
   // the end of the road is checked whatever happened.
@@ -279,17 +304,21 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   function drive(now) {
     const dt = S.last ? Math.min(0.08, (now - S.last) / 1000) : 0.016;
     S.last = now;
-    S.t += dt; env.t = S.t;
+    // behind the briefing card the van waits and the run's clock stands still; the animals only idle
+    const briefing = S.brief;
+    S.anim += dt; env.t = S.anim;
+    if (!briefing) S.t += dt;
 
-    const speed = rig.step(dt, reduceMotion() ? null : poi);
+    const speed = rig.step(briefing ? 0 : dt, briefing || reduceMotion() ? null : poi);
     rig.worldHead(env.camPos);
     rig.camera.getWorldDirection(env.look);           // where the lens points (the ant column picks its subject by it)
     env.aspect = rig.camera.aspect;                  // how wide the frame is (a phone held upright sees less to the sides)
     sky.position.copy(env.camPos);                     // the sky travels with the lens (a long route would leave it behind)
     if (stars) stars.position.copy(env.camPos);
     env.u = rig.progress;
-    stepMedium(dt);
+    stepMedium(dt, briefing);
     if (world.update) world.update(dt, env);
+    if (briefing) { calm.t = env.t; calm.u = env.u; calm.aspect = env.aspect; calm.under = env.under; calm.look = env.look; }
     scenery.cull(env.camPos, scene.fog.far * 1.05);
     // what the lens drifts towards next: the nearest creature worth a look, else the route's own point
     let poiD = 80;
@@ -310,13 +339,14 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       ball.set(vA, (c.radius || 1) * 2.5 + 1.5);
       c.root.visible = c.visible && (c.flock || d < 6 || frustum.intersectsSphere(ball));
       if (c.lod) c.lod(d * lens);
-      if (c.visible) { env.dist = d; c.step(dt, env); stepFace(c, dt); }
+      if (c.visible && briefing) idle(c, dt, d);
+      else if (c.visible) { env.dist = d; c.step(dt, env); stepFace(c, dt); }
       if (d < poiD && d > 7) { poiD = d; poi = c.photoPoint(new THREE.Vector3()); }
     }
     if (!poi && world.poi) poi = world.poi(rig.progress);
     stepPellets(dt);
     stepAmbient();
-    audio.drive(speed);
+    audio.drive(briefing ? 0 : speed);
     if (rig.state.bump > lastBump + 0.18) audio.bump(Math.min(1, rig.state.bump));   // only the new jolts make a sound
     lastBump = rig.state.bump;
     hud.progress(rig.progress);
@@ -349,7 +379,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
 
   // ---- the medium and the stretches of the route. The dive begins a moment before the van
   // touches the water, so the lamps are on by the time the surface closes over the lens.
-  function stepMedium(dt) {
+  function stepMedium(dt, briefing) {
     const u = rig.progress;
     if (world.dive) {
       const [u0, u1] = world.dive;
@@ -378,12 +408,12 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     }
     // the zoom hint: once, on the first stretch where the lens needs the zoom, unless the visitor has
     // already zoomed; it goes at the first zoom, or when the stretch is behind the van
-    if (world.zoomHint && !S.zoomed) {
+    if (world.zoomHint && !S.zoomed && !briefing) {
       const [z0, z1] = world.zoomHint;
       if (!S.hinted && u >= z0 && u < z1) { S.hinted = true; hud.zoomHint(true); }
       else if (S.hinted && u >= z1) { S.zoomed = true; hud.zoomHint(false); }
     }
-    if (world.sections) {
+    if (world.sections && !briefing) {                // the first title shows as the drive starts
       let i = -1;
       world.sections.forEach((s, k) => { if (u >= s.u) i = k; });
       if (i !== S.section) { S.section = i; if (i >= 0 && world.sections[i].title) hud.title(world.sections[i].title, world.sections[i].line); }
@@ -444,7 +474,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   const aim = (ev) => rig.aim((ev.clientX / Math.max(1, el.clientWidth)) * 2 - 1, (ev.clientY / Math.max(1, el.clientHeight)) * 2 - 1);
   const cursor = (ev) => el.classList.toggle('sf-outside', !hud.inFrame(ev.clientX, ev.clientY));
   el.addEventListener('pointerdown', (ev) => {
-    if (S.over) return;
+    if (S.over || S.brief) return;
     audio.start();
     if (ev.pointerType === 'mouse') { aim(ev); cursor(ev); if (ev.button === 0 && !hud.dropShot(ev.clientX, ev.clientY)) shoot(); return; }
     pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
@@ -453,7 +483,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); fov0 = rig.state.fov; }
   }, sig);
   el.addEventListener('pointermove', (ev) => {
-    if (ev.pointerType === 'mouse') { if (!S.over) aim(ev); cursor(ev); return; }
+    if (ev.pointerType === 'mouse') { if (!S.over && !S.brief) aim(ev); cursor(ev); return; }
     if (!pointers.has(ev.pointerId)) return;
     const prev = pointers.get(ev.pointerId);
     if (pointers.size === 1) {
@@ -478,7 +508,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   el.addEventListener('pointerup', up, sig);
   el.addEventListener('pointercancel', (ev) => { pointers.delete(ev.pointerId); downAt = null; }, sig);
   // the wheel zooms only while the van drives; after it, the report on top scrolls as a page does
-  el.addEventListener('wheel', (ev) => { if (S.over) return; ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); zoomed(); }, { passive: false, signal: abort.signal });
+  el.addEventListener('wheel', (ev) => { if (S.over || S.brief) return; ev.preventDefault(); hud.setZoom(rig.zoom(Math.exp(ev.deltaY * 0.0012)), FOV.wide); zoomed(); }, { passive: false, signal: abort.signal });
   el.addEventListener('contextmenu', (ev) => ev.preventDefault(), sig);
   window.addEventListener('keydown', (ev) => {
     if (hud.viewing) return;                          // a photo is open large in the report: its keys
@@ -488,6 +518,10 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     if ((k === ' ' || k === 'Enter') && t && t.closest && t.closest('button')) return;   // a focused button acts
     if (k === 'Escape') { ev.stopImmediatePropagation(); ev.preventDefault(); quit(); return; }
     if (S.over) return;
+    if (S.brief) {                                    // the briefing card: Enter or space is OK, nothing else acts
+      if ((k === 'Enter' || k === ' ' || k === 'Spacebar') && !ev.repeat) { ev.preventDefault(); ev.stopImmediatePropagation(); brief.ok(); }
+      return;
+    }
     if (k === 'Enter') { ev.preventDefault(); ev.stopImmediatePropagation(); audio.start(); shoot(); }
     else if (k === ' ' || k === 'Spacebar' || k === 'f' || k === 'F') {
       ev.preventDefault(); ev.stopImmediatePropagation();
@@ -527,7 +561,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   return {
     route: R, tod,
     state: () => ({ u: rig.progress, ratio: +RES.ratio.toFixed(2), film: S.film, pellets: S.pellets, shots: S.shots.length,
-      points: S.shots.reduce((n, s) => n + s.points, 0), over: S.over, paused: S.paused,
+      points: S.shots.reduce((n, s) => n + s.points, 0), over: S.over, paused: S.paused, brief: S.brief, t: S.t,
       species: new Set(S.shots.filter((s) => s.best).map((s) => s.best.species.id)).size }),
     // test hooks: drive the run on without waiting two minutes
     skipTo: (u) => { rig.state.u = Math.max(rig.state.u, Math.min(0.999, u)); },

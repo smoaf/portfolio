@@ -76,7 +76,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
   muteEl.addEventListener('click', () => on.mute && on.mute());
 
   helpEl.textContent = touch ? 'Drag to look · tap to shoot · pinch to zoom' : 'Mouse to aim · click or Enter to shoot · wheel to zoom · space or F to feed';
-  setTimeout(() => helpEl.classList.add('gone'), 7000);
+  helpEl.classList.add('gone');                        // shown when the drive starts (after the briefing card)
 
   let sayTimer = 0, titleTimer = 0, report = null, viewer = null;
   // a print slides away to the right and is gone once the slide is over
@@ -138,6 +138,49 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       titleEl.innerHTML = `<b>${big}</b>${small ? `<span>${small}</span>` : ''}`;
       titleEl.classList.remove('on'); void titleEl.offsetWidth; titleEl.classList.add('on');
       clearTimeout(titleTimer); titleTimer = setTimeout(() => titleEl.classList.remove('on'), 3600);
+    },
+    // ---- the briefing card (FEAT-019): before every run, over the dimmed start scene. OK (or Enter or
+    // space) starts the drive; Exit at the top right still leaves. Only the controls of this device.
+    // Placeholder text, to be replaced by Smo's own.
+    brief({ film: nFilm, pellets: nFeed, onOk }) {
+      const controls = touch
+        ? [['Drag', 'to look'], ['Tap', 'to shoot'], ['Pinch', 'to zoom'], ['Feed', 'button to feed'], ['Exit', 'to leave']]
+        : [['Mouse', 'to aim'], ['Click or Enter', 'to shoot'], ['Wheel', 'to zoom'], ['Space or F', 'to feed'], ['Exit', 'to leave']];
+      const card = el('div', 'sf-brief');
+      card.setAttribute('role', 'dialog');
+      card.setAttribute('aria-label', 'How the safari works');
+      card.innerHTML = `<div class="sf-bcard">
+        <div class="sf-sub">${esc(route.name)} · ${TOD[tod] || 'Day'}</div>
+        <h2>Before you drive</h2>
+        <p class="sf-bgoal">Photograph animals until the road ends. You have <b>${nFilm} film</b> and <b>${nFeed} feed</b>.</p>
+        <h3>Controls</h3>
+        <ul class="sf-bkeys">${controls.map(([k, v]) => `<li><b>${k}</b> ${v}</li>`).join('')}</ul>
+        <h3>Points</h3>
+        <p>Bigger and more centred: more points. Bonus for 2 or more of the same species, every other species in the frame, an animal feeding, a rare pose.</p>
+        <h3>Tips</h3>
+        <p>Feed lures animals. Rare poses happen as you pass. Zoom in for small animals.</p>
+        <button type="button" class="sf-bok" id="sf-ok">OK${touch ? '' : ' <span class="sf-key">(Enter)</span>'}</button>
+        <p class="sf-bnote">Placeholder text</p>
+      </div>`;
+      root.appendChild(card);
+      root.classList.add('briefing');
+      const ok = card.querySelector('#sf-ok');
+      ok.addEventListener('pointerdown', stop); ok.addEventListener('pointerup', stop);
+      card.addEventListener('pointerdown', stop); card.addEventListener('pointerup', stop);
+      let done = false;
+      const go = () => {
+        if (done) return;
+        done = true;
+        root.classList.remove('briefing');
+        card.classList.add('out');
+        setTimeout(() => card.remove(), 320);
+        helpEl.classList.remove('gone');                 // the controls line, as before, from the start of the drive
+        setTimeout(() => helpEl.classList.add('gone'), 7000);
+        if (onOk) onOk();
+      };
+      ok.addEventListener('click', () => { ok.blur(); go(); });
+      if (!touch) ok.focus({ preventScroll: true });
+      return { ok: go, get open() { return !done; } };
     },
     // `under` tints the frame while the van is below the surface
     under(k) { root.style.setProperty('--under', k.toFixed(3)); root.classList.toggle('under', k > 0.02); },
