@@ -173,8 +173,8 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         <div class="sf-board">
           <div><h3>Your name for the board</h3>
             <form class="sf-entry" id="sf-form"><input id="sf-name" maxlength="5" placeholder="NAME" aria-label="Name for the leaderboard, up to 5 letters" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"><button type="submit" id="sf-save">Save</button></form>
-            <p class="sf-empty" id="sf-note" style="margin-top:10px">Scores stay in this browser for now.</p></div>
-          <div><h3>Best runs · ${r.name}</h3><ol class="sf-list" id="sf-list"></ol></div>
+            <p class="sf-empty" id="sf-note" style="margin-top:10px">${store.kind === 'online' ? 'Scores go on the board for every visitor.' : 'Scores stay in this browser for now.'}</p></div>
+          <div><h3>Best runs · ${r.name}</h3><p class="sf-offline" id="sf-off" hidden>offline</p><ol class="sf-list" id="sf-list"></ol></div>
         </div>
         <div class="sf-done"><button id="sf-again">Drive it again</button><button id="sf-back">Back to the van</button></div>
       </div>`;
@@ -266,18 +266,25 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
       const shown = report;
       requestAnimationFrame(() => shown.classList.add('on'));
 
-      const listEl = report.querySelector('#sf-list');
+      const listEl = report.querySelector('#sf-list'), offEl = report.querySelector('#sf-off');
+      let drawn = 0;                                   // the latest list wins (a slow first answer can't undo a save)
       const draw = (rows, mine) => {
         listEl.innerHTML = '';
+        offEl.hidden = !store.offline;
         if (!rows.length) { listEl.innerHTML = '<li class="sf-none">No runs yet</li>'; return; }
+        // this run: the stored entry itself, or (from the shared board) the first line with its name and score
+        const me = mine ? rows.find((e) => e === mine || e.at === mine.at) || rows.find((e) => e.name === mine.name && e.score === mine.score) : null;
         rows.slice(0, 10).forEach((e, i) => {
-          const li = el('li', e === mine || (mine && e.at === mine.at) ? 'me' : '',
+          const li = el('li', e === me ? 'me' : '',
             `<span class="sf-rank">${i + 1}.</span><span>${esc(e.name)}</span><span class="sf-score">${esc(e.score)}</span>`);
           listEl.appendChild(li);
         });
       };
-      draw(await store.list(r.id), null);
-      const { lastName, rememberName, cleanName } = await import('./leaderboard.js');
+      // the board loads while the report is already up (the shared one may take up to 3 s)
+      const first = ++drawn;
+      store.list(r.id).then((rows) => { if (drawn === first && report) draw(rows, null); }).catch((err) => console.error('Safari board failed', err));
+      const { lastName, rememberName, cleanName, newRunId } = await import('./leaderboard.js');
+      const runId = newRunId();                        // one id per run: the shared board takes it once
       const form = report.querySelector('#sf-form'), nameEl = report.querySelector('#sf-name'), saveEl = report.querySelector('#sf-save');
       // only capitals A–Z, Ä, Ö, Ü, at most 5: a lowercase letter turns into its capital, any other key is not taken
       const tidy = () => {
@@ -300,9 +307,11 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         saved = true;
         form.hidden = true;
         rememberName(name);
-        const mine = await store.add(r.id, { name, score: total(), shots: shots.length, species });
-        draw(await store.list(r.id), mine);
-        report.querySelector('#sf-note').textContent = 'Saved in this browser.';
+        const n = ++drawn;
+        const mine = await store.add(r.id, { name, score: total(), shots: shots.length, species, runId });
+        const rows = await store.list(r.id);
+        if (n === drawn) draw(rows, mine);
+        report.querySelector('#sf-note').textContent = store.kind === 'online' && mine && mine.sent ? 'Saved on the board.' : 'Saved in this browser.';
       });
       setTimeout(() => { const b = report && report.querySelector('#sf-back'); if (b) b.focus({ preventScroll: true }); }, 450);
       return { total: total(), species };

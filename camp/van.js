@@ -11,7 +11,7 @@
 // ground at z = 0, the body floor at z = 0.95. The page places the group on the van in the model.
 import * as THREE from 'three';
 import { summary } from '../safari/fieldlog.js';
-import { localBoard } from '../safari/leaderboard.js';
+import { localBoard, boardStore } from '../safari/leaderboard.js';
 
 // `ready` says whether the route has its terrain yet; the screen shows COMING SOON for the others.
 export const ROUTES = [
@@ -437,7 +437,8 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
   root.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
 
   // --- the start menu on the screen: amber monospace text on a dark CRT, a slight glow and scanlines
-  const UI = { state: 'home', hover: null, items: [], blink: true, route: null, log: [], board: [] };
+  const UI = { state: 'home', hover: null, items: [], blink: true, route: null, log: [], board: [], offline: false };
+  const store = boardStore();                        // the shared board when an address is set (FEAT-016), else this browser's
   const TOD = { dawn: 'DAWN', day: 'DAY', dusk: 'DUSK', night: 'NIGHT' };
   function draw() {
     const W = canvas.width, H = canvas.height, g = ctx;
@@ -504,6 +505,7 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
           if (sec) wrap('SECRET: ' + sec, x0, y + 72, 20, colW, 2);
         }
         text('BEST RUNS', x0, 370, 22, dim, 600);
+        if (UI.offline) right('OFFLINE', x0 + colW, 372, 16, 'rgba(255, 189, 61, 0.4)');   // the shared board didn't answer
         g.fillStyle = 'rgba(255, 189, 61, 0.3)'; g.fillRect(x0, 388, colW, 2);
         if (!rows.length) { text('NO RUNS YET', x0, 414, 22, dim, 500); return; }
         const subW = (colW - 24) / 2;
@@ -539,7 +541,17 @@ export function buildVanInterior({ polaroids = [], timeOfDay = () => 'day', onRo
   function press(id) {
     if (!id) return false;
     if (id === 'start') UI.state = 'routes';
-    else if (id === 'log') { UI.state = 'log'; UI.log = ROUTES.map((r) => summary(r.id)); UI.board = ROUTES.map((r) => localBoard(r.id)); }
+    else if (id === 'log') {
+      UI.state = 'log'; UI.log = ROUTES.map((r) => summary(r.id)); UI.board = ROUTES.map((r) => localBoard(r.id)); UI.offline = false;
+      // the shared board: the local one shows at once, everyone's top 10 replace it when they come
+      if (store.kind === 'online') {
+        const ask = UI.ask = (UI.ask || 0) + 1;
+        Promise.all(ROUTES.map((r) => store.list(r.id))).then((boards) => {
+          if (ask !== UI.ask || UI.state !== 'log') return;
+          UI.board = boards; UI.offline = !!store.offline; draw();
+        }).catch((err) => console.error('Field log board failed', err));
+      }
+    }
     else if (id === 'back') UI.state = UI.state === 'soon' ? 'routes' : 'home';
     else {
       const r = ROUTES.find((q) => q.id === id);
