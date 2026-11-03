@@ -276,8 +276,14 @@ export function buildGiantPanda(K, home, opts = {}) {
     { ...leg(K, hip, [-0.2, -0.06, 0.02], { r1: 0.12, l1: 0.26, r2: 0.1, l2: 0.2, m1: black, foot: pawH }), ph: PI },
     { ...leg(K, hip, [0.2, -0.06, 0.02], { r1: 0.12, l1: 0.26, r2: 0.1, l2: 0.2, m1: black, foot: pawH }), ph: 0 },
   ];
-  // the bamboo cane in the right front paw: a jointed stalk with a spray of leaves at the top
-  const bam = K.group([0, -0.26, 0.06], legs[1].knee, [PI - 0.3, 0, 0.35]);
+  // the bamboo cane (FEAT-018): a real object. It sits in the right front paw while the panda sits
+  // and eats; when the panda gets up it lays the cane on the ground, where it stays until the panda
+  // sits down by it again and picks it up. It never grows or shrinks. `grip` marks where the paw
+  // holds it; the cane itself hangs off the root and is placed by hand every frame (so the pose
+  // blend of safari/poses.js leaves it alone).
+  const grip = K.group([0, -0.26, 0.06], legs[1].knee, [PI - 0.3, 0, 0.35]);
+  const bam = K.group(null, root);
+  bam.matrixAutoUpdate = false;
   K.mesh(K.cyl(0.026, 0.03, 1.2, 7), cane, [0, 0.3, 0], bam);
   for (let i = 0; i < 4; i++) K.mesh(K.cyl(0.034, 0.034, 0.025, 7), cane, [0, -0.12 + i * 0.26, 0], bam);
   const leafPts = [[0, 0], [0.04, 0.1], [0.03, 0.3], [0, 0.38], [-0.02, 0.28], [-0.03, 0.1]];
@@ -290,18 +296,106 @@ export function buildGiantPanda(K, home, opts = {}) {
   K.mesh(K.box(0.6, 0.5, 0.95), black, [0, 0.25, 0.0], far);
   K.place(root, home);
 
-  let sit = 1, w = 0, ph = 0;
+  // habits (FEAT-018): 'eat' (default) sits eating bamboo 15-30 s at a time with short walks in
+  // between, and now and then play-wrestles with its partner (`opts.pair`, an object both share);
+  // 'rest' lies on its back dozing, now and then rolling onto its side and back again.
+  const habit = opts.habit || 'eat', pair = opts.pair || null;
+  const ground = (x, z) => (K.groundY ? K.groundY(x, z) : 0);
+  const caneAt = { on: false, pos: new THREE.Vector3(), q: new THREE.Quaternion() };   // where it lies
+  const gPos = new THREE.Vector3(), gQ = new THREE.Quaternion(), gS = new THREE.Vector3(), mW = new THREE.Matrix4(), mI = new THREE.Matrix4();
+  const hPos = new THREE.Vector3(), hQ = new THREE.Quaternion(), eLay = new THREE.Euler(0, 0, 0, 'YXZ');
+  let sit = habit === 'rest' ? 0.9 : 1, lie = habit === 'rest' ? 1 : 0, w = 0, ph = 0, hold = 1, grab = habit !== 'rest';
+  let roll = 0, rollTo = 0, rollNext = 14 + K.rand() * 16, play = 0;
+  const sitSpot = (out) => out.copy(caneAt.pos).sub(root.position).setY(0).normalize().multiplyScalar(-0.78).add(caneAt.pos);
+  // lay the cane down on the ground at its right front, lying flat, roughly along its body
+  const layCane = () => {
+    vA.set(0.34, 0, 0.74); root.localToWorld(vA);
+    caneAt.pos.set(vA.x, ground(vA.x, vA.z) + 0.035, vA.z);
+    eLay.set(PI / 2, root.rotation.y + 0.45 + K.rand() * 0.5, 0);
+    caneAt.q.setFromEuler(eLay);
+    caneAt.on = true;
+  };
+  // the paw can reach the cane from where it sits
+  const nearCane = () => {
+    if (!caneAt.on) return true;
+    vA.set(0.2, 0, 0.7); root.localToWorld(vA);
+    return Math.hypot(vA.x - caneAt.pos.x, vA.z - caneAt.pos.z) < 0.95;
+  };
+  const onState = (c, state) => {
+    if (state === 'wander' && c._back) { c._back = false; return; }   // the walk back to the cane: its target is set
+    needTarget(c, state);
+    if (state === 'wander' && !c._toPartner && caneAt.on) {             // a short stroll, then back
+      const a = K.rand() * PI * 2, r = 2 + K.rand() * 2;
+      c.target = caneAt.pos.clone().add(vA.set(Math.cos(a) * r, 0, Math.sin(a) * r));
+      c.target.lerp(c.home, 0.3); c.hold = 6;
+    }
+    if (state === 'idle') {
+      if (c._toPartner) {                                                 // reached its partner: play
+        c._toPartner = false;
+        const o = pair && (pair.a === c ? pair.b : pair.a);
+        if (o && o.state === 'idle' && o.root.position.distanceTo(root.position) < 2.2) {
+          pair.top = K.rand() < 0.5 ? c : o; pair.t = 0;
+          c.go('play', 9); o.go('play', 9);
+        } else c.hold = 2;
+        return;
+      }
+      if (caneAt.on && !nearCane() && root.position.distanceTo(sitSpot(vB)) > 0.35 && (c._tries = (c._tries || 0) + 1) < 3) {   // first back to its cane, then sit
+        c._back = true; c.target = sitSpot(new THREE.Vector3()); c.go('wander', 10);
+        return;
+      }
+      c._tries = 0;                                                       // (can't get there, e.g. water: it sits where it is)
+      c.hold = habit === 'rest' ? 60 + K.rand() * 40 : 15 + K.rand() * 15;
+    }
+  };
+
   const c = K.makeCreature({
-    species: SPECIES['giant-panda'], onState: needTarget, root, home, radius: 0.95, eye: new THREE.Vector3(0, 1.0, 0.55), ground: K.groundY,
-    speed: 0.85, roam: 5, fleeAt: 6, curiousAt: 26, shy: 0.25, rareChance: 0.7, yaw: opts.yaw,
+    species: SPECIES['giant-panda'], onState, root, home, radius: 0.95, eye: new THREE.Vector3(0, 1.0, 0.55), ground: K.groundY,
+    speed: 0.85, roam: 5, fleeAt: 6, curiousAt: 0, shy: 0.25, rareChance: 0.7, yaw: opts.yaw,   // too busy eating or dozing to come and look
     pose(c, dt, env) {
       rareCue(c, env);
       K.blink(c, [eyes], dt);
+      if (pair) {                                       // the pair: who is who, and when they play next
+        if (!pair.a) pair.a = c; else if (pair.a !== c && !pair.b) pair.b = c;
+        const o = pair.a === c ? pair.b : pair.a;
+        if (pair.next === undefined && env.dist < 75) pair.next = env.t + 2 + K.rand() * 8;   // the first time as the van comes near
+        if (o && pair.next !== undefined && env.t > pair.next && c === pair.a && c.state === 'idle' && o.state === 'idle' &&
+            sit > 0.9 && c.t > 3 && o.t > 3 && root.position.distanceTo(o.root.position) < 20) {
+          pair.next = env.t + 40 + K.rand() * 30;
+          const [m, n] = K.rand() < 0.5 ? [c, o] : [o, c];  // one walks over to the other
+          m._toPartner = true; m.target = n.root.position.clone().add(vA.subVectors(m.root.position, n.root.position).setY(0).normalize().multiplyScalar(1.15));
+          m._back = true; m.go('wander', 30);
+          n.hold = Math.max(n.hold, n.t + 32);                       // the other keeps eating until it arrives
+        }
+        if (c.state === 'play' && (c.t > c.hold || !o || o.state !== 'play')) c.go('idle', 1);
+      }
+      const playing = c.state === 'play', resting = habit === 'rest' && c.state === 'idle';
       const moving = c.state === 'wander' || c.state === 'flee' || (c.state === 'eat' && c.pellet && c.pellet.pos.distanceTo(root.position) > 0.4);
-      const sitting = !moving && c.state !== 'curious' && c.state !== 'rare';
-      sit = damp(sit, sitting ? 1 : 0, 2.2, dt);
+      const sitting = !moving && c.state !== 'curious' && c.state !== 'rare' && !playing;
+      // lying down: sit first, then lean back; getting up: up off its back first
+      lie = damp(lie, resting && sit > 0.8 ? 1 : 0, 1.1, dt);
+      sit = damp(sit, sitting || lie > 0.05 ? 1 : 0, 2.2, dt);
       w = damp(w, moving ? 1 : 0, 4, dt);
       ph += dt * (c.state === 'flee' ? 9 : 5) * w;
+      // the dozer now and then rolls onto one side for a while, then back
+      if (resting && lie > 0.9) {
+        rollNext -= dt;
+        if (rollNext < 0) { rollTo = rollTo ? 0 : (K.rand() < 0.5 ? -1 : 1); rollNext = rollTo ? 5 + K.rand() * 5 : 18 + K.rand() * 20; }
+      } else rollTo = 0;
+      roll = damp(roll, rollTo, 0.9, dt);
+      // play: the two sit up facing each other, swat and shove; the one underneath rolls onto its back
+      // with its paws up while the other leans over it; then they sit up again
+      let pBack = 0, pLean = 0, swat = 0;
+      if (playing) {
+        const o = pair.a === c ? pair.b : pair.a, u = c.t;
+        c.turnTo(o.root.position.x, o.root.position.z, dt, 2.2);
+        const under = pair.top !== c, mid = smooth((u - 2.6) / 0.9) * (1 - smooth((u - 6.6) / 0.9));
+        pBack = under ? mid : 0;
+        pLean = under ? 0 : mid * 0.55;
+        swat = Math.sin(u * (under ? 6.5 : 5.2) + (under ? 1 : 0)) * (0.5 + 0.5 * Math.sin(u * 1.3));
+        const shove = Math.sin(u * 3.1) * 0.06 * (1 - mid);          // little pushes back and forth
+        vA.set(0, 0, shove * dt * 3.1); vA.applyAxisAngle(vB.set(0, 1, 0), root.rotation.y); root.position.add(vA);
+        play = damp(play, 1, 3, dt);
+      } else play = damp(play, 0, 3, dt);
       // tumble and roll on its back (rare); otherwise level
       let tx = 0, tz = 0, lift = 0, back = 0;
       if (c.state === 'rare') {
@@ -309,32 +403,64 @@ export function buildGiantPanda(K, home, opts = {}) {
         if (u < 1) { tx = smooth(u) * PI * 2; lift = Math.sin(u * PI) * 0.35; }
         else { back = smooth((c.t - 1.5) / 0.8); tz = Math.sin(c.t * 2.3) * 0.32 * back; }
       }
+      const sitK = Math.max(sit, play * (1 - pBack));                  // the one rolled onto its back is not sitting up
+      const recl = Math.max(back, pBack);                             // on its back with the paws up (the tumble's end, or play)
+      if (pBack) tz = Math.sin(c.t * 3.4) * 0.28 * pBack;
+      tz += roll * 1.15 * lie;                                        // the dozer's roll onto its side
       if (c.state === 'rare' && c.t < 1.5) tum.rotation.x = tx;
-      else tum.rotation.x = damp(tum.rotation.x > PI ? tum.rotation.x - PI * 2 : tum.rotation.x, -1.25 * back, 4, dt);
+      else tum.rotation.x = damp(tum.rotation.x > PI ? tum.rotation.x - PI * 2 : tum.rotation.x, -1.25 * recl - 1.2 * lie + 0.35 * pLean, 4, dt);
       tum.rotation.z = damp(tum.rotation.z, tz, 4, dt);
-      tum.position.y = 0.62 - 0.32 * sit - 0.18 * back + lift + Math.abs(Math.sin(ph)) * 0.025 * w;
-      hip.rotation.x = -1.15 * sit - 0.9 * back;
-      hip.position.z = -0.38 + 0.12 * back;
-      // neck: keeps the head level when sitting, dips to the cane when munching, sniffs when walking
-      const munch = sitting ? Math.sin(env.t * 5.2 + c.bob) : 0;
-      neck.rotation.x = damp(neck.rotation.x, 1.05 * sit + 0.1 * munch * sit + 0.95 * back + (moving ? 0.15 : 0), 5, dt);
-      K.look(c, head, env, dt, { yaw: 0.8, pitch: 0.4, rate: 2.5 });
-      const br = 1 + Math.sin(env.t * 1.6 + c.bob) * 0.012;
+      tum.position.y = 0.62 - 0.32 * sitK - 0.18 * recl - 0.2 * lie + lift + Math.abs(Math.sin(ph)) * 0.025 * w;
+      hip.rotation.x = -1.15 * sitK * (1 - 0.35 * lie) - 0.9 * recl;
+      hip.position.z = -0.38 + 0.12 * recl + 0.08 * lie;
+      // neck: keeps the head level when sitting, dips to the cane when munching, sniffs when walking;
+      // lying on its back the head rests back on the ground
+      const eating = sitting && !resting && hold > 0.6;
+      const munch = eating ? Math.sin(env.t * 5.2 + c.bob) : 0;
+      neck.rotation.x = damp(neck.rotation.x, 1.05 * sitK + 0.1 * munch + 0.95 * recl + 0.55 * lie + (moving ? 0.15 : 0) + (playing ? 0.25 * Math.sin(c.t * 4.1) : 0), 5, dt);
+      K.look(c, head, env, dt, { yaw: 0.8, pitch: 0.4, rate: 2.5, glance: lie < 0.5 });
+      if (lie > 0.6 && !(c._blink < 0.12 && c._blink > 0)) eyes.scale.y = 0.15 + 0.85 * Math.max(0, Math.sin(env.t * 0.21 + c.bob) - 0.85) / 0.15;   // dozing: eyes mostly shut
+      const br = 1 + Math.sin(env.t * (lie > 0.5 ? 1.0 : 1.6) + c.bob) * (lie > 0.5 ? 0.02 : 0.012);
       hip.scale.set(br, br, 1);
       // legs: walking gait blended with the sitting pose (arms up to the mouth, hind legs forward)
       gait(legs, ph, w, 0.45, 0.6);
-      const raise = 0.15 + 0.08 * Math.sin(env.t * 2.6 + c.bob);
-      const wave = back ? Math.sin(c.t * 5) * 0.4 : 0;
-      const sitPose = [[-0.05 + wave, 0.3], [-0.6 - raise, -1.5], [-0.2 - wave, 0], [-0.2 + wave, 0]];
+      const arm = c.state === 'rare' ? 1 : hold;                      // the right arm as it holds the cane (the tumble keeps its old look)
+      const raise = (0.15 + 0.08 * Math.sin(env.t * 2.6 + c.bob)) * arm;
+      const wave = back ? Math.sin(c.t * 5) * 0.4 : pBack ? Math.sin(c.t * 6.2) * 0.45 : 0;
+      const sw = playing ? swat * 0.7 : 0;
+      const sitPose = [[-0.05 + wave - sw * 0.6, 0.3 - Math.abs(sw) * 0.4], [-0.6 * arm - raise - 0.05 * (1 - arm) + sw, -1.5 * arm + 0.3 * (1 - arm) - Math.abs(sw) * 0.3],
+        [-0.2 - wave, 0], [-0.2 + wave, 0]];
+      const liePose = [[-0.9, -0.9], [-0.9, -0.9], [-0.7, -0.6], [-0.7, -0.6]];   // on its back: legs loosely folded up
       legs.forEach((L, i) => {
-        const k = Math.max(sit, back);
-        L.hip.rotation.x = L.hip.rotation.x * (1 - k) + sitPose[i][0] * k + (back ? -0.9 * back + (i < 2 ? -0.6 : 0.2) : 0);
+        const k = Math.max(sitK, recl);
+        L.hip.rotation.x = L.hip.rotation.x * (1 - k) + sitPose[i][0] * k + (recl ? -0.9 * recl + (i < 2 ? -0.6 : 0.2) : 0);
         L.knee.rotation.x = L.knee.rotation.x * (1 - k) + sitPose[i][1] * k;
-        L.hip.rotation.z = (i % 2 ? 1 : -1) * ((i === 1 ? 0.4 : 0.12) * sit + 0.35 * back);
+        if (lie > 0.01) {
+          L.hip.rotation.x += (liePose[i][0] + Math.sin(env.t * 0.5 + i) * 0.05 - L.hip.rotation.x) * lie;
+          L.knee.rotation.x += (liePose[i][1] - L.knee.rotation.x) * lie;
+        }
+        L.hip.rotation.z = (i % 2 ? 1 : -1) * ((i === 1 ? 0.4 : 0.12) * sitK * arm + 0.12 * sitK * (1 - arm) + 0.35 * recl + 0.3 * lie);
       });
-      bam.scale.setScalar(Math.max(0.001, smooth((sit - 0.35) / 0.5)));
+      // the cane: picked up when it sits down by it, laid down when it gets up
+      if (sitting && !resting && !grab && sit < 0.6 && nearCane()) grab = true;
+      if (!sitting || resting) grab = false;
+      { const to = grab ? smooth((sit - 0.35) / 0.5) : 0; hold += THREE.MathUtils.clamp(to - hold, -1.1 * dt, 1.1 * dt); }   // ~0.9 s each way
+      const hk = smooth(hold);                                         // eased: no jerk where it starts and stops
+      root.updateMatrixWorld(true);
+      if (hold > 0.001) {                                              // the paw's hold, in the root's space
+        grip.matrixWorld.decompose(hPos, hQ, gS);
+        if (!caneAt.on) { gPos.copy(hPos); gQ.copy(hQ); }
+        else { gPos.lerpVectors(caneAt.pos, hPos, hk); gQ.slerpQuaternions(caneAt.q, hQ, hk); }
+        if (hold > 0.995) caneAt.on = false;                           // in the paw
+      } else { gPos.copy(caneAt.pos); gQ.copy(caneAt.q); }
+      if (!caneAt.on && hold < 0.995 && !grab) layCane();             // let go: it lands here and stays
+      if (caneAt.on && hold <= 0.001) { gPos.copy(caneAt.pos); gQ.copy(caneAt.q); }
+      mW.compose(gPos, gQ, gS.set(1, 1, 1));
+      bam.matrix.copy(mI.copy(root.matrixWorld).invert().multiply(mW));
+      bam.visible = !c.far;
     },
   });
+  if (habit === 'rest') { c.state = 'idle'; c.hold = 30 + K.rand() * 30; layCane(); }
   return K.lod(c, near, far, 45);
 }
 
