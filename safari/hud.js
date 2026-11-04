@@ -1,5 +1,5 @@
 // Everything the visitor sees on top of the picture. Kept to what the plan allows: the viewfinder,
-// how much film is left, the feed button, exit (plus a mute toggle, because the safari makes sound).
+// how much film is left, the lure button, exit (plus a mute toggle, because the safari makes sound).
 // The viewfinder is an old camera's focusing screen: corner marks, a pale ring with a split-image spot
 // in the middle, grain and a few specks of dust, and the figures along the bottom edge of the frame.
 // The HUD element is also the input surface: the station's canvas sits behind it, so no drag of
@@ -31,8 +31,8 @@ const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).p
 
 export function createHud({ host = document.body, route, tod, film, pellets, on = {} }) {
   const touch = !matchMedia('(hover: hover)').matches;
-  // the feed button names its key where there is a keyboard
-  const feedLabel = (n) => `Feed <b>${n}</b>${touch ? '' : ' <span class="sf-key">(Space)</span>'}`;
+  // the lure button names its key where there is a keyboard
+  const feedLabel = (n) => `Lure <b>${n}</b>${touch ? '' : ' <span class="sf-key">(Space)</span>'}`;
   const root = el('div', 'safari');
   root.setAttribute('role', 'application');
   root.setAttribute('aria-label', `Photo safari: ${route.name}`);
@@ -75,7 +75,7 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
   feedEl.addEventListener('click', () => on.feed && on.feed());
   muteEl.addEventListener('click', () => on.mute && on.mute());
 
-  helpEl.textContent = touch ? 'Drag to look · tap to shoot · pinch to zoom' : 'Mouse to aim · click or Enter to shoot · wheel to zoom · space or F to feed';
+  helpEl.textContent = touch ? 'Drag to look · tap to shoot · pinch to zoom' : 'Mouse to aim · click or Enter to shoot · wheel to zoom · space to lure';
   helpEl.classList.add('gone');                        // shown when the drive starts (after the briefing card)
 
   let sayTimer = 0, titleTimer = 0, report = null, viewer = null;
@@ -141,26 +141,25 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
     },
     // ---- the briefing card (FEAT-019): before every run, over the dimmed start scene. OK (or Enter or
     // space) starts the drive; Exit at the top right still leaves. Only the controls of this device.
-    // Placeholder text, to be replaced by Smo's own.
+    // Smo's final texts (BUG-025).
     brief({ film: nFilm, pellets: nFeed, onOk }) {
       const controls = touch
-        ? [['Drag', 'to look'], ['Tap', 'to shoot'], ['Pinch', 'to zoom'], ['Feed', 'button to feed'], ['Exit', 'to leave']]
-        : [['Mouse', 'to aim'], ['Click or Enter', 'to shoot'], ['Wheel', 'to zoom'], ['Space or F', 'to feed'], ['Exit', 'to leave']];
+        ? [['Drag', 'to look'], ['Tap', 'to shoot'], ['Pinch', 'to zoom'], ['Lure button', 'to lure']]
+        : [['Mouse', 'to aim'], ['Click or Enter', 'to shoot'], ['Wheel or pinch', 'to zoom'], ['Space', 'to lure']];
       const card = el('div', 'sf-brief');
       card.setAttribute('role', 'dialog');
       card.setAttribute('aria-label', 'How the safari works');
       card.innerHTML = `<div class="sf-bcard">
         <div class="sf-sub">${esc(route.name)} · ${TOD[tod] || 'Day'}</div>
         <h2>Before you drive</h2>
-        <p class="sf-bgoal">Photograph animals until the road ends. You have <b>${nFilm} film</b> and <b>${nFeed} feed</b>.</p>
+        <p class="sf-bgoal">Photograph animals until the road ends. Every run you get one film with <b>${nFilm} images</b> and <b>${nFeed} lures</b>.</p>
         <h3>Controls</h3>
         <ul class="sf-bkeys">${controls.map(([k, v]) => `<li><b>${k}</b> ${v}</li>`).join('')}</ul>
         <h3>Points</h3>
-        <p>Bigger and more centred: more points. Bonus for 2 or more of the same species, every other species in the frame, an animal feeding, a rare pose.</p>
+        <p>The bigger and more centred an animal is in your shot, the more points it earns. Catch two or more of the same species together for a bonus, and every other species in the frame adds even more. Snap an animal while it eats your lure, or in a rare pose, and the points really add up.</p>
         <h3>Tips</h3>
-        <p>Feed lures animals. Rare poses happen as you pass. Zoom in for small animals.</p>
-        <button type="button" class="sf-bok" id="sf-ok">OK${touch ? '' : ' <span class="sf-key">(Enter)</span>'}</button>
-        <p class="sf-bnote">Placeholder text</p>
+        <p>Lures draw some animals closer. Rare poses happen as you pass, so keep watching ahead. Zoom in for small animals.</p>
+        <button type="button" class="sf-bok" id="sf-ok">OK</button>
       </div>`;
       root.appendChild(card);
       root.classList.add('briefing');
@@ -300,8 +299,8 @@ export function createHud({ host = document.body, route, tod, film, pellets, on 
         if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); }
         else if (k === 'ArrowLeft' || k === 'ArrowRight') { e.preventDefault(); e.stopImmediatePropagation(); go(k === 'ArrowLeft' ? -1 : 1); }
       }, { capture: true, signal: keys.signal });
-      if (!shots.length) grid.innerHTML = '<p class="sf-empty">No photos this time. The animals come closer when you feed them, and the lens zooms in for the shy ones.</p>';
-      else if (!species) grid.insertAdjacentHTML('beforebegin', '<p class="sf-empty">No species in frame this time. The animals come closer when you feed them, and the lens zooms in for the shy ones.</p>');
+      if (!shots.length) grid.innerHTML = '<p class="sf-empty">No photos this time. The animals come closer when you lure them, and the lens zooms in for the shy ones.</p>';
+      else if (!species) grid.insertAdjacentHTML('beforebegin', '<p class="sf-empty">No species in frame this time. The animals come closer when you lure them, and the lens zooms in for the shy ones.</p>');
       report.querySelector('#sf-back').addEventListener('click', () => onDone && onDone());
       report.querySelector('#sf-again').addEventListener('click', () => onAgain && onAgain());
       root.appendChild(report);

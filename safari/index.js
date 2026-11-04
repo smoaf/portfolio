@@ -183,7 +183,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     scene.add(m);
     pellets.push({ mesh: m, pos: m.position, vel: v, landed: false, eaten: false, born: S.t });
     audio.throwPellet();
-    hud.say('Feed', 'thrown');
+    hud.say('Lure', 'thrown');
     lookRound();
   }
 
@@ -523,7 +523,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
       return;
     }
     if (k === 'Enter') { ev.preventDefault(); ev.stopImmediatePropagation(); audio.start(); shoot(); }
-    else if (k === ' ' || k === 'Spacebar' || k === 'f' || k === 'F') {
+    else if (k === ' ' || k === 'Spacebar') {   // F no longer throws (BUG-025)
       ev.preventDefault(); ev.stopImmediatePropagation();
       if (!ev.repeat) { audio.start(); throwFeed(); }   // holding the bar down doesn't empty the bag
     }
