@@ -291,11 +291,9 @@
   .album-book.phone .album-flip { transition-timing-function: cubic-bezier(.4, 0, .6, 1); }
   .album-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 0 24px rgba(0, 0, 0, 0.18); }
   .album-face.back { transform: rotateY(180deg); }
-  .album-bar { display: flex; justify-content: center; align-items: stretch; margin: 14px auto calc(16px + env(safe-area-inset-bottom, 0px)); color: var(--glass-ink);
-               background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
-  .album-bar button { color: inherit; font-size: 18px; letter-spacing: 0; min-width: 52px; min-height: 44px; }
-  .album-count { display: grid; place-items: center; min-width: 110px; padding: 0 12px; border-left: 1px solid var(--glass-line); border-right: 1px solid var(--glass-line);
-                 font: 400 11px/1 var(--font-display); letter-spacing: 0.16em; font-variant-numeric: tabular-nums; }
+  .album-bar { display: flex; justify-content: center; align-items: stretch; gap: 6px; margin: 14px auto calc(16px + env(safe-area-inset-bottom, 0px)); color: var(--glass-ink); }
+  .album-bar button { color: inherit; font-size: 18px; letter-spacing: 0; min-width: 52px; min-height: 44px;
+                      background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@500&display=swap">
 
