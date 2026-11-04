@@ -719,18 +719,22 @@ export const ROUTE = {
       spawn('superb-bird-of-paradise-female', at(1.1), { yaw: mix(toHim, van, 0.3), mate: male }, { seeAt: 90 });
     }
 
-    // the leafcutter ants (FEAT-009): a column crossing the road on the far bank's last stretch, between
-    // the flower mantis and the last anteater (each ~22 m off) and ~75 m past the jaguar's tree. From a
-    // tree on the right with chewed leaves on a low branch, across the road to a low nest mound on the
-    // left; the soldier that rears up stands at the left edge of the road. No random numbers here.
+    // the leafcutter ants (FEAT-009, FEAT-022): on the far bank's last stretch, between the flower
+    // mantis and the last anteater and ~75 m past the jaguar's tree. Since FEAT-022 the ants are 5×
+    // bigger and the column runs along the left roadside instead of across the road: from a tree with
+    // chewed leaves on a low branch, ~5 m from the road's middle (the road is 3.2 m to each side, so the
+    // van never drives over it), to a low nest mound further on, both on the left. The soldier that
+    // rears up stands on the column's road side half way along. No random numbers here.
     let antTrail = null;
     {
-      const uT = 0.922, footT = beside(uT - 0.002, 7.4);
+      const uT = 0.922, um = (m) => m / roadLen;                          // metres along the road from the tree
+      const u0 = uT - 0.002, at = (m, side) => beside(u0 + um(m), side);
+      const footT = at(0, -7.8);
       perchItems.push({ p: footT, s: [0.9, 1, 0.9] });
-      const trail = [footT, beside(uT - 0.0014, 5.3), beside(uT - 0.0006, 3.6), beside(uT + 0.0002, 1.1), beside(uT + 0.0007, -1.5), beside(uT + 0.0011, -3.6), beside(uT + 0.0019, -5.1)];
-      const moundAt = beside(uT + 0.0034, -6.9);
-      const ants = spawn('leafcutter-ant', beside(uT + 0.0011, -3.6), { yaw: 0, path: trail, tree: { foot: footT, r: 0.6 * 0.9, taper: (0.2 / 12) * 0.9 }, mound: { at: moundAt, r: 0.85 } }, { seeAt: 130 });
-      if (ants) antTrail = [footT, beside(uT, 0), moundAt];
+      const trail = [footT, at(2, -5.6), at(4, -4.95), at(7, -4.85), at(10, -5.0), at(12, -5.1)];
+      const moundAt = at(15.5, -9.5);
+      const ants = spawn('leafcutter-ant', at(7, -4.0), { yaw: 0, path: trail, tree: { foot: footT, r: 0.6 * 0.9, taper: (0.2 / 12) * 0.9 }, mound: { at: moundAt, r: 0.85 * 5 } }, { seeAt: 130 });
+      if (ants) antTrail = { line: [footT, at(2, -5.6), at(7, -4.85), at(12, -5.1), moundAt], mound: moundAt, r: 0.85 * 5 };
     }
 
     // the golden silk orb-weaver (FEAT-011): her web on the left of the road where it climbs from the
@@ -835,7 +839,11 @@ export const ROUTE = {
       }
     }
     // and the ant trail itself, from the tree to the mound: nothing grows on it
-    if (antTrail) for (let i = 1; i < antTrail.length; i++) lanes.push({ ax: antTrail[i - 1].x, az: antTrail[i - 1].z, bx: antTrail[i].x, bz: antTrail[i].z, r: 1.2 });
+    if (antTrail) {
+      const L = antTrail.line;
+      for (let i = 1; i < L.length; i++) lanes.push({ ax: L[i - 1].x, az: L[i - 1].z, bx: L[i].x, bz: L[i].z, r: 1.4 });
+      lanes.push({ ax: antTrail.mound.x, az: antTrail.mound.z, bx: antTrail.mound.x, bz: antTrail.mound.z, r: antTrail.r + 0.6 });   // and nothing on the mound
+    }
     // and the web, from the vine to the tree: nothing grows through it
     if (webLine) lanes.push({ ax: webLine[0].x, az: webLine[0].z, bx: webLine[1].x, bz: webLine[1].z, r: 1.4 });
     const blocked = (x, z, pad) => lanes.some((l) => {
