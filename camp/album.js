@@ -93,8 +93,8 @@ export function openAlbum(root, manifest, { onClose } = {}) {
   const phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) <= 600;
   let spread = true, at = 0, busy = false, pw = 300;
   root.innerHTML = `<div class="album-stage"><div class="album-book" aria-live="polite"></div></div>
-    <div class="album-bar"><button class="album-prev" aria-label="Previous page">‹</button><span class="album-count"></span><button class="album-next" aria-label="Next page">›</button></div>`;
-  const book = root.querySelector('.album-book'), count = root.querySelector('.album-count');
+    <div class="album-bar"><button class="album-prev" aria-label="Previous page">‹</button><button class="album-next" aria-label="Next page">›</button></div>`;
+  const book = root.querySelector('.album-book');
   const prevB = root.querySelector('.album-prev'), nextB = root.querySelector('.album-next');
   root.hidden = false;
   requestAnimationFrame(() => root.classList.add('open'));
@@ -159,7 +159,6 @@ export function openAlbum(root, manifest, { onClose } = {}) {
     const sheet = document.createElement('div'); sheet.className = 'album-sheet';
     for (let k = 0; k < perView(); k++) sheet.appendChild(pageEl(first + k));
     book.appendChild(sheet);
-    count.textContent = pages.length ? '' : 'No photos yet';   // no page count (BUG-019); the empty middle keeps the arrows where they were
     prevB.disabled = at <= 0; nextB.disabled = at >= views() - 1;
     preload(at + 1);
   }
