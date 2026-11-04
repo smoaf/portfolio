@@ -32,9 +32,9 @@ const SEE_FAR = 30;
 const CHAIN = [
   { id: 'left', x: -23.4, z: -2.95, spot: true },
   { id: 'near-left', x: -24.95, z: -0.95, spot: true },
-  { id: 'middle', x: -25.45, z: -0.05, spot: true },
-  { id: 'near-right', x: -25.05, z: 0.85, spot: true },
-  { id: 'turn', x: -25.05, z: 2.2, spot: false },
+  { id: 'middle', x: -25.2, z: -0.15, spot: true },
+  { id: 'near-right', x: -25.25, z: 0.6, spot: true },
+  { id: 'turn', x: -25.1, z: 2.2, spot: false },
   { id: 'right', x: -23.1, z: 3.15, spot: true },
 ];
 const START = 1;
@@ -158,7 +158,7 @@ const node = (i) => CHAIN[i];
 function allowed() {
   const r = S.host.el.getBoundingClientRect(), aspect = r.width / Math.max(1, r.height);
   const vfov = THREE.MathUtils.degToRad(S.host.portrait() ? 84 : 72);
-  const half = Math.atan(Math.tan(vfov / 2) * aspect) - THREE.MathUtils.degToRad(5);
+  const half = Math.atan(Math.tan(vfov / 2) * aspect) - THREE.MathUtils.degToRad(4);
   const out = [];
   CHAIN.forEach((n, i) => {
     if (!n.spot) return;
@@ -238,7 +238,7 @@ function inView() {
 // ---- every frame
 function stepBody(dt) {
   const calm = S.host.reduceMotion();
-  let walking = false;
+  let walking = false, turning = false;
   if (S.greetLeft > 0 || S.hovered) {                    // greeting: stop, turn to the visitor
     if (!S.hovered) S.greetLeft -= dt;
     turnTo(faceCamera(), dt * 1.6);
@@ -250,7 +250,7 @@ function stepBody(dt) {
   } else if (S.mode === 'walk') {
     const n = node(S.path[0]), dx = n.x - S.pos.x, dz = n.z - S.pos.y, d = Math.hypot(dx, dz);
     const h = Math.atan2(dx, dz);
-    if (Math.abs(wrap(h - S.heading)) > 0.12 && d > 0.05) { turnTo(h, dt); walking = Math.abs(wrap(h - S.heading)) > 0.02; }
+    if (Math.abs(wrap(h - S.heading)) > 0.12 && d > 0.05) { turnTo(h, dt); walking = turning = true; }   // turning on the spot: small shuffling steps
     else {
       turnTo(h, dt);
       const s = Math.min(d, SPEED * dt * (0.55 + 0.45 * S.amp));
@@ -263,7 +263,7 @@ function stepBody(dt) {
     }
   }
   // the gait: the outer slabs swing as legs, the middle ones carry the body (a smaller counter-swing)
-  const want = walking ? (calm ? 0.5 : 1) : 0;
+  const want = walking ? (turning ? 0.35 : 1) * (calm ? 0.5 : 1) : 0;
   S.amp += (want - S.amp) * Math.min(1, dt * 2.5);
   if (S.amp > 0.002 || Math.abs(Math.sin(S.phase * Math.PI * 2)) > 0.01) {
     S.phase += (walking ? SPEED * dt / STRIDE : dt * 0.5);
@@ -295,7 +295,7 @@ function stepLens(dt, now) {
   S.core.position.set(vA.x * 0.03, vA.y * 0.03, 0.01 + vA.z * 0.012);
   S.spark.position.set(vA.x * 0.045 - 0.016, vA.y * 0.045 + 0.018, 0.04);
   // the station's light: the metal reads darker at night, like the plaster round it
-  const e = 0.45 - 0.33 * night;
+  const e = 0.45 - 0.25 * night;
   S.mats.metal.envMapIntensity = e; S.mats.dark.envMapIntensity = e; S.mats.ring.envMapIntensity = e * 2;
 }
 
