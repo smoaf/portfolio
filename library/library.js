@@ -1,8 +1,8 @@
 // Library (LIBRARY_PLAN phase L1): room details and the lucky cat.
 //   - Simon's three things on the bookshelf (the lucky cat, the terrarium in its carafe, the painted
-//     vase); the books where they stand are taken out of the shelf mesh (index only, the per-book
-//     colours of the page's accents stay as they are)
-//   - a monstera in a terracotta pot and a woven basket by the window, its leaves swaying
+//     vase), 25% bigger since FEAT-021; the books round them are moved aside (some lean, three lie
+//     stacked, the ones that no longer fit are taken out; the per-book colours stay as they are)
+//   - a monstera in a terracotta pot and a woven basket by the window, its leaf tips stirring faintly
 //   - the cat waves its raised paw while the library is open or in view; otherwise nothing runs
 //   - click or tap the cat: the camera flies close to it;
 //     Back or Esc returns
@@ -18,11 +18,16 @@ import { makeCat, makeVase, makeTerrarium, makeMonstera } from './props.js';
 // where things stand (viewer coordinates: y up, the room's open side faces -z, +x is to the left
 // in the default view). Shelf boards: tops at 3.09 + k * 0.43; bays 1.02 m wide, centres below.
 const SHELF_Y = (k) => 3.09 + k * 0.43, SHELF_Z = 2.47;
+// half: the thing's half width (m) at its old size; the books round it make room for it at SCALE
 const SPOTS = {
-  cat: { x: -12.3, k: 3, clear: [-12.58, -12.02] },            // eye level, right of the desk
-  vase: { x: -14.25, k: 2, clear: [-14.5, -14.0] },            // above the reading corner
-  terrarium: { x: -10.05, k: 2, clear: [-10.3, -9.8] },        // towards the window, clear of the computer
+  cat: { x: -12.3, k: 3, half: 0.09 },                         // eye level, right of the desk
+  vase: { x: -14.25, k: 2, half: 0.105 },                      // above the reading corner (turned; its handles stick out)
+  terrarium: { x: -10.05, k: 2, half: 0.07 },                  // towards the window, clear of the computer
 };
+const SCALE = 1.25;                                            // FEAT-021: the three things 25% bigger
+const BAYS = { x0: -14.87, w: 1.024 };                         // the bookshelf's five bays along x
+const STACK = { len: 0.25 };                                   // the flat stack's longest book
+const LEAN = 0.2;                                              // radians the leaning book tips
 const MONSTERA = { x: -8.75, z: 1.85, floor: 3.01, yaw: 0.2 }; // left of the room, in front of the window
 const GLOW = new THREE.Color(0xffa95e);
 const WAVE = { period: 1.5, swing: 0.32 };                     // seconds per beckon, radians either way
@@ -64,7 +69,13 @@ function buildDom() {
   return els;
 }
 
-// ---- the room: books out, things in, computer square
+// ---- the room: books moved aside, things in, computer square
+// FEAT-021: the three things are 25% bigger, so the books round each one are moved to make room.
+// In the thing's bay: the books on its one side are pushed towards the side panel, the one nearest
+// the thing leans against its neighbour; on the other side three books lie stacked flat (shortened
+// a little) next to the thing, the upright books beyond them pushed aside. Books that no longer fit
+// are taken out (index only). Every book keeps its colour (the page's accents tell books apart by
+// vertex, and each book is moved as a whole).
 function clearBooks(root) {
   const books = root.getObjectByName('librarybooks');
   if (!books || !books.geometry.index) return;
@@ -76,21 +87,97 @@ function clearBooks(root) {
   const seen = new Map();
   for (let i = 0; i < n; i++) { const k = `${pos.getX(i).toFixed(4)},${pos.getY(i).toFixed(4)},${pos.getZ(i).toFixed(4)}`; if (seen.has(k)) join(i, seen.get(k)); else seen.set(k, i); }
   for (let f = 0; f < ix.length; f += 3) { join(ix[f], ix[f + 1]); join(ix[f], ix[f + 2]); }
-  // each book's centre in the viewer's frame
+  // each book's vertices and box (the books mesh sits at the origin: its vertices are viewer coordinates)
   books.updateMatrixWorld(true);
-  const sum = new Map();
+  const all = new Map();
   for (let i = 0; i < n; i++) {
     const r = find(i); vT.fromBufferAttribute(pos, i).applyMatrix4(books.matrixWorld);
-    const s = sum.get(r) || [0, 0, 0, 0]; s[0] += vT.x; s[1] += vT.y; s[2] += vT.z; s[3]++; sum.set(r, s);
+    let b = all.get(r);
+    if (!b) { b = { r, v: [], x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, z0: Infinity, z1: -Infinity }; all.set(r, b); }
+    b.v.push(i);
+    b.x0 = Math.min(b.x0, vT.x); b.x1 = Math.max(b.x1, vT.x); b.y0 = Math.min(b.y0, vT.y); b.y1 = Math.max(b.y1, vT.y); b.z0 = Math.min(b.z0, vT.z); b.z1 = Math.max(b.z1, vT.z);
   }
+  const inv = new THREE.Matrix4().copy(books.matrixWorld).invert();
+  const put = (i, x, y, z) => { vT.set(x, y, z).applyMatrix4(inv); pos.setXYZ(i, vT.x, vT.y, vT.z); };
   const gone = new Set();
-  sum.forEach((s, r) => {
-    const x = s[0] / s[3], y = s[1] / s[3];
-    Object.values(SPOTS).forEach((sp) => { if (x > sp.clear[0] && x < sp.clear[1] && y > SHELF_Y(sp.k) && y < SHELF_Y(sp.k) + 0.38) gone.add(r); });
+  // move a book along x, keeping it upright
+  const shift = (b, dx) => { b.v.forEach((i) => { vT.fromBufferAttribute(pos, i).applyMatrix4(books.matrixWorld); put(i, vT.x + dx, vT.y, vT.z); }); b.x0 += dx; b.x1 += dx; };
+  // lay a book flat: its height along x (length L), its thickness up, its depth D; at [x, x+L], resting on y
+  const flat = (b, x, y, L, D, zc) => {
+    const w = b.x1 - b.x0, h = b.y1 - b.y0, d = b.z1 - b.z0;
+    b.v.forEach((i) => {
+      vT.fromBufferAttribute(pos, i).applyMatrix4(books.matrixWorld);
+      const u = (vT.x - b.x0) / w, v = (vT.y - b.y0) / h, q = (vT.z - b.z0) / d;
+      put(i, x + (1 - v) * L, y + u * w, zc - D / 2 + q * D);   // a turn, not a mirror: the faces stay outside
+    });
+    return w;
+  };
+  Object.entries(SPOTS).forEach(([id, sp]) => {
+    const top = SHELF_Y(sp.k), bay = Math.floor((sp.x - BAYS.x0) / BAYS.w), L = BAYS.x0 + bay * BAYS.w, R = L + BAYS.w;
+    const row = [...all.values()].filter((b) => { const x = (b.x0 + b.x1) / 2, y = (b.y0 + b.y1) / 2; return x > L && x < R && y > top && y < top + 0.38; })
+      .sort((p, q) => p.x0 - q.x0);
+    if (!row.length) return;
+    const uL = row[0].x0, uR = row[row.length - 1].x1;     // where books may stand in this bay
+    const half = sp.half * SCALE + 0.03;                    // the bigger thing and a little air
+    const g0 = sp.x - half, g1 = sp.x + half;
+    const lefts = row.filter((b) => (b.x0 + b.x1) / 2 < sp.x), rights = row.filter((b) => (b.x0 + b.x1) / 2 >= sp.x);
+    const gapOf = (list) => { let s = 0; for (let k = 1; k < list.length; k++) s += Math.max(0, list[k].x0 - list[k - 1].x1); return list.length > 1 ? s / (list.length - 1) : 0.003; };
+    // the stack goes on the side with more room; the leaning book on the other
+    const stackLeft = (g0 - uL) > (uR - g1) ? 1 : 0;
+    const sides = [{ list: lefts, dir: -1, from: uL, edge: g0, stack: !!stackLeft }, { list: rights.slice().reverse(), dir: 1, from: uR, edge: g1, stack: !stackLeft }];
+    const spare = [];
+    sides.forEach((sd) => {
+      // the books on this side, from the side panel inwards (towards the thing)
+      const list = sd.list;                                  // lefts: panel first; rights reversed: panel first
+      const sp0 = gapOf(sd.dir < 0 ? sd.list : sd.list.slice().reverse());
+      let room = Math.abs(sd.edge - sd.from) - (sd.stack ? STACK.len + 0.03 : 0.075);   // the stack, or the leaning book's foot
+      let at = sd.from;                                      // pack from the panel
+      const kept = [];
+      list.forEach((b) => {
+        const w = b.x1 - b.x0;
+        if (room - w < 0) { spare.push(b); return; }
+        room -= w + sp0;
+        if (sd.dir < 0) { shift(b, at - b.x0); at = b.x1 + sp0; } else { shift(b, at - b.x1); at = b.x0 - sp0; }
+        kept.push(b);
+      });
+      sd.kept = kept; sd.at = at;
+    });
+    // the leaning book: the last upright one on the non-stack side tips over into the free space
+    const ln = sides.find((sd) => !sd.stack);
+    if (ln && ln.kept.length > 1) {
+      const b = ln.kept[ln.kept.length - 1], prev = ln.kept[ln.kept.length - 2];
+      leanBook(b, -ln.dir, LEAN, ln.dir < 0 ? prev.x1 : prev.x0);
+    }
+    // the stack: three books lying flat next to the thing, shortened a little
+    const st = sides.find((sd) => sd.stack);
+    const pick = spare.splice(0, 3);
+    while (pick.length < 3 && st && st.kept.length > 2) pick.push(st.kept.splice(st.kept.length - 1, 1)[0]);
+    if (st && pick.length) {
+      let y = top + 0.0005;
+      pick.sort((p, q) => (q.x1 - q.x0) - (p.x1 - p.x0));    // the thickest at the bottom
+      pick.forEach((b, k) => {
+        const Lk = STACK.len - k * 0.018, D = Math.min(b.z1 - b.z0, 0.27) - k * 0.012, x0 = st.dir < 0 ? st.edge - 0.012 - Lk - k * 0.006 : st.edge + 0.012 + k * 0.006;
+        const w = flat(b, x0, y, Lk, D, SHELF_Z + 0.005 * (k - 1));
+        y += w + 0.0005;
+      });
+    }
+    spare.forEach((b) => gone.add(b.r));
   });
+  // tip a book over by a radians, its top resting against its neighbour's face at x = nface; e: from the
+  // neighbour towards the free space. Its bottom corner by the neighbour stays on the shelf, the foot slides out.
+  function leanBook(b, e, a, nface) {
+    const h = b.y1 - b.y0, y0 = b.y0, c = Math.cos(a), sn = Math.sin(a), xin = e > 0 ? b.x0 : b.x1;
+    b.v.forEach((i) => {
+      vT.fromBufferAttribute(pos, i).applyMatrix4(books.matrixWorld);
+      const across = (vT.x - xin) * e, up = vT.y - y0;
+      put(i, nface + e * h * sn + e * (across * c - up * sn), y0 + across * sn + up * c, vT.z);
+    });
+  }
   const keep = [];
   for (let f = 0; f < ix.length; f += 3) if (!gone.has(find(ix[f]))) keep.push(ix[f], ix[f + 1], ix[f + 2]);
   g.setIndex(keep);
+  pos.needsUpdate = true;
+  g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere();
   S.booksRemoved = gone.size;
 }
 // the all-in-one stood at an angle; turn it (body and screen together) about its stand until the
@@ -125,7 +212,7 @@ function straightenComputer(root) {
   }
   S.computerTurn = best;
 }
-function place(group, x, y, z, yaw = 0) { group.position.set(x, y, z); group.rotation.y = yaw; group.updateMatrixWorld(true); }
+function place(group, x, y, z, yaw = 0, scale = 1) { group.position.set(x, y, z); group.rotation.y = yaw; group.scale.setScalar(scale); group.updateMatrixWorld(true); }
 
 // ---- the computer's screen: its four corners in the world (it faces -z, towards the chair)
 function measureScreen(root) {
@@ -181,8 +268,8 @@ function setRect(el, x, y, w, h) {                      // only when it moved: n
 // ---- glow and picking (the cat only)
 // the two things to click: the cat and the computer
 const THINGS = {
-  cat: { label: 'Lucky cat', pick: () => S.cat.pick, anchor: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.3, S.cat.group.position.z),
-    near: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.12, S.cat.group.position.z) },
+  cat: { label: 'Lucky cat', pick: () => S.cat.pick, anchor: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.3 * SCALE, S.cat.group.position.z),
+    near: (out) => out.set(S.cat.group.position.x, S.cat.group.position.y + 0.12 * SCALE, S.cat.group.position.z) },
   pc: { label: 'Papers', pick: () => S.pc.pick, glow: () => [S.pc.face], anchor: (out) => out.copy(S.pc.centre).setY(S.pc.centre.y + S.pc.h * 0.5 + 0.08), near: (out) => out.copy(S.pc.centre) },
 };
 const ids = () => (S.pc ? ['cat', 'pc'] : ['cat']);
@@ -231,8 +318,8 @@ function pcPose() {                                    // the screen almost fill
   return { eye: at.clone().add(vT.set(0, 0, -d)), at, fov };
 }
 function catPose() {
-  const portrait = S.host.portrait(), fov = portrait ? 55 : 40, size = 0.42;
-  const at = new THREE.Vector3(S.cat.group.position.x, S.cat.group.position.y + 0.13, S.cat.group.position.z);
+  const portrait = S.host.portrait(), fov = portrait ? 55 : 40, size = 0.42 * SCALE;
+  const at = new THREE.Vector3(S.cat.group.position.x, S.cat.group.position.y + 0.13 * SCALE, S.cat.group.position.z);
   const el = S.host.el, aspect = el.clientWidth / Math.max(1, el.clientHeight);
   const vf = THREE.MathUtils.degToRad(fov), hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
   const d = Math.max((size * 0.55) / Math.tan(hf / 2), (size * 0.45) / Math.tan(vf / 2));
@@ -318,9 +405,9 @@ export const library = {
     straightenComputer(root);
     S.pc = measureScreen(root);
     const items = new THREE.Group(); items.name = 'library_items';
-    S.cat = makeCat(); place(S.cat.group, SPOTS.cat.x, SHELF_Y(SPOTS.cat.k), SHELF_Z, 0);
-    const vase = makeVase(); place(vase.group, SPOTS.vase.x, SHELF_Y(SPOTS.vase.k), SHELF_Z, 0.3);
-    const terra = makeTerrarium(); place(terra.group, SPOTS.terrarium.x, SHELF_Y(SPOTS.terrarium.k), SHELF_Z, 0);
+    S.cat = makeCat(); place(S.cat.group, SPOTS.cat.x, SHELF_Y(SPOTS.cat.k), SHELF_Z, 0, SCALE);
+    const vase = makeVase(); place(vase.group, SPOTS.vase.x, SHELF_Y(SPOTS.vase.k), SHELF_Z, 0.3, SCALE);
+    const terra = makeTerrarium(); place(terra.group, SPOTS.terrarium.x, SHELF_Y(SPOTS.terrarium.k), SHELF_Z, 0, SCALE);
     S.monstera = makeMonstera(); place(S.monstera.group, MONSTERA.x, MONSTERA.floor, MONSTERA.z, MONSTERA.yaw);
     items.add(S.cat.group, vase.group, terra.group, S.monstera.group);
     host.scene.add(items);

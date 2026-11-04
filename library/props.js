@@ -331,11 +331,15 @@ export function makeMonstera() {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nuniform float uSway;\nattribute float aPhase;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
+        // FEAT-021: a faint draft, a quarter of the old movement and slower, only the leaf tips stir
+        // (stems, uv.x near 0.97, and the leaf bases stay still)
         float hh = max(0.0, position.y - 0.45);
-        float sw = sin(uSway * 1.1 + aPhase) * 0.018 + sin(uSway * 2.3 + aPhase * 1.7) * 0.006;
+        float tip = uv.x > 0.9 ? 0.0 : smoothstep(0.35, 1.0, uv.y);
+        float t = uSway * 0.6;
+        float sw = (sin(t * 1.1 + aPhase) * 0.018 + sin(t * 2.3 + aPhase * 1.7) * 0.006) * 0.25 * tip;
         transformed.x += sw * hh * hh;
-        transformed.z += sin(uSway * 0.9 + aPhase * 1.3) * 0.012 * hh * hh;
-        transformed.y += sin(uSway * 1.7 + aPhase) * 0.004 * hh;`);
+        transformed.z += sin(t * 0.9 + aPhase * 1.3) * 0.012 * 0.25 * tip * hh * hh;
+        transformed.y += sin(t * 1.7 + aPhase) * 0.004 * 0.25 * tip * hh;`);
   };
   const leaves = new THREE.Mesh(mergeGeometries(parts), mat);
   parts.forEach((g) => g.dispose());
