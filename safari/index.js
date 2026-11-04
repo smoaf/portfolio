@@ -171,9 +171,96 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     audio.call({ x: Math.cos(ang) * r, y: 2 + Math.random() * 10, z: Math.sin(ang) * r, hz: a.hz * (0.85 + Math.random() * 0.3), kind: a.kind, vol: a.vol });
   }
 
+  // ---- the water lure (BUG-027). Under water the thrown lure is a glowing bait ball: it glides fast
+  // and straight to where the reticle points (up to 10 m, short of the floor and the surface), slows
+  // down smoothly, then sinks slowly to the floor and rests there; uneaten, it fades ~10 s after it
+  // came to rest. As soon as its glide ends it counts as landed feed, so every pool animal that goes
+  // for feed (the shared state machine, the swimmers, the tetras, the clusters where they stand)
+  // treats it exactly as a lure on land. Cheap: a core, a halo sprite and 14 trail points.
+  const BAIT = { reach: 10, speed: 14, sink: 0.45, rest: 10, fade: 1.2, trail: 14 };
+  const baitGeo = keep(new THREE.SphereGeometry(0.075, 10, 8));
+  const baitMat = keep(new THREE.MeshBasicMaterial({ color: 0xfff1c0, transparent: true, toneMapped: false }));
+  const baitHalo = keep((() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+    const g = cv.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,240,190,1)'); gr.addColorStop(0.25, 'rgba(255,214,120,0.55)'); gr.addColorStop(1, 'rgba(255,200,90,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; return tx;
+  })());
+  const baitTrailMat = keep(new THREE.PointsMaterial({ size: 0.09, map: baitHalo, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  const TRAIL_RGB = [1, 0.86, 0.55];
+  function throwBait() {
+    const root = new THREE.Group();
+    const core = new THREE.Mesh(baitGeo, baitMat.clone()); root.add(core);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: baitHalo, color: 0xffd98a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    halo.scale.setScalar(0.55); root.add(halo);
+    const tg = new THREE.BufferGeometry();
+    tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(BAIT.trail * 3), 3));
+    tg.setAttribute('color', new THREE.BufferAttribute(new Float32Array(BAIT.trail * 3), 3));
+    const trail = new THREE.Points(tg, baitTrailMat); trail.frustumCulled = false;
+    rig.worldHead(vB); rig.lookDir(vA);
+    const from = vB.clone().addScaledVector(vA, 1.2), to = from.clone();
+    // where the reticle points, up to 10 m on: stop short of the floor and of the surface
+    for (let d = 0.2; d <= BAIT.reach - 1.2; d += 0.2) {
+      const x = from.x + vA.x * d, y = from.y + vA.y * d, z = from.z + vA.z * d;
+      if (y < world.groundY(x, z) + 0.3) break;
+      to.set(x, y, z);
+      if (world.waterY && y > world.waterY(x, z) - 0.3) { to.y = world.waterY(x, z) - 0.3; break; }
+    }
+    root.position.copy(from);
+    scene.add(root); scene.add(trail);
+    const parts = [];
+    for (let k = 0; k < BAIT.trail; k++) parts.push({ p: from.clone(), life: 0, v: new THREE.Vector3() });
+    const glide = Math.max(0.3, from.distanceTo(to) / BAIT.speed * 1.6);
+    pellets.push({ mesh: root, pos: root.position, vel: new THREE.Vector3(), landed: false, eaten: false, born: S.t, bait: true,
+      from, to, glide, sinkV: 0, restAt: 0, fadeAt: 0, core, halo, trail, parts, spawn: 0, next: 0 });
+  }
+  function stepBait(p, dt) {
+    const age = S.t - p.born;
+    if (age < p.glide) {                                 // the glide: fast and straight, slowing down smoothly
+      const u = age / p.glide, e = 1 - Math.pow(1 - u, 3);
+      p.pos.lerpVectors(p.from, p.to, e);
+    } else {
+      if (!p.landed) { p.pos.copy(p.to); p.landed = true; p.sunk = true; p.landedAt = S.t; }   // from now on animals go for it
+      const g = world.groundY(p.pos.x, p.pos.z) + 0.09;
+      if (!p.restAt) {                                   // sinking slowly to the floor
+        p.sinkV = Math.min(BAIT.sink, p.sinkV + dt * BAIT.sink);
+        p.pos.y = Math.max(g, p.pos.y - p.sinkV * dt);
+        if (p.pos.y <= g + 1e-3) p.restAt = S.t;
+      } else p.pos.y = g;
+      if (!p.eaten && !p.fadeAt && ((p.restAt && S.t - p.restAt > BAIT.rest) || age > 30)) { p.fadeAt = S.t; p.eaten = true; p.faded = true; }   // nobody came: it fades
+    }
+    // glow: a slow soft pulse; fading or eaten, the whole ball dims away
+    const k = p.fadeAt ? Math.max(0, 1 - (S.t - p.fadeAt) / BAIT.fade) : 1;
+    p.halo.material.opacity = k * (0.75 + 0.25 * Math.sin(S.t * 3.1 + p.born * 7));
+    p.core.material.opacity = k;
+    // the trail: a few tiny specks left behind while it moves, drifting up a little and dimming
+    const moving = age < p.glide || (!p.restAt && p.sinkV > 0.05);
+    p.next -= dt;
+    if (moving && p.next <= 0 && k > 0) {
+      const q = p.parts[p.spawn]; p.spawn = (p.spawn + 1) % p.parts.length; p.next = age < p.glide ? 0.02 : 0.12;
+      q.p.copy(p.pos).add(vA.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(0.08)); q.life = 1;
+      q.v.set((Math.random() - 0.5) * 0.06, 0.04 + Math.random() * 0.05, (Math.random() - 0.5) * 0.06);
+    }
+    const pa = p.trail.geometry.attributes.position, ca = p.trail.geometry.attributes.color;
+    p.parts.forEach((q, j) => {
+      if (q.life > 0) { q.life = Math.max(0, q.life - dt / 1.1); q.p.addScaledVector(q.v, dt); }
+      pa.setXYZ(j, q.p.x, q.p.y, q.p.z);
+      const b = q.life * q.life * k * 0.9; ca.setXYZ(j, TRAIL_RGB[0] * b, TRAIL_RGB[1] * b, TRAIL_RGB[2] * b);
+    });
+    pa.needsUpdate = true; ca.needsUpdate = true;
+    if (p.eaten && !p.faded) p.mesh.scale.multiplyScalar(Math.max(0, 1 - dt * 6));
+    return (p.faded && k <= 0) || (p.eaten && !p.faded && p.mesh.scale.x < 0.05);
+  }
+  function dropBait(p) {
+    scene.remove(p.mesh); scene.remove(p.trail);
+    p.trail.geometry.dispose(); p.core.material.dispose(); p.halo.material.dispose();
+  }
+
   function throwFeed() {
     if (S.pellets <= 0 || S.over || S.brief) return;
     S.pellets--; hud.setPellets(S.pellets);
+    if (S.under > 0.5) { throwBait(); audio.throwPellet(); hud.say('Lure', 'thrown'); lookRound(); return; }   // under water: the glowing bait ball
     const m = new THREE.Mesh(pelletGeo, pelletMat);
     rig.worldHead(m.position);
     rig.lookDir(vA);
@@ -217,6 +304,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   function stepPellets(dt) {
     for (let i = pellets.length - 1; i >= 0; i--) {
       const p = pellets[i];
+      if (p.bait) { if (stepBait(p, dt)) { dropBait(p); pellets.splice(i, 1); } continue; }
       if (!p.landed) {
         // the medium the pellet is in: water slows it right down (it sinks), unless the route lets
         // feed float (`world.floats`, the estuary), then it rides on the surface
