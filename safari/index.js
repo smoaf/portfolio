@@ -242,7 +242,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   // ---- the shot: judged on what the lens had, then grabbed off the canvas after the next render
   function shoot() {
     if (S.over || S.pending || S.brief) return;
-    if (S.film <= 0) { hud.say('No film', 'the run is nearly over'); return; }
+    if (S.film <= 0) { audio.empty(); hud.say('No film', 'the run is nearly over'); return; }   // a dull click, no photo
     S.pending = true;
   }
   function takeShot() {
@@ -501,6 +501,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
   const up = (ev) => {
     const had = pointers.delete(ev.pointerId);
     if (!had || S.over) { downAt = null; return; }
+    audio.start();                                  // iPhone Safari unlocks sound on the finger lifting, not on the touch
     // a short press that did not travel is the shutter (on a print it sends the print away); a drag only looks
     if (pointers.size === 0 && downAt && moved < 16 && performance.now() - downAt.t < 700 && !hud.dropShot(downAt.x, downAt.y)) shoot();
     downAt = null;
