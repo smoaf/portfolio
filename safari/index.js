@@ -187,7 +187,7 @@ export async function startSafari({ renderer, route = 'canyon', tod = 'day', hos
     g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
     const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; return tx;
   })());
-  const baitTrailMat = keep(new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  const baitTrailMat = keep(new THREE.PointsMaterial({ size: 0.09, map: baitHalo, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
   const TRAIL_RGB = [1, 0.86, 0.55];
   function throwBait() {
     const root = new THREE.Group();
