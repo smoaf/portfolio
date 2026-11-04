@@ -392,6 +392,7 @@ import { telescope } from './relay/telescope.js';
 import { relay } from './relay/house.js';
 import { library } from './library/library.js';
 import { hub } from './hub/screens.js';
+import { guide } from './hub/guide.js';
 import { media } from './media/media.js';
 import { robot } from './showroom/robot.js';
 
@@ -1479,6 +1480,7 @@ const onModel = (gltf) => {
   telescope.setup(tsHost, gltf.scene); relay.setup(rlHost, gltf.scene);
   library.setup(lbHost, gltf.scene);                                // shelf things, monstera, the waving cat (library/library.js)
   hub.setup(hubHost, gltf.scene);                                   // the hanging screens and their slideshows (hub/screens.js)
+  guide.setup(gdHost);                                              // the walking guide robot on the hub floor (hub/guide.js)
   media.setup(mdHost, gltf.scene, hub);                             // the showroom's panorama and the hub's films (media/media.js)
   robot.setup(rbHost);                                              // the six-legged robot on the showroom floor (showroom/robot.js)
   setupCamp(gltf.scene);
@@ -1741,7 +1743,7 @@ function tapDuringFlight(ev, act) {
 }
 
 function enter(p) {
-  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset();
   nav.place = p; nav.mode = p.view.type;
   closePanel();
   document.body.classList.add('in-place');
@@ -1760,7 +1762,7 @@ function enter(p) {
   }
 }
 function leave() {
-  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
   document.body.classList.remove('in-place');
@@ -1858,6 +1860,7 @@ function tapOwn(ev) {
   if (nav.place.id === 'dish') return telescope.tap(ev);
   if (nav.place.id === 'relay') return relay.tap(ev);
   if (nav.place.id === 'library') return library.tap(ev);
+  if (nav.place.id === 'hub') return guide.tap(ev);
   if (nav.place.id === 'showroom') { if (robot.tap(ev)) return true; if (hitRoof(ev)) { setRoof(!roof.closed); return true; } }
   return false;
 }
@@ -1900,9 +1903,10 @@ function hoverOwn(ev) {
   if (nav.place.id === 'dish') return telescope.hover(ev);
   if (nav.place.id === 'relay') return relay.hover(ev);
   if (nav.place.id === 'library') return library.hover(ev);
+  if (nav.place.id === 'hub') { const on = guide.hover(ev); el.style.cursor = on ? 'pointer' : ''; return on; }
   return false;
 }
-el.addEventListener('pointerleave', () => { setTip(null); robot.hover(null); });
+el.addEventListener('pointerleave', () => { setTip(null); robot.hover(null); guide.hover(null); });
 const markers = document.getElementById('markers');
 const markerEls = PLACES.map((p) => {
   const m = document.createElement('button');
@@ -2745,7 +2749,7 @@ function frame(now) {
   const away = !!workshop.focused || relay.inside || library.zoomed;  // a workshop station, the radio room or the cat close up: nothing else runs
   if (!away) { stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); }
   stepPlaces(now); stepSky(now);
-  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); robot.step(now); }
+  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); robot.step(now); guide.step(now); }
   if (!away || relay.inside) telescope.step(now);  // the radio room's moon bounce needs it to keep tracking
   workshop.step(now); relay.step(now); library.step(now); hub.step(now); media.step(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
@@ -2787,7 +2791,7 @@ const station = {
     station.held = false;
     const now = performance.now();
     skyState.last = person.last = turbine.last = showDark.last = camp.last = now;
-    workshop.resume(now); telescope.resume(now); relay.resume(now); library.resume(now); hub.resume(now); robot.resume(now);
+    workshop.resume(now); telescope.resume(now); relay.resume(now); library.resume(now); hub.resume(now); robot.resume(now); guide.resume(now);
     if (fire.last) fire.last = now;
     quality.settle = now + 3000;
     if (camp.van && camp.van.outer.visible) camp.van.start();
@@ -2854,6 +2858,12 @@ const hubHost = {
   inPlace: () => !!nav.place && nav.place.id === 'hub',
   night: () => skyState.d,
 };
+// --- the hub's guide robot (hub/guide.js): walks while the hub is seen, greets on hover or tap
+const gdHost = {
+  scene, camera, el, ray, setRay, reduceMotion, portrait,
+  inPlace: () => !!nav.place && nav.place.id === 'hub',
+  night: () => skyState.d,
+};
 
 // --- media (media/media.js): the showroom's panorama and the hub's films play while their place is open
 const mdHost = { scene, place: () => (nav.place ? nav.place.id : null) };
@@ -2899,6 +2909,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__hub = hub;
   window.__media = media;
   window.__robot = robot;
+  window.__guide = guide;
   window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
   window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
   window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
