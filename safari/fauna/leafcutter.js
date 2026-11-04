@@ -1,19 +1,20 @@
-// Leafcutter ants (FEAT-009): a long column crossing the jungle road on the far bank, from a tree
-// with chewed leaves on one side to a low earthen nest mound on the other.
+// Leafcutter ants (FEAT-009, FEAT-022): a long column beside the jungle road on the far bank, from a
+// tree with chewed leaves to a low earthen nest mound further along the same roadside.
 //
 //   leafcutter-ant   hundreds of reddish-brown workers on a worn, cleared trail. The loaded ones come
 //                    down the trunk from the chewed leaves and walk to the mound, each with a cut
 //                    half-moon of green leaf held high over its head like a sail, bobbing as it walks;
 //                    others walk back empty. Bigger soldiers with huge heart-shaped heads and strong
-//                    jaws patrol along the sides. The van drives over them; they simply carry on.
+//                    jaws patrol along the sides. The column never crosses the road (FEAT-022).
 //                    The rare pose: a soldier by the road rears up, jaws wide open, facing the van.
 //
 // One species for the photo: a frame of the column counts once (its subject is the stretch of
 // column the lens is aimed at). They work at night too.
 //
 // The ants are drawn with instancing (a handful of draw calls for the whole column) and moved along
-// a precomputed trail every frame; on phones there are fewer of them. Like the frogs they are larger
-// than life (`SIZE`: workers ~4 cm instead of ~1 cm), so the long lens can make them out from the van.
+// a precomputed trail every frame; on phones there are fewer of them. They are much larger than life
+// (`SIZE`: workers ~22 cm, soldiers ~35 cm; FEAT-022 made them 5× the first ones), so they can be seen
+// from the van on the 1.0× lens; the leaves, the trail, the tree and the mound are scaled to fit (`G`).
 //
 // The twist: the leaf pieces carry faint glowing veins and the soldiers' heads a faint glow; barely
 // there by day, at night the column shows as a moving glowing line.
@@ -26,9 +27,10 @@ export const SPECIES = {
 };
 
 const PI = Math.PI;
-const SIZE = 4;                                     // × real size
-const WORKER = 0.011 * SIZE, SOLDIER = 0.017 * SIZE; // body lengths, metres
-const STEP = 0.01;                                  // the trail is sampled every centimetre
+const SIZE = 20;                                    // × real size (FEAT-022: 5× the first column's 4)
+const G = SIZE / 4;                                 // what everything round them grew by with it
+const WORKER = 0.011 * SIZE, SOLDIER = 0.0175 * SIZE; // body lengths, metres: ~22 cm and ~35 cm
+const STEP = 0.01 * G;                              // the trail is sampled every 5 cm
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const damp = (a, b, k, dt) => a + (b - a) * Math.min(1, k * dt);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -148,11 +150,12 @@ function treeLeaf(bites) {
 
 // =============================================================================================
 // The colony. home: where the soldier that rears up stands (the route puts it by the road edge).
-// opts: path ([Vector3] on the ground from the tree's foot across the road to the mound), tree
+// opts: path ([Vector3] on the ground from the tree's foot along the roadside to the mound), tree
 // ({ foot, r: trunk radius at the foot, taper: radius lost per metre up }), mound ({ at, r }).
 export function buildLeafcutters(K, home, opts) {
   const phone = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-  const N = phone ? { loaded: 170, empty: 60, soldiers: 14 } : { loaded: 300, empty: 110, soldiers: 28 };
+  // fewer, bigger ants (FEAT-022): about the same column, spaced out so they don't crowd
+  const N = phone ? { loaded: 56, empty: 22, soldiers: 7 } : { loaded: 80, empty: 34, soldiers: 10 };
   let seed = 9091;
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const lum = Math.max(0.03, K.glowLevel - 0.25);                         // ~0.05 by day, ~2.2 at night
@@ -170,7 +173,7 @@ export function buildLeafcutters(K, home, opts) {
   const barkM = K.mat(0x5a4c3c, { roughness: 0.95 });
 
   // ---- the mound: a low dome of loose orange-brown earth with entrance holes
-  const M = opts.mound, MR = M.r, MH = 0.32;
+  const M = opts.mound, MR = M.r, MH = 0.32 * G;
   const moundH = (x, z) => {
     const dx = x - M.at.x, dz = z - M.at.z, r = Math.hypot(dx, dz) / MR;
     if (r >= 1) return 0;
@@ -179,7 +182,7 @@ export function buildLeafcutters(K, home, opts) {
   };
   const height = (x, z) => groundY(x, z) + moundH(x, z);
   const normalAt = (x, z, out) => {
-    const e = 0.04;
+    const e = 0.04 * G;
     return out.set(height(x - e, z) - height(x + e, z), 2 * e, height(x, z - e) - height(x, z + e)).normalize();
   };
   const holes = [];
@@ -220,16 +223,16 @@ export function buildLeafcutters(K, home, opts) {
     holes.forEach((h, i) => {
       normalAt(h.x, h.z, n);
       q.setFromUnitVectors(Y, n);
-      const s = i === 0 ? 0.05 : 0.03 + 0.012 * (i % 2);
-      const hole = new THREE.Mesh(holeG, holeM); hole.position.copy(h).addScaledVector(n, 0.012); hole.quaternion.copy(q); hole.scale.set(s, 1, s * 0.8);
-      const rim = new THREE.Mesh(rimG, rimM); rim.position.copy(h).addScaledVector(n, 0.006); rim.quaternion.copy(q); rim.scale.set(s * 1.35, s * 0.5, s * 1.1);
+      const s = (i === 0 ? 0.05 : 0.03 + 0.012 * (i % 2)) * G;
+      const hole = new THREE.Mesh(holeG, holeM); hole.position.copy(h).addScaledVector(n, 0.012 * G); hole.quaternion.copy(q); hole.scale.set(s, 1, s * 0.8);
+      const rim = new THREE.Mesh(rimG, rimM); rim.position.copy(h).addScaledVector(n, 0.006 * G); rim.quaternion.copy(q); rim.scale.set(s * 1.35, s * 0.5, s * 1.1);
       statics.add(hole, rim);
     });
     // loose crumbs of earth round the mound
     const crumbG = K.geo('ant-crumb', () => new THREE.IcosahedronGeometry(1, 0));
     for (let i = 0; i < 40; i++) {
       const a = rand() * PI * 2, r = MR * (0.85 + rand() * 0.35), x = M.at.x + Math.cos(a) * r, z = M.at.z + Math.sin(a) * r;
-      const cr = new THREE.Mesh(crumbG, rimM); cr.position.set(x, height(x, z) + 0.004, z); cr.scale.setScalar(0.012 + rand() * 0.02); cr.rotation.set(rand() * 3, rand() * 3, 0);
+      const cr = new THREE.Mesh(crumbG, rimM); cr.position.set(x, height(x, z) + 0.004 * G, z); cr.scale.setScalar((0.012 + rand() * 0.02) * G); cr.rotation.set(rand() * 3, rand() * 3, 0);
       statics.add(cr);
     }
   }
@@ -237,11 +240,12 @@ export function buildLeafcutters(K, home, opts) {
   // ---- the tree: a low branch off the trunk, on the road side, its leaves chewed into half-moons
   const T = opts.tree, toRoad0 = new THREE.Vector3(opts.path[1].x - T.foot.x, 0, opts.path[1].z - T.foot.z).normalize();
   const rAt = (h) => T.r - T.taper * h;
-  const BH = 1.45;                                                        // the branch's height
+  const BH = 1.45 + 0.15 * G;                                             // the branch's height
   const side0 = new THREE.Vector3(-toRoad0.z, 0, toRoad0.x);
   const bDir = toRoad0.clone().multiplyScalar(0.75).addScaledVector(side0, 0.66).normalize();   // reaching out, half along the road
   const bStart = T.foot.clone().addScaledVector(bDir, rAt(BH) * 0.9).setY(T.foot.y + BH);
-  const bLen = 1.1, bEnd = bStart.clone().addScaledVector(bDir, bLen).setY(bStart.y + 0.18);
+  const bLen = 1.1 * Math.sqrt(G), bEnd = bStart.clone().addScaledVector(bDir, bLen).setY(bStart.y + 0.18 * Math.sqrt(G));
+  const BR = 0.03 * G;                                                    // the branch's radius where the ants walk
   {
     const twig = (a, b, r0, r1) => {
       const d = new THREE.Vector3().subVectors(b, a), L = d.length();
@@ -249,12 +253,12 @@ export function buildLeafcutters(K, home, opts) {
       const m = new THREE.Mesh(K.keep(g), barkM); m.position.copy(a); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
       statics.add(m);
     };
-    twig(bStart.clone().addScaledVector(bDir, -0.2), bEnd, 0.05, 0.022);
+    twig(bStart.clone().addScaledVector(bDir, -0.2 * G), bEnd, BR * 1.4, BR * 0.8);
     const forks = [];
     for (let i = 0; i < 4; i++) {
       const a = bStart.clone().lerp(bEnd, 0.35 + i * 0.2);
-      const b = a.clone().add(new THREE.Vector3((rand() - 0.5) * 0.7, 0.15 + rand() * 0.3, (rand() - 0.5) * 0.7));
-      twig(a, b, 0.018, 0.008); forks.push([a, b]);
+      const b = a.clone().add(new THREE.Vector3((rand() - 0.5) * 0.7, 0.15 + rand() * 0.3, (rand() - 0.5) * 0.7).multiplyScalar(Math.sqrt(G) * 1.3));
+      twig(a, b, 0.018 * G, 0.008 * G); forks.push([a, b]);
     }
     // the leaves: a few whole, most with one to four bites taken out of the edge
     const shapes = [treeLeaf([]), treeLeaf([[0.12, 1, 0.035]]), treeLeaf([[0.08, -1, 0.04], [0.16, 1, 0.03]]),
@@ -266,7 +270,7 @@ export function buildLeafcutters(K, home, opts) {
     spots.forEach((p, i) => {
       const g = shapes[i % 7 === 0 ? 0 : 1 + (i % 4)].clone();
       e.set(-0.9 + rand() * 1.6, rand() * PI * 2, (rand() - 0.5) * 0.8);
-      m4.compose(p, q.setFromEuler(e), s.setScalar(0.8 + rand() * 0.4));
+      m4.compose(p, q.setFromEuler(e), s.setScalar((0.8 + rand() * 0.4) * G));   // the chewed leaves grow with the ants (~1.1 m)
       g.applyMatrix4(m4);
       parts.push(g);
     });
@@ -280,21 +284,21 @@ export function buildLeafcutters(K, home, opts) {
   const raw = [], ups = [];
   const pushPt = (p, up) => { raw.push(p); ups.push(up); };
   const Y = new THREE.Vector3(0, 1, 0);
-  for (let k = 0; k <= 20; k++) pushPt(bEnd.clone().lerp(bStart, k / 20).setY(bEnd.y + (bStart.y - bEnd.y) * k / 20 + 0.03), Y);
+  for (let k = 0; k <= 20; k++) pushPt(bEnd.clone().lerp(bStart, k / 20).setY(bEnd.y + (bStart.y - bEnd.y) * k / 20 + BR), Y);
   const out0 = toRoad0.clone();                                           // round the trunk to its road side, then down
   const a0 = Math.atan2(bDir.z, bDir.x), a1 = Math.atan2(out0.z, out0.x), da = wrap(a1 - a0);
   for (let k = 1; k < 8; k++) {
     const a = a0 + da * k / 8, o = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
-    pushPt(T.foot.clone().addScaledVector(o, rAt(BH) * 0.92 + 0.012).setY(T.foot.y + BH + 0.02), o);
+    pushPt(T.foot.clone().addScaledVector(o, rAt(BH) * 0.92 + 0.012 * G).setY(T.foot.y + BH + 0.02 * G), o);
   }
   for (let k = 0; k <= 30; k++) {
     const h = BH * (1 - k / 30);
-    pushPt(T.foot.clone().addScaledVector(out0, rAt(h) * 0.92 + 0.012).setY(T.foot.y + h), out0);
+    pushPt(T.foot.clone().addScaledVector(out0, rAt(h) * 0.92 + 0.012 * G).setY(T.foot.y + h), out0);
   }
-  const ground = new THREE.CatmullRomCurve3(opts.path.map((p, i) => (i === 0 ? T.foot.clone().addScaledVector(out0, rAt(0) + 0.02) : p.clone())).concat([holes[0].clone()]), false, 'centripetal');
-  const gN = Math.ceil(ground.getLength() / 0.05);
-  for (let k = 1; k <= gN; k++) { const p = ground.getPointAt(k / gN); p.y = height(p.x, p.z) + 0.004; pushPt(p, null); }
-  pushPt(holes[0].clone().setY(holes[0].y - 0.08), null);                 // and down into the hole
+  const ground = new THREE.CatmullRomCurve3(opts.path.map((p, i) => (i === 0 ? T.foot.clone().addScaledVector(out0, rAt(0) + 0.02 * G) : p.clone())).concat([holes[0].clone()]), false, 'centripetal');
+  const gN = Math.ceil(ground.getLength() / 0.1);
+  for (let k = 1; k <= gN; k++) { const p = ground.getPointAt(k / gN); p.y = height(p.x, p.z) + 0.004 * G; pushPt(p, null); }
+  pushPt(holes[0].clone().setY(holes[0].y - 0.08 * G), null);             // and down into the hole
   // resample at STEP with the frames
   const segL = [0];
   for (let i = 1; i < raw.length; i++) segL.push(segL[i - 1] + raw[i].distanceTo(raw[i - 1]));
@@ -321,10 +325,10 @@ export function buildLeafcutters(K, home, opts) {
     const i0 = Math.floor(groundFrom / STEP), i1 = NS - 10;
     let n = 0;
     for (let i = i0; i <= i1; i += 4) {
-      const w = 0.075 + 0.02 * Math.sin(i * 0.031) + 0.012 * Math.sin(i * 0.11);
+      const w = (0.075 + 0.02 * Math.sin(i * 0.031 * G) + 0.012 * Math.sin(i * 0.11 * G)) * G;
       for (const sd of [-1, 0, 1]) {
         const x = PA[i * 3] + XA[i * 3] * w * sd, z = PA[i * 3 + 2] + XA[i * 3 + 2] * w * sd;
-        pos.push(x, height(x, z) + 0.008 + (sd ? 0 : 0.002), z);
+        pos.push(x, height(x, z) + 0.012 + (sd ? 0 : 0.004), z);
         const c = sd ? c1 : c0; col.push(c.r, c.g, c.b);
       }
       if (n > 0) { const a = (n - 1) * 3, b = n * 3; idx.push(a, b, a + 1, a + 1, b, b + 1, a + 1, b + 1, a + 2, a + 2, b + 1, b + 2); }
@@ -363,7 +367,7 @@ export function buildLeafcutters(K, home, opts) {
   const box = new THREE.Box3();
   for (let i = 0; i < NS; i += 10) box.expandByPoint(vA.fromArray(PA, i * 3));
   const ball = box.getBoundingSphere(new THREE.Sphere());
-  ball.radius += 0.3;
+  ball.radius += 0.3 * G;
   const colony = new THREE.Group();
   for (const m of Object.values(mesh)) { m.boundingSphere = ball.clone(); colony.add(m); }
   colony.visible = false;                                                 // until the first step has placed them
@@ -376,10 +380,11 @@ export function buildLeafcutters(K, home, opts) {
 
   // each ant: where it is on the trail at t 0, its pace, how far off the middle it walks, its phase
   const ants = [];
-  for (let i = 0; i < N.loaded; i++) ants.push({ s0: ((i + rand() * 0.8) / N.loaded) * LEN, v: 0.075 + rand() * 0.02, lat: (rand() - 0.5) * 0.06, ph: rand() * 6.28, sc: 0.9 + rand() * 0.2, ls: 0.85 + rand() * 0.35 });
-  for (let i = 0; i < N.empty; i++) ants.push({ s0: ((i + rand()) / N.empty) * LEN, v: -(0.1 + rand() * 0.03), lat: 0.035 * (rand() < 0.5 ? -1 : 1) + (rand() - 0.5) * 0.03, ph: rand() * 6.28, sc: 0.85 + rand() * 0.2 });
+  // (paces, side offsets and the stride's sway in metres, all grown with the ants by G)
+  for (let i = 0; i < N.loaded; i++) ants.push({ s0: ((i + rand() * 0.6) / N.loaded) * LEN, v: (0.075 + rand() * 0.02) * G, lat: (rand() - 0.5) * 0.06 * G, ph: rand() * 6.28, sc: 0.9 + rand() * 0.2, ls: 0.85 + rand() * 0.35 });
+  for (let i = 0; i < N.empty; i++) ants.push({ s0: ((i + rand()) / N.empty) * LEN, v: -(0.1 + rand() * 0.03) * G, lat: (0.035 * (rand() < 0.5 ? -1 : 1) + (rand() - 0.5) * 0.03) * G, ph: rand() * 6.28, sc: 0.85 + rand() * 0.2 });
   const soldiers = [];
-  for (let i = 0; i < N.soldiers; i++) soldiers.push({ s0: ((i + rand()) / N.soldiers) * LEN, v: (rand() < 0.5 ? -1 : 1) * (0.02 + rand() * 0.035), lat: (i % 2 ? -1 : 1) * (0.075 + rand() * 0.035), ph: rand() * 6.28, sc: 0.9 + rand() * 0.2, pause: rand() * 10 });
+  for (let i = 0; i < N.soldiers; i++) soldiers.push({ s0: ((i + rand()) / N.soldiers) * LEN, v: (rand() < 0.5 ? -1 : 1) * (0.02 + rand() * 0.035) * G, lat: (i % 2 ? -1 : 1) * (0.075 + rand() * 0.035) * G, ph: rand() * 6.28, sc: 0.9 + rand() * 0.2, pause: rand() * 10 });
 
   // the frame at trail position s (metres), into `o` (an array of 16, column-major)
   const fr = { x: [0, 0, 0], u: [0, 0, 0], f: [0, 0, 0], p: [0, 0, 0] };
@@ -402,13 +407,13 @@ export function buildLeafcutters(K, home, opts) {
   // Only the ants inside the view are drawn, and only those that look big (near, or near through
   // the long lens) get the detailed body; the rest get the plain one. Each frame the visible ants are
   // packed into the front of the instance lists and the meshes draw that many.
-  const NEAR = phone ? 2.5 : 4;                                           // metres, as the lens makes it look
+  const NEAR = (phone ? 2.5 : 4) * G;                                     // metres, as the lens makes it look
   const view = { cam: [0, 0, 0], look: [0, 0, -1], cos: 0, lens: 1 };
   const n = { w: 0, wf: 0, l: 0, s: 0, sf: 0 };
   // where an ant at P goes: 0 out of view, 1 near, 2 far
   const sort = (P) => {
     const dx = P[0] - view.cam[0], dy = P[1] - view.cam[1], dz = P[2] - view.cam[2], d = Math.hypot(dx, dy, dz) || 1e-6;
-    if ((dx * view.look[0] + dy * view.look[1] + dz * view.look[2]) / d < view.cos && d > 0.6) return 0;
+    if ((dx * view.look[0] + dy * view.look[1] + dz * view.look[2]) / d < view.cos && d > 0.6 * G) return 0;
     return d * view.lens < NEAR ? 1 : 2;
   };
   function stepColumn(t, dt, env) {
@@ -423,9 +428,9 @@ export function buildLeafcutters(K, home, opts) {
       const s = ((a.s0 + a.v * t) % LEN + LEN) % LEN;
       const F = frameAt(s, back);
       // in and out at the ends: they come out of the leaves and go down into the hole
-      const sc = WORKER * a.sc * smooth(0, 0.06, s) * smooth(LEN, LEN - 0.07, s);
+      const sc = WORKER * a.sc * smooth(0, 0.06 * G, s) * smooth(LEN, LEN - 0.07 * G, s);
       const st = t * (back ? 19 : 15) + a.ph;                              // the stride
-      const wob = Math.sin(st) * 0.004, bob = Math.abs(Math.sin(st)) * 0.0012;
+      const wob = Math.sin(st) * 0.004 * G, bob = Math.abs(Math.sin(st)) * 0.0012 * G;
       for (let k = 0; k < 3; k++) P0[k] = F.p[k] + F.x[k] * (a.lat + wob) + F.u[k] * bob;
       const where = sc > 0 ? sort(P0) : 0;
       if (!where) continue;
@@ -457,10 +462,10 @@ export function buildLeafcutters(K, home, opts) {
       const walk = t - Math.floor((t + a.pause) / 9) * 9 > 2.5 ? 1 : 0;
       a.s = a.s ?? a.s0;
       a.s = ((a.s + a.v * walk * dt) % LEN + LEN) % LEN;
-      const s = Math.min(LEN - 0.3, Math.max(0.3, a.s));
+      const s = Math.min(LEN - 0.3 * G, Math.max(0.3 * G, a.s));
       const F = frameAt(s, a.v < 0);
       const sc = SOLDIER * a.sc, st = t * 9 + a.ph;
-      for (let k = 0; k < 3; k++) P0[k] = F.p[k] + F.x[k] * a.lat * (a.v < 0 ? -1 : 1) + F.u[k] * Math.abs(Math.sin(st)) * 0.0015 * walk;
+      for (let k = 0; k < 3; k++) P0[k] = F.p[k] + F.x[k] * a.lat * (a.v < 0 ? -1 : 1) + F.u[k] * Math.abs(Math.sin(st)) * 0.0015 * G * walk;
       const where = sort(P0);
       if (where === 1) { put(sArr, n.s, F.x, F.u, F.f, P0, sc); put(hArr, n.s++, F.x, F.u, F.f, P0, sc); }
       else if (where === 2) { put(sfArr, n.sf, F.x, F.u, F.f, P0, sc); put(hfArr, n.sf++, F.x, F.u, F.f, P0, sc); }
@@ -475,7 +480,9 @@ export function buildLeafcutters(K, home, opts) {
   const root = K.group(), near = K.group(null, root);
   const iH = (() => { let best = 0, bd = Infinity; for (let i = 0; i < NS; i++) { const d = (PA[i * 3] - home.x) ** 2 + (PA[i * 3 + 2] - home.z) ** 2; if (d < bd) { bd = d; best = i; } } return best; })();
   const hF = new THREE.Vector3().fromArray(FA, iH * 3), hX = new THREE.Vector3().fromArray(XA, iH * 3);
-  const spot = new THREE.Vector3().fromArray(PA, iH * 3).addScaledVector(hX, 0.13);
+  const hP = new THREE.Vector3().fromArray(PA, iH * 3);
+  if ((home.x - hP.x) * hX.x + (home.z - hP.z) * hX.z < 0) { hX.negate(); hF.negate(); }   // its side of the column: towards home (the road)
+  const spot = hP.clone().addScaledVector(hX, 0.13 * G);
   const restYaw = Math.atan2(hX.x + hF.x * 0.6, hX.z + hF.z * 0.6);      // facing out from the column, half along it
   const turn = K.group(null, near);                                       // turns it towards the van
   const body = K.group(null, turn);
@@ -496,7 +503,7 @@ export function buildLeafcutters(K, home, opts) {
   const headLocal = new THREE.Vector3(0, S.near.hinge[1] + 0.06 - PIVOT[1], S.near.hinge[2] - PIVOT[2]);
 
   const c = perch(K.makeCreature({
-    species: SPECIES['leafcutter-ant'], root, home: spot, radius: 0.32, eye: new THREE.Vector3(0, 0.05, 0),
+    species: SPECIES['leafcutter-ant'], root, home: spot, radius: 0.32 * G * 0.75, eye: new THREE.Vector3(0, 0.05 * G, 0),
     ground: K.groundY, speed: 0, roam: 0, fleeAt: 0, curiousAt: 0, shy: 1, rareChance: 0, yaw: restYaw,
     pose(c, dt, env) {
       const rare = c.state === 'rare';
@@ -512,7 +519,7 @@ export function buildLeafcutters(K, home, opts) {
     },
   }));
   const R = { up: 0, open: 0 };
-  K.lod(c, near, null, 30);
+  K.lod(c, near, null, 60);
   c.seeAt = 130;
   // the subject of a frame: while the soldier rears, its head; otherwise the stretch of column the
   // lens is aimed at (the point nearest the middle of the view, worked out once per frame)
@@ -535,9 +542,9 @@ export function buildLeafcutters(K, home, opts) {
       const d = vA.length(), k = vA.dot(look) / (d || 1) - d * 0.0004;
       if (k > best) { best = k; bi = i; }
     }
-    aim.fromArray(PA, bi * 3).addScaledVector(vB.fromArray(UA, bi * 3), 0.06);
+    aim.fromArray(PA, bi * 3).addScaledVector(vB.fromArray(UA, bi * 3), 0.06 * G);
   };
-  c.colony = { mesh, LEN, length: LEN, count: ants.length + soldiers.length, ball, trail: [opts.tree.foot, M.at] };
+  c.colony = { mesh, LEN, length: LEN, count: ants.length + soldiers.length, ball, trail: [opts.tree.foot, M.at], points: PA, step: STEP, size: [WORKER, SOLDIER] };
   return c;
 }
 
