@@ -71,6 +71,39 @@ export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
     return true;
   }
 
+  // the camera's sounds (BUG-026): short bursts of white noise, one filter each
+  let white = null;
+  function whiteBuffer() {
+    if (white) return white;
+    white = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.5), ctx.sampleRate);
+    const d = white.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return white;
+  }
+  function burst(at, type, f, q, dur, vol) {
+    const g = ctx.createGain(), fl = ctx.createBiquadFilter();
+    fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+    const s = ctx.createBufferSource(); s.buffer = whiteBuffer();
+    s.connect(fl); fl.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + Math.min(0.003, dur / 4));
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    s.start(at, Math.random() * 0.3); s.stop(at + dur + 0.02);
+  }
+  const tick = (at, f, q, dur, vol) => burst(at, 'bandpass', f, q, dur, vol);     // a bright mechanical click
+  const thump = (at, f, dur, vol) => burst(at, 'lowpass', f, 0.7, dur, vol);      // a dull knock
+  function whirr(at, dur, f, vol) {                                               // the film sliding on
+    const g = ctx.createGain(), fl = ctx.createBiquadFilter();
+    fl.type = 'bandpass'; fl.frequency.value = f; fl.Q.value = 0.9;
+    const s = ctx.createBufferSource(); s.buffer = whiteBuffer(); s.loop = true;
+    s.connect(fl); fl.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + 0.04);
+    g.gain.setValueAtTime(vol, at + dur * 0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    s.start(at); s.stop(at + dur + 0.02);
+  }
+
   // Called from the first gesture inside the safari (and again after a pause).
   function start() {
     if (closed) return;
@@ -132,21 +165,31 @@ export function createAudio({ ambience = {}, muted = mutedByDefault() } = {}) {
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
       s.start(t); s.stop(t + 0.3);
     },
-    // the shutter: a click, a soft mirror slap, the film winding on
+    // the shutter (BUG-026): a classic film camera. The old version drew its clicks from the shared
+    // noise, which is brown (made for wind and thuds) and has hardly anything left at 1-3 kHz, so the
+    // clicks came out ~30 dB under the engine and were never heard. Clicks and wind now use their own
+    // white noise: the shutter opening, a soft mirror slap, the shutter closing, then the film wind,
+    // a quick run of ratchet ticks over a soft whirr. Played from the frame that takes the photo, with
+    // the flash, so it never delays the shot.
     shutter() {
       if (!ctx || closed) return;
       const t = ctx.currentTime;
-      const click = (at, f, dur, vol) => {
-        const g = ctx.createGain(), bp = ctx.createBiquadFilter();
-        bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 1.2;
-        const s = ctx.createBufferSource(); s.buffer = noise;
-        s.connect(bp); bp.connect(g); g.connect(master);
-        g.gain.setValueAtTime(0.0001, at);
-        g.gain.exponentialRampToValueAtTime(vol, at + 0.004);
-        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-        s.start(at); s.stop(at + dur + 0.05);
-      };
-      click(t, 2600, 0.05, 0.3); click(t + 0.03, 900, 0.09, 0.2); click(t + 0.16, 1500, 0.2, 0.08);
+      tick(t, 4200, 1.4, 0.016, 0.55);                // shutter opens
+      thump(t + 0.012, 1400, 0.05, 0.4);              // mirror slap
+      tick(t + 0.075, 3000, 1.6, 0.02, 0.4);          // shutter closes
+      // the film wind: ratchet ticks over a whirr, slowing a little at the end
+      const w0 = t + 0.17, n = 11;
+      let at = w0;
+      for (let k = 0; k < n; k++) { tick(at, 2300 + (k % 2) * 400, 3, 0.008, 0.16 * (1 - k / (n * 1.6))); at += 0.022 + k * 0.0016; }
+      whirr(w0, at - w0 + 0.03, 1700, 0.05);
+    },
+    // pressed with the film used up: a dull, short clack, as if the shutter were jammed (no wind)
+    empty() {
+      if (!ctx || closed) return;
+      const t = ctx.currentTime;
+      thump(t, 520, 0.07, 0.5);
+      tick(t + 0.004, 900, 2.5, 0.03, 0.22);
+      thump(t + 0.05, 380, 0.05, 0.25);
     },
     // feed pellets leaving the hatch
     throwPellet() {
