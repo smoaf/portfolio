@@ -230,6 +230,11 @@
                    transform: translateX(-50%) rotate(45deg); -webkit-backdrop-filter: none; backdrop-filter: none; }
   .bubble p { margin: 0 0 10px; font: 500 17px/1.3 var(--font-display); }
   .bubble-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  /* FEAT-024: the robots ask the same question as the camp figure; theirs can be closed without choosing */
+  .robot-ask { padding-right: 44px; }
+  .robot-ask .bubble-lead { margin: 0 0 4px; font: 400 14px/1.3 var(--font-display); color: var(--glass-soft); }
+  .robot-ask .bubble-close { position: absolute; top: 4px; right: 4px; min-width: 36px; min-height: 36px; padding: 0; font-size: 13px; }
+  body.tour-on .robot-ask, body.safari-on .robot-ask { display: none !important; }
   /* FEAT-023: first-visit banner, the guide's speech card on the tour, the top menu pulsing at its end */
   .tour-banner { position: fixed; z-index: 19; left: 50%; transform: translateX(-50%); top: calc(var(--hh, 77px) + 12px); display: flex; align-items: center; gap: 4px;
                  width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line);
@@ -371,6 +376,12 @@
 <div class="bubble" id="bubble" hidden role="dialog" aria-label="The figure at the camp">
   <p>Hi! Tour or leave a message?</p>
   <div class="bubble-actions"><button class="btn" id="bubble-tour">Tour</button><button class="btn" id="bubble-msg">Leave a message</button></div>
+</div>
+<div class="bubble robot-ask" id="robot-ask" hidden role="dialog" aria-label="The robot">
+  <button class="btn ghost bubble-close" id="robot-ask-close" type="button" aria-label="Close">✕</button>
+  <p class="bubble-lead" id="robot-ask-lead" hidden></p>
+  <p>Hi! Tour or leave a message?</p>
+  <div class="bubble-actions"><button class="btn" id="robot-ask-tour" type="button">Tour</button><button class="btn" id="robot-ask-msg" type="button">Leave a message</button></div>
 </div>
 <aside class="panel" id="msg-panel" aria-hidden="true" aria-label="Leave a message">
   <button class="btn ghost panel-close" id="msg-close" aria-label="Close">Close ✕</button>
@@ -1770,7 +1781,7 @@ function tapDuringFlight(ev, act) {
 function enter(p) {
   tour.entered(p.id);
   if (tourNoPanel !== p.id) tourNoPanel = null;
-  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset(); askReset();
   tour.relayout();                                     // the reset above may have cleared the tour's view offset
   nav.place = p; nav.mode = p.view.type;
   closePanel();
@@ -1791,7 +1802,7 @@ function enter(p) {
 }
 function leave() {
   tour.entered(null);
-  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset();
+  campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset(); askReset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
   document.body.classList.remove('in-place');
@@ -1879,7 +1890,9 @@ el.addEventListener('pointerup', (ev) => {
 });
 // the place's own things first (each says whether the tap was its own); otherwise another place in sight goes there
 function tapPlace(ev) {
+  const open = ask.cur;
   if (tapOwn(ev)) return;
+  if (open && ask.cur === open && !ask.el.hidden) askEnd();   // FEAT-024: a tap elsewhere closes a robot's question (not its open form)
   const p = otherPlaceAt(ev);
   if (p) setRoute(p.id);
 }
@@ -2416,18 +2429,20 @@ function placeBubble() {
   b.style.left = cx + 'px'; b.style.top = cy + 'px';
   b.style.setProperty('--tail', Math.max(18, Math.min(bw - 18, bw / 2 + x - cx)) + 'px');
 }
-document.getElementById('bubble-msg').addEventListener('click', openMsg);
+document.getElementById('bubble-msg').addEventListener('click', () => openMsg('camp'));
 document.getElementById('bubble-tour').addEventListener('click', startTour);
 // FEAT-023: Tour: the figure keeps facing the visitor while it introduces the station (camp/tour.js),
 // then the tour flies on from place to place; Skip during the introduction lets it walk on
+let tourFrom = 'camp';                                // FEAT-024: who offered the tour (the camp figure or a robot)
 function startTour() {
   showBubble(false);
+  tourFrom = 'camp';
   tour.start();
 }
 let tourNoPanel = null;                                // the place the tour is flying to: its panel doesn't open on arrival
 tour.setup({
   go: (id) => { tourNoPanel = id; setRoute(id); },
-  endIntro: () => endTalk(),
+  endIntro: () => { if (tourFrom === 'camp') endTalk(); },   // a robot's tour leaves the visitor where they are
   ended: () => { tourNoPanel = null; },
   layout: tourLayout,
 });
@@ -2459,12 +2474,13 @@ function stepFigureGlow(now) {
     if (camp.hover !== 'figure') setGlow(t, false);
   }
 }
-async function openMsg() {
+async function openMsg(from) {
   showBubble(false);
-  const tok = camp.seq;
+  const tok = camp.seq, atk = ask.seq;
+  camp.msgFrom = from;                                 // 'camp' (the figure) or 'robot' (FEAT-024)
   const { mountMessage } = await import('./camp/message.js');
-  if (tok !== camp.seq) return;
-  const opts = { onDone: () => endTalk() };
+  if (tok !== camp.seq || atk !== ask.seq) return;
+  const opts = { onDone: () => msgDone() };
   if (window.__formEndpoint !== undefined) opts.endpoint = window.__formEndpoint;     // tests: see the sent and failed states
   const form = mountMessage(campEls.msgBody, opts);
   campEls.msg.classList.add('open'); campEls.msg.setAttribute('aria-hidden', 'false'); campEls.msg.scrollTop = 0;
@@ -2483,7 +2499,56 @@ function shiftView() {                                 // keep the figure in vie
   if (phoneMenu()) camera.setViewOffset(w, h, 0, h * 0.26, w, h); else camera.setViewOffset(w, h, Math.min(560, w / 2) / 2, 0, w, h);
 }
 window.addEventListener('resize', shiftView);
-document.getElementById('msg-close').addEventListener('click', () => endTalk());
+document.getElementById('msg-close').addEventListener('click', () => msgDone());
+function msgDone() { if (camp.msgFrom === 'robot') { closeMsg(); askEnd(); } else endTalk(); }
+// FEAT-024: the robots (the hub's guide robot, the showroom robot) ask "Tour or leave a message?" like the
+// camp figure. A robot's host calls ask({ lead, at, done }): `at(v)` puts the point above the robot into v
+// (world), `done()` is called once the question (or the form it opened) is closed, and the robot goes back
+// to what it was doing. ✕, Esc, a tap elsewhere or leaving the place close it without choosing.
+const ask = { el: document.getElementById('robot-ask'), cur: null, seq: 0 };
+function askOpen(o) {
+  if (camp.msgOpen) return;
+  if (ask.cur && ask.cur !== o) askEnd();
+  ask.cur = o;
+  const lead = document.getElementById('robot-ask-lead');
+  lead.hidden = !o.lead; lead.textContent = o.lead || '';
+  if (o.lead) lead.dataset.placeholder = 'true';
+  const b = ask.el;
+  if (b.hidden) { b.hidden = false; requestAnimationFrame(() => { if (ask.cur) b.classList.add('on'); }); }
+  placeAsk();
+  setTimeout(() => { if (!b.hidden) document.getElementById('robot-ask-tour').focus({ preventScroll: true }); }, 50);
+}
+function askHide() { ask.el.classList.remove('on'); ask.el.hidden = true; }
+function askEnd() {                                    // closes the question (and the robot's form) and lets the robot go on
+  const o = ask.cur;
+  ask.cur = null; ask.seq++; askHide();
+  if (camp.msgOpen && camp.msgFrom === 'robot') closeMsg();
+  if (o && o.done) o.done();
+}
+function placeAsk() {
+  const b = ask.el, o = ask.cur;
+  if (b.hidden || !o) return;
+  o.at(vTmp).project(camera);
+  const r = el.getBoundingClientRect(), bw = b.offsetWidth, bh = b.offsetHeight;
+  const x = r.left + (vTmp.x + 1) / 2 * r.width, y = r.top + (1 - vTmp.y) / 2 * r.height;
+  const top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 77) + 12;
+  const cx = Math.max(16 + bw / 2, Math.min(window.innerWidth - 16 - bw / 2, x)), cy = Math.max(top + bh, y);
+  b.style.left = cx + 'px'; b.style.top = cy + 'px';
+  b.style.setProperty('--tail', Math.max(18, Math.min(bw - 18, bw / 2 + x - cx)) + 'px');
+}
+document.getElementById('robot-ask-close').addEventListener('click', () => askEnd());
+document.getElementById('robot-ask-tour').addEventListener('click', () => {
+  askEnd();
+  tourFrom = 'robot';
+  tour.start();
+});
+document.getElementById('robot-ask-msg').addEventListener('click', () => { askHide(); openMsg('robot'); });
+window.addEventListener('keydown', (e) => {          // Esc closes the question or the robot's form, not the place
+  if (e.key !== 'Escape' || !(ask.cur || (camp.msgOpen && camp.msgFrom === 'robot'))) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  askEnd();
+}, true);
+function askReset() { if (ask.cur || (camp.msgOpen && camp.msgFrom === 'robot')) askEnd(); }
 function endTalk() {
   tour.introLeft();
   closeMsg(); showBubble(false);
@@ -2620,7 +2685,7 @@ async function endSafari(opts = {}) {
 function stepCamp(now) {
   const dt = camp.last ? Math.min(0.1, (now - camp.last) / 1000) : 0; camp.last = now;
   stepJab(dt); stepSparks(dt, now / 1000); stepCampKeys();
-  placeBubble(); stepFigureGlow(now);
+  placeBubble(); placeAsk(); stepFigureGlow(now);
   const id = camp.hover;
   if (id && !campEls.tip.hidden) {
     TARGETS[id].anchor(vTmp).project(camera);
@@ -2938,7 +3003,7 @@ const hubHost = {
 };
 // --- the hub's guide robot (hub/guide.js): walks while the hub is seen, greets on hover or tap
 const gdHost = {
-  scene, camera, el, ray, setRay, reduceMotion, portrait,
+  scene, camera, el, ray, setRay, reduceMotion, portrait, ask: askOpen,
   inPlace: () => !!nav.place && nav.place.id === 'hub',
   night: () => skyState.d,
 };
@@ -2948,7 +3013,7 @@ const mdHost = { scene, place: () => (nav.place ? nav.place.id : null) };
 
 // --- the showroom robot (showroom/robot.js): runs while the showroom is open, darkens with its roof
 const rbHost = {
-  scene, camera, ray, setRay, reduceMotion, timeOfDay,
+  scene, camera, ray, setRay, reduceMotion, timeOfDay, ask: askOpen,
   inPlace: () => !!nav.place && nav.place.id === 'showroom',
   darken: (m) => showDarkMaterial(m),
 };
@@ -2987,6 +3052,8 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__hub = hub;
   window.__media = media;
   window.__robot = robot;
+  window.__robotScreen = () => { robot.bodyAt(vTmp).project(camera); const r = el.getBoundingClientRect(); return [r.left + (vTmp.x + 1) / 2 * r.width, r.top + (1 - vTmp.y) / 2 * r.height]; };
+  window.__ask = () => ({ open: !ask.el.hidden, cur: !!ask.cur, msg: camp.msgOpen, from: camp.msgFrom || null });
   window.__guide = guide;
   window.__tour = tour;
   window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });

@@ -11,8 +11,10 @@
 //   - walking: the outer slabs swing forward as legs while the middle ones carry the body
 //   - the lens: its glowing centre and highlight turn towards the camera; warm amber with a slow
 //     breathing glow while resting, brighter when greeting
-//   - hover (computer) or tap (phone): it stops, turns to the visitor, the lens brightens and a short
-//     line shows in a small speech label next to it; a few seconds later it walks on
+//   - hover (computer): it stops, turns to the visitor, the lens brightens and a short line shows in a
+//     small speech label next to it; a few seconds later it walks on
+//   - click or tap (FEAT-024): the same stop, and its greeting asks "Tour or leave a message?" with two
+//     buttons (the question is index.html's, host.ask); once it is closed, it walks on as before
 // The routes were checked against the hub's furniture (stools, table, curved bench), the glass wall
 // and the hanging screens (their lower edges hang below the robot's top), with half a metre to spare.
 // The area pattern: setup(host), step(now), tap(ev), hover(ev), arrive(), reset(), resume(now).
@@ -53,7 +55,7 @@ const AMBER = new THREE.Color(0xffa043);
 const S = { host: null, ready: false, last: 0, t: 0, on: false,
   root: null, outer: null, mid: null, lens: null, core: null, halo: null, spark: null, mats: null, box: new THREE.Box3(),
   pos: new THREE.Vector2(), heading: 0, node: START, dir: 1, path: [], mode: 'pause', wait: 3, phase: 0, amp: 0,
-  hovered: false, greetLeft: 0, glow: 0, label: null, labelOn: false };
+  hovered: false, greetLeft: 0, asking: false, glow: 0, label: null, labelOn: false };
 const vA = new THREE.Vector3(), vB = new THREE.Vector3(), mInv = new THREE.Matrix4(), frustum = new THREE.Frustum(), pm = new THREE.Matrix4(), sph = new THREE.Sphere();
 
 // ---- building the robot
@@ -239,8 +241,9 @@ function inView() {
 function stepBody(dt) {
   const calm = S.host.reduceMotion();
   let walking = false, turning = false;
-  if (S.greetLeft > 0 || S.hovered) {                    // greeting: stop, turn to the visitor
-    if (!S.hovered) S.greetLeft -= dt;
+  if (S.asking || S.greetLeft > 0 || S.hovered) {        // greeting or asking: stop, turn to the visitor
+    if (S.asking) S.greetLeft = Math.max(S.greetLeft, 0.01);
+    else if (!S.hovered) S.greetLeft -= dt;
     turnTo(faceCamera(), dt * 1.6);
     if (!S.hovered && S.greetLeft <= 0) { S.greetLeft = 0; S.wait = Math.min(S.wait, 1.2); }
   } else if (S.mode === 'pause') {
@@ -277,7 +280,7 @@ function stepBody(dt) {
   S.root.rotation.y = S.heading;
 }
 function stepLens(dt, now) {
-  const greet = S.greetLeft > 0 || S.hovered ? 1 : 0;
+  const greet = S.asking || S.greetLeft > 0 || S.hovered ? 1 : 0;
   S.glow += (greet - S.glow) * Math.min(1, dt * 4);
   const breathe = S.host.reduceMotion() ? 0.5 : 0.5 + 0.5 * Math.sin(now / 1000 * Math.PI * 2 / 4.6);
   const night = S.host.night();
@@ -314,11 +317,11 @@ function step(now) {
   const dt = S.last ? Math.min(0.1, Math.max(0, (now - S.last) / 1000)) : 0; S.last = now;
   S.on = inView();
   S.root.visible = true;
-  if (!S.host.inPlace()) { S.hovered = false; S.greetLeft = 0; showLabel(false); }
+  if (!S.host.inPlace()) { S.hovered = false; S.greetLeft = 0; S.asking = false; showLabel(false); }
   if (!S.on) return;                                     // out of sight: it waits where it is
   stepBody(dt);
   stepLens(dt, now);
-  showLabel(S.host.inPlace() && (S.hovered || S.greetLeft > 0));
+  showLabel(S.host.inPlace() && !S.asking && (S.hovered || S.greetLeft > 0));   // while asking, the question shows instead
   placeLabel();
 }
 function hit(ev) {
@@ -336,17 +339,19 @@ function hover(ev) {
 }
 function tap(ev) {
   if (!hit(ev)) return false;
-  S.greetLeft = GREET + 1;
+  S.host.ask({ lead: GREETING, at: (v) => v.set(S.pos.x, FLOOR_Y + H + 0.12, S.pos.y),
+    done: () => { S.asking = false; S.greetLeft = Math.min(S.greetLeft, 0.01); } });   // walks on as before
+  S.asking = true;
   return true;
 }
 function arrive() { S.last = 0; }
-function reset() { S.hovered = false; S.greetLeft = 0; if (S.label) showLabel(false); }
+function reset() { S.hovered = false; S.greetLeft = 0; S.asking = false; if (S.label) showLabel(false); }
 function resume(now) { S.last = now; }
 
 export const guide = { setup, step, tap, hover, arrive, reset, resume,
   // tests
   state: () => ({ ready: S.ready, on: S.on, mode: S.mode, node: CHAIN[S.node].id, path: S.path.map((i) => CHAIN[i].id), pos: [+S.pos.x.toFixed(2), +S.pos.y.toFixed(2)],
-    heading: +S.heading.toFixed(2), amp: +S.amp.toFixed(2), hovered: S.hovered, greet: +S.greetLeft.toFixed(2), glow: +S.glow.toFixed(2), label: S.labelOn,
+    heading: +S.heading.toFixed(2), amp: +S.amp.toFixed(2), hovered: S.hovered, asking: S.asking, greet: +S.greetLeft.toFixed(2), glow: +S.glow.toFixed(2), label: S.labelOn,
     allowed: S.ready ? allowed().map((i) => CHAIN[i].id) : [] }),
   screen() {                                             // where on the page the lens is
     S.lens.getWorldPosition(vB).project(S.host.camera);
