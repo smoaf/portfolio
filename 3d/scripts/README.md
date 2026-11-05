@@ -37,8 +37,10 @@ Station and layout
 - `build_station_v3.py`: older parameter set and helpers, still imported by showroom_options.py.
 - `showroom_options.py`: showroom interior kit: oval LED wall, speaker rigging on floor towers,
   speakers, ceiling projectors, benches (sculptures switched off); `shell_from()`, `prism()`.
-- `construction.py`: the new module under construction (skeleton, two scaffolds, work light),
-  and `lattice()`, the lattice mast used by the relay station and the radio dish.
+- `construction.py`: the new module under construction (skeleton, legs, panel stacks, work light;
+  since FEAT-025a no scaffolds but a robot worksite: tool rack, silo and drums, offcuts, charging
+  dock with cable reel and console; the arms, tool heads and hose are built by the viewer in
+  `newmodule/worksite.js`), and `lattice()`, the lattice mast used by the relay station and the radio dish.
 
 Things around the station
 - `vehicle.py`: the expedition van.
