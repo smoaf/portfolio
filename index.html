@@ -230,6 +230,29 @@
                    transform: translateX(-50%) rotate(45deg); -webkit-backdrop-filter: none; backdrop-filter: none; }
   .bubble p { margin: 0 0 10px; font: 500 17px/1.3 var(--font-display); }
   .bubble-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  /* FEAT-023: first-visit banner, the guide's speech card on the tour, the top menu pulsing at its end */
+  .tour-banner { position: fixed; z-index: 19; left: 50%; transform: translateX(-50%); top: calc(var(--hh, 77px) + 12px); display: flex; align-items: center; gap: 4px;
+                 width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line);
+                 -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 4px 4px 4px 14px; font: 400 14px/1.35 var(--font-display); }
+  .tour-banner-close { min-width: 40px; min-height: 40px; color: inherit; font-size: 13px; flex: none; }
+  .tour-card { position: fixed; z-index: 19; left: 16px; top: calc(var(--hh, 77px) + 12px); width: min(340px, calc(100vw - 32px)); box-sizing: border-box; color: var(--glass-ink);
+               background: var(--glass-strong); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); padding: 12px 16px 10px;
+               opacity: 0; transition: opacity .35s; }
+  .tour-card.on { opacity: 1; }
+  body.camp-sub .tour-card { top: calc(var(--hh, 77px) + 68px); }   /* below the camp's Back button during the introduction */
+  .tour-who { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tour-who svg { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; border: 1px solid var(--glass-line); border-radius: 50%; padding: 2px; }
+  .tour-count { margin-left: auto; font: 500 11px/1 var(--font-data); color: var(--glass-soft); font-variant-numeric: tabular-nums; }
+  .tour-text { margin: 0 0 10px; font: 500 15.5px/1.38 var(--font-display); }
+  .tour-note { margin-top: 6px; font: 400 10.5px/1.2 var(--font-data); color: var(--glass-soft); }
+  body.tour-on .camp-hint, body.panel-open .tour-card, body.safari-on .tour-card, body.safari-on .tour-banner { display: none !important; }
+  body.tour-menu .menu, body.tour-menu .menu-toggle { animation: tour-pulse 1.6s ease-in-out infinite; }
+  @keyframes tour-pulse { 0%, 100% { box-shadow: inset 0 0 0 1px currentColor, 0 0 0 0 rgba(255, 169, 94, 0); } 50% { box-shadow: inset 0 0 0 1px currentColor, 0 0 0 5px rgba(255, 169, 94, 0.5); } }
+  @media (prefers-reduced-motion: reduce) { body.tour-menu .menu, body.tour-menu .menu-toggle { animation: none; box-shadow: inset 0 0 0 1px currentColor, 0 0 0 3px rgba(255, 169, 94, 0.5); } }
+  @media (max-width: 720px) {
+    .tour-card { top: auto; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+    .tour-text { font-size: 14.5px; }
+  }
   .msg-form { display: grid; gap: 14px; max-width: 460px; }
   .msg-field { display: grid; gap: 6px; }
   .msg-field em { font-style: normal; text-transform: none; letter-spacing: 0.02em; }
@@ -346,8 +369,8 @@
 <button class="btn campback" id="camp-back" hidden>‹ Back</button>
 <div class="camp-keys" id="camp-keys" role="group" aria-label="Camp" hidden></div>
 <div class="bubble" id="bubble" hidden role="dialog" aria-label="The figure at the camp">
-  <p>Hi! Want to leave a message?</p>
-  <div class="bubble-actions"><button class="btn" id="bubble-yes">Yes</button><button class="btn ghost" id="bubble-no">Not now</button></div>
+  <p>Hi! Tour or leave a message?</p>
+  <div class="bubble-actions"><button class="btn" id="bubble-tour">Tour</button><button class="btn" id="bubble-msg">Leave a message</button></div>
 </div>
 <aside class="panel" id="msg-panel" aria-hidden="true" aria-label="Leave a message">
   <button class="btn ghost panel-close" id="msg-close" aria-label="Close">Close ✕</button>
@@ -393,6 +416,7 @@ import { hub } from './hub/screens.js';
 import { guide } from './hub/guide.js';
 import { media } from './media/media.js';
 import { robot } from './showroom/robot.js';
+import { tour } from './camp/tour.js';
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -1499,7 +1523,7 @@ const onModel = (gltf) => {
     warming = false;
     requestAnimationFrame(() => requestAnimationFrame(() => {   // after the first drawn frame, so the screen never sits empty
       status.classList.add('out');
-      setTimeout(() => { status.hidden = true; }, 300);
+      setTimeout(() => { status.hidden = true; tour.loaded(); }, 300);
     }));
   });
 };
@@ -1744,6 +1768,8 @@ function tapDuringFlight(ev, act) {
 }
 
 function enter(p) {
+  tour.entered(p.id);
+  if (tourNoPanel !== p.id) tourNoPanel = null;
   campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset();
   nav.place = p; nav.mode = p.view.type;
   closePanel();
@@ -1763,6 +1789,7 @@ function enter(p) {
   }
 }
 function leave() {
+  tour.entered(null);
   campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset();
   nav.place = null; nav.mode = 'overview';
   closePanel();
@@ -2334,6 +2361,7 @@ function clearSpot(p, dir0, dist) {                    // turn the camera direct
 }
 function goFigure() {
   if (!person.root) return;
+  tour.figureClicked();
   rememberHome(); const tok = ++camp.seq; setSub('figure'); nav.mode = 'fixed';
   const p = person.root.position.clone(), seated = isSeated();
   const head = groundY(p) + (seated ? 1.15 : 1.62);
@@ -2374,7 +2402,7 @@ function showBubble(on) {
   if (!on) { b.classList.remove('on'); b.hidden = true; return; }
   b.hidden = false; requestAnimationFrame(() => b.classList.add('on'));
   placeBubble();
-  setTimeout(() => { if (!b.hidden) document.getElementById('bubble-yes').focus({ preventScroll: true }); }, 50);
+  setTimeout(() => { if (!b.hidden) document.getElementById('bubble-tour').focus({ preventScroll: true }); }, 50);
 }
 function placeBubble() {
   const b = campEls.bubble, T = person.talk;
@@ -2387,8 +2415,38 @@ function placeBubble() {
   b.style.left = cx + 'px'; b.style.top = cy + 'px';
   b.style.setProperty('--tail', Math.max(18, Math.min(bw - 18, bw / 2 + x - cx)) + 'px');
 }
-document.getElementById('bubble-yes').addEventListener('click', openMsg);
-document.getElementById('bubble-no').addEventListener('click', () => endTalk());
+document.getElementById('bubble-msg').addEventListener('click', openMsg);
+document.getElementById('bubble-tour').addEventListener('click', startTour);
+// FEAT-023: Tour: the figure keeps facing the visitor while it introduces the station (camp/tour.js),
+// then the tour flies on from place to place; Skip during the introduction lets it walk on
+function startTour() {
+  showBubble(false);
+  tour.start();
+}
+let tourNoPanel = null;                                // the place the tour is flying to: its panel doesn't open on arrival
+tour.setup({
+  go: (id) => { tourNoPanel = id; setRoute(id); },
+  endIntro: () => endTalk(),
+  ended: () => { tourNoPanel = null; },
+});
+// first visit: the figure glows softly (a slow breath) until it is first clicked; hovering it still glows as before
+let figGlow = false;
+function stepFigureGlow(now) {
+  const t = TARGETS.figure;
+  if (!person.root) return;
+  if (tour.glowing() && camp.hover !== 'figure') {
+    const k = 0.13 + 0.07 * Math.sin(now / 1000 * 2.2);
+    t.mats().forEach((m) => {
+      if (!m.emissive) return;
+      if (!m.userData.e0) m.userData.e0 = { c: m.emissive.clone(), i: m.emissiveIntensity };
+      m.emissive.copy(GLOW); m.emissiveIntensity = k;
+    });
+    figGlow = true;
+  } else if (figGlow) {
+    figGlow = false;
+    if (camp.hover !== 'figure') setGlow(t, false);
+  }
+}
 async function openMsg() {
   showBubble(false);
   const tok = camp.seq;
@@ -2415,6 +2473,7 @@ function shiftView() {                                 // keep the figure in vie
 window.addEventListener('resize', shiftView);
 document.getElementById('msg-close').addEventListener('click', () => endTalk());
 function endTalk() {
+  tour.introLeft();
   closeMsg(); showBubble(false);
   person.talk = null;                                  // walks on from where it stopped
   backToCamp();
@@ -2549,7 +2608,7 @@ async function endSafari(opts = {}) {
 function stepCamp(now) {
   const dt = camp.last ? Math.min(0.1, (now - camp.last) / 1000) : 0; camp.last = now;
   stepJab(dt); stepSparks(dt, now / 1000); stepCampKeys();
-  placeBubble();
+  placeBubble(); stepFigureGlow(now);
   const id = camp.hover;
   if (id && !campEls.tip.hidden) {
     TARGETS[id].anchor(vTmp).project(camera);
@@ -2646,6 +2705,7 @@ function go(it) {
 // content: the panel opens when the camera arrives (Smo: no small card first); while it is open the 3D pauses
 const panel = document.getElementById('panel');
 function openPanel(id) {
+  if (tourNoPanel && tourNoPanel === id) { tourNoPanel = null; return; }   // FEAT-023: on the tour the place's panel stays shut
   const c = PAGES[id]; if (!c) return;
   const n = c.cards === 0 ? 0 : 3;
   const cards = Array.from({ length: n }, (_, i) => `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`).join('');
@@ -2914,6 +2974,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__media = media;
   window.__robot = robot;
   window.__guide = guide;
+  window.__tour = tour;
   window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
   window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
   window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
