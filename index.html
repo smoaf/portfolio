@@ -1771,6 +1771,7 @@ function enter(p) {
   tour.entered(p.id);
   if (tourNoPanel !== p.id) tourNoPanel = null;
   campReset(); workshop.reset(); telescope.reset(); relay.reset(); library.reset(); robot.reset(); guide.reset();
+  tour.relayout();                                     // the reset above may have cleared the tour's view offset
   nav.place = p; nav.mode = p.view.type;
   closePanel();
   document.body.classList.add('in-place');
@@ -2428,7 +2429,18 @@ tour.setup({
   go: (id) => { tourNoPanel = id; setRoute(id); },
   endIntro: () => endTalk(),
   ended: () => { tourNoPanel = null; },
+  layout: tourLayout,
 });
+// phones: the card sits low over the scene, so the view moves up until the place is centred between the
+// header and the card (the same view offset the message form uses); computers: the card is at the side
+function tourLayout(card) {
+  if (camp.msgOpen) return;                            // the form keeps its own offset
+  const w = el.clientWidth, h = el.clientHeight;
+  if (!card || card.hidden || !phoneMenu() || panel.classList.contains('open')) { camera.clearViewOffset(); return; }
+  const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 70;
+  const shift = Math.max(0, h / 2 - (top + card.getBoundingClientRect().top) / 2);
+  camera.setViewOffset(w, h, 0, shift, w, h);
+}
 // first visit: the figure glows softly (a slow breath) until it is first clicked; hovering it still glows as before
 let figGlow = false;
 function stepFigureGlow(now) {
@@ -2713,6 +2725,7 @@ function openPanel(id) {
     <p class="note">Placeholder content. Real texts, images and videos follow.</p><div class="cards">${cards}</div>
     <div class="panel-actions"><a class="btn" href="#" onclick="return false">Open as page ↗</a></div>`;
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false'); panel.scrollTop = 0; document.body.classList.add('panel-open');
+  tour.relayout();
   closeDrop();
   setTimeout(() => { if (panel.classList.contains('open')) setPaused(true); }, 470);              // pause once the panel has slid in
 }
@@ -2720,6 +2733,7 @@ function closePanel() {
   if (!panel.classList.contains('open')) return;
   setPaused(false);
   panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); document.body.classList.remove('panel-open');
+  tour.relayout();
 }
 document.getElementById('panel-close').addEventListener('click', closePanel);
 // phones (BUG-021): when the sheet is scrolled to the top, a swipe down anywhere on it drags it down with the

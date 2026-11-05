@@ -11,7 +11,8 @@
 //   - Skip, Esc, or going somewhere else on the way end it at once. Once it was skipped or finished,
 //     or the banner was dismissed, the banner never comes back by itself; the figure still offers the tour.
 // No sound. index.html builds the host: go(id) flies to a place without opening its panel,
-// endIntro() lets the figure walk on (Skip during the introduction).
+// endIntro() lets the figure walk on (Skip during the introduction), layout(card) keeps the place
+// clear of the card (phones: the view moves up between the header and the card).
 
 // PLACEHOLDER texts (Smo supplies the real ones), written from what each place contains
 const NAME = 'The camp guide';
@@ -75,6 +76,7 @@ function build() {
     e.preventDefault(); e.stopImmediatePropagation();          // Esc ends the tour only: the visitor stays where they are
     end('skip');
   }, true);
+  window.addEventListener('resize', () => { if (S.on && S.host.layout) S.host.layout(S.card); });
 }
 
 function hideBanner() { if (S.banner) S.banner.hidden = true; }
@@ -90,6 +92,7 @@ function render() {
   document.body.classList.add('tour-on');
   document.body.classList.toggle('tour-menu', !!st.menu);
   setTimeout(() => { if (S.on && !c.contains(document.activeElement)) c.querySelector('#tour-next').focus({ preventScroll: true }); }, 50);
+  if (S.host.layout) S.host.layout(c);
 }
 
 function goStep(i) {
@@ -110,6 +113,7 @@ function end(why) {
   S.card.classList.remove('on'); S.card.hidden = true;
   document.body.classList.remove('tour-on', 'tour-menu');
   markSeen();
+  if (S.host.layout) S.host.layout(null);
   if (S.host.ended) S.host.ended(why);
   if (atIntro && why !== 'left' && S.host.endIntro) S.host.endIntro();
 }
@@ -126,6 +130,7 @@ export const tour = {
   // the camp's figure view was left during the introduction (Back): the tour ends with it
   introLeft() { if (S.on && S.i === 0) end('left'); },
   skip() { end('skip'); },
+  relayout() { if (S.on && S.host.layout) S.host.layout(S.card); },
   next() { advance(); },
   get active() { return S.on; },
   state: () => ({ on: S.on, step: S.i, place: STEPS[S.i].place, menu: !!STEPS[S.i].menu, first: S.first, clicked: S.clicked, seen: seen(),
