@@ -235,6 +235,8 @@
   .robot-ask .bubble-lead { margin: 0 0 4px; font: 400 14px/1.3 var(--font-display); color: var(--glass-soft); }
   .robot-ask .bubble-close { position: absolute; top: 4px; right: 4px; min-width: 36px; min-height: 36px; padding: 0; font-size: 13px; }
   body.tour-on .robot-ask, body.safari-on .robot-ask { display: none !important; }
+  /* while a robot's form is open, like the camp's form: nothing lies over it (the hub film's sound button would cover its Close) */
+  body.robot-msg .md-sound, body.robot-msg .tour-banner, body.robot-msg .nav, body.robot-msg .gear, body.robot-msg .controls, body.robot-msg .skypanel, body.robot-msg .markers { display: none !important; }
   /* FEAT-023: first-visit banner, the guide's speech card on the tour, the top menu pulsing at its end */
   .tour-banner { position: fixed; z-index: 19; left: 50%; transform: translateX(-50%); top: calc(var(--hh, 77px) + 12px); display: flex; align-items: center; gap: 4px;
                  width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; color: var(--glass-ink); background: var(--glass-strong); border: 1px solid var(--glass-line);
@@ -2485,11 +2487,13 @@ async function openMsg(from) {
   const form = mountMessage(campEls.msgBody, opts);
   campEls.msg.classList.add('open'); campEls.msg.setAttribute('aria-hidden', 'false'); campEls.msg.scrollTop = 0;
   camp.msgOpen = true; shiftView();
+  document.body.classList.toggle('robot-msg', from === 'robot');
   setTimeout(() => { if (camp.msgOpen) form.focus(); }, 480);
 }
 function closeMsg() {
   if (!camp.msgOpen) return;
   camp.msgOpen = false;
+  document.body.classList.remove('robot-msg');
   campEls.msg.classList.remove('open'); campEls.msg.setAttribute('aria-hidden', 'true');
   camera.clearViewOffset();
 }
