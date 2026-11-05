@@ -429,6 +429,7 @@ import { hub } from './hub/screens.js';
 import { guide } from './hub/guide.js';
 import { media } from './media/media.js';
 import { robot } from './showroom/robot.js';
+import { worksite } from './newmodule/worksite.js';
 import { tour } from './camp/tour.js';
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
@@ -1518,6 +1519,7 @@ const onModel = (gltf) => {
   telescope.setup(tsHost, gltf.scene); relay.setup(rlHost, gltf.scene);
   library.setup(lbHost, gltf.scene);                                // shelf things, monstera, the waving cat (library/library.js)
   hub.setup(hubHost, gltf.scene);                                   // the hanging screens and their slideshows (hub/screens.js)
+  worksite.setup(wkHost, gltf.scene);                               // the New module's robot worksite: two parked arms, tool heads, hose (newmodule/worksite.js)
   guide.setup(gdHost);                                              // the walking guide robot on the hub floor (hub/guide.js)
   media.setup(mdHost, gltf.scene, hub);                             // the showroom's panorama and the hub's films (media/media.js)
   robot.setup(rbHost);                                              // the six-legged robot on the showroom floor (showroom/robot.js)
@@ -1618,7 +1620,7 @@ const PLACES = [
     view: { type: 'inside', eye: [-14.6, 4.65, 9.6], look: [-14.5, 4.4, 14.3], fov: 72 },
     onEnter: () => { if (roof.closed) setRoof(false); robot.arrive(); } },
   { id: 'new-module', name: 'New module', zone: { c: [-7.6, 3.5, 28.7], r: 8.5 },
-    view: { type: 'object', pos: [8.0, 11.0, 14.0], target: [-7.6, 3.5, 28.7], az: 60, polar: [40, 85], dist: [10, 35], fit: 18 } },
+    view: { type: 'object', pos: [12.8, 10.25, 10.85], target: [-4.36, 2.0, 27.02], az: 60, polar: [40, 85], dist: [10, 35], fit: 18 } },   // FEAT-025a: aimed a little lower and towards the open side, so the arms' dock and the tool rack are in view
   { id: 'dish', name: 'Radio telescope', zone: { c: [15.0, 33.0, 154.0], r: 26 },
     view: { type: 'object', pos: [1.0, 57.0, 72.0], target: [15.0, 42.0, 150.0], az: 80, polar: [45, 88], dist: [30, 120], fit: 50 },
     onEnter: () => telescope.arrive() },           // click the telescope: it tracks the sun or a moon (relay/telescope.js)
@@ -2896,7 +2898,7 @@ function frame(now) {
   const away = !!workshop.focused || relay.inside || library.zoomed;  // a workshop station, the radio room or the cat close up: nothing else runs
   if (!away) { stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); }
   stepPlaces(now); stepSky(now);
-  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); robot.step(now); guide.step(now); }
+  if (!away) { stepShowDark(now); stepPerson(now); stepCamp(now); robot.step(now); guide.step(now); worksite.step(now); }
   if (!away || relay.inside) telescope.step(now);  // the radio room's moon bounce needs it to keep tracking
   workshop.step(now); relay.step(now); library.step(now); hub.step(now); media.step(now); stepFps(now);
   const d = camera.position.distanceTo(controls.target);
@@ -3016,6 +3018,9 @@ const gdHost = {
 const mdHost = { scene, place: () => (nav.place ? nav.place.id : null) };
 
 // --- the showroom robot (showroom/robot.js): runs while the showroom is open, darkens with its roof
+// --- the New module's worksite (newmodule/worksite.js): two robot arms parked at their dock (FEAT-025a)
+const wkHost = { scene, markShadows: () => markShadows() };
+
 const rbHost = {
   scene, camera, ray, setRay, reduceMotion, timeOfDay, ask: askOpen,
   inPlace: () => !!nav.place && nav.place.id === 'showroom',
@@ -3056,6 +3061,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__hub = hub;
   window.__media = media;
   window.__robot = robot;
+  window.__worksite = worksite;
   window.__robotScreen = () => { robot.bodyAt(vTmp).project(camera); const r = el.getBoundingClientRect(); return [r.left + (vTmp.x + 1) / 2 * r.width, r.top + (1 - vTmp.y) / 2 * r.height]; };
   window.__ask = () => ({ open: !ask.el.hidden, cur: !!ask.cur, msg: camp.msgOpen, from: camp.msgFrom || null });
   window.__guide = guide;
