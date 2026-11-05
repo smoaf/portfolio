@@ -7,8 +7,10 @@
 //     bench and the visitor's spot; the rolling ball bounces softly off the same edges
 //   - night: it folds into a ball and sleeps; a click wakes it for a moment; at dawn it wakes up
 //   - hover: it stops, turns to the visitor and leans in, and glows a little (no light on the robot)
-//   - click or tap: the next big animation of a short story (crown; fold and roll, bloom; spin; wave;
-//     stretch); a click during a big animation doesn't cut it off
+//   - click or tap (FEAT-024): it asks "Tour or leave a message?" (the question is index.html's,
+//     host.ask); while it asks it stops and looks at the visitor as on hover (asleep: it wakes first; a
+//     big animation is never cut off); once the question is closed it goes back to what it was doing.
+//     The big animations (crown, roll, spin, wave, stretch) still come by themselves from its list.
 //   - it only runs while the showroom is the open place and pauses with the rest of the site
 // The area pattern: setup(host), step(now), tap(ev), hover(ev), arrive(), reset(), resume(now).
 import * as THREE from 'three';
@@ -25,13 +27,12 @@ const KEEP_OUT = [                                  // x, z, radius in metres: s
 ];
 const START = { x: -14.3, z: 13.2 };
 const GLOW = new THREE.Color(0xffa95e);
-const STORY = [['crown'], ['fold', 'roll', 'bloom'], ['spin'], ['wave'], ['stretch']];
 const CHOICES = [                                   // [what, weight] while standing
   ['idle', 30], ['walk', 28], ['look', 12], ['turn', 8], ['crouch', 5], ['stretch', 4],
   ['wave', 2.5], ['spin', 2.5], ['crown', 2.5], ['roll', 2.5],
 ];
 
-const S = { host: null, M: null, rig: null, stage: null, ready: false, last: 0, prev: '', story: 0, hovered: false, glow: 0, pulse: 0,
+const S = { host: null, M: null, rig: null, stage: null, ready: false, last: 0, prev: '', hovered: false, asking: false, glow: 0, pulse: 0,
   blob: null, shell: null, sleeping: false, night: false, wakeAt: 0 };
 const vA = new THREE.Vector3(), vB = new THREE.Vector3(), sph = new THREE.Sphere();
 
@@ -163,11 +164,12 @@ function step(now) {
   if (S.wakeAt && now > S.wakeAt) { S.wakeAt = 0; }
   if (M.clipName === 'sleep' && !M.wake && !night) wake();
   if (!M.clip && !M.queue.length) choose();
-  if (S.hovered && !S.night && !M.big && M.state === 'stand' && M.clipName !== 'look') { M.queue.length = 0; M.play('look', { until: () => S.hovered }); }
+  const held = S.hovered || S.asking;
+  if (held && !S.night && !M.big && M.state === 'stand' && M.clipName !== 'look') { M.queue.length = 0; M.play('look', { until: () => S.hovered || S.asking }); }
   M.update(dt);
   // the glow: eases in on hover, a short pulse on a tap
   S.pulse = Math.max(0, S.pulse - dt);
-  const want = S.hovered || S.pulse > 0 ? 1 : 0;
+  const want = held || S.pulse > 0 ? 1 : 0;
   S.glow += (want - S.glow) * Math.min(1, dt * 8);
   S.shell.forEach((m) => { m.emissive.copy(GLOW); m.emissiveIntensity = 0.16 * S.glow; });
   // the soft shadow follows the body, wider when it stands
@@ -199,15 +201,10 @@ function tap(ev) {
   if (!hit(ev)) return false;
   const M = S.M;
   S.pulse = 0.5;
-  if (M.clipName === 'sleep' || (S.night && M.state === 'ball')) { wake(); return true; }
-  if (M.big || M.queue.some(([n]) => n === 'roll' || n === 'bloom' || n === 'twitch')) return true;   // never cut a big one short
-  M.queue.length = 0;
-  if (S.night) { choose(); return true; }               // standing at night: off to sleep
-  if (M.state === 'ball') { M.then([['peek'], ['bloom'], ['spin']]); S.story = 2; const [n, o] = M.queue.shift(); M.play(n, o); return true; }
-  const part = STORY[S.story % STORY.length]; S.story++;
-  M.then(part.length === 1 ? sequence(part[0]) : sequence('roll'));
-  S.prev = part[0];
-  const [n, o] = M.queue.shift(); M.play(n, o);       // at once: idling, walking or looking give way
+  if (M.clipName === 'sleep' || (S.night && M.state === 'ball')) wake();   // asleep: it wakes for a moment, then asks
+  else if (M.state === 'ball' && !M.big && !M.queue.length) M.then([['bloom']]);   // rolled up: it opens to look
+  S.host.ask({ at: (v) => S.rig.body.getWorldPosition(v).setY(v.y + 0.62 * SCALE), done: () => { S.asking = false; } });
+  S.asking = true;                                     // stops and looks at the visitor (step), never cutting a big one short
   return true;
 }
 // arriving in the showroom: asleep at night, otherwise as it was
@@ -219,7 +216,8 @@ function arrive() {
     const M = S.M; M.place(M.root.position.x, M.root.position.z, M.heading, true); M.play('sleep');
   }
 }
-function reset() { S.hovered = false; }
+function reset() { S.hovered = false; S.asking = false; }
 function resume(now) { S.last = now; }
 
-export const robot = { setup, step, tap, hover, arrive, reset, resume, get M() { return S.M; }, get ready() { return S.ready; }, region };
+export const robot = { setup, step, tap, hover, arrive, reset, resume, get M() { return S.M; }, get ready() { return S.ready; }, region,
+  bodyAt: (v) => S.rig.body.getWorldPosition(v), get asking() { return S.asking; } };   // tests
