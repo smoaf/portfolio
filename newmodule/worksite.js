@@ -13,8 +13,9 @@
 //     j4 (forearm roll, y) → j5 (wrist, x) → j6 (flange roll, y) → mount (where a tool head docks).
 //     Upper arm 3.0 m, forearm 2.7 m, wrist and tool ~0.5 m: about 6 m of reach from the shoulder,
 //     enough to reach the module's roof (5.9 m) from the ground without a lifting column.
-//   - plaster model style: the station's own plaster and black linework materials, no colours,
-//     no names or logos
+//   - plaster model style: the station's own plaster and black linework materials (plaster links,
+//     black joints, tracks and steel tool heads), no colours, no names or logos; most parts are one
+//     mesh, so both arms, the four heads and the hose cost 23 draw calls
 // Coordinates: the site's frame from the model (z up, long axis along y, the finished end at +y,
 // the open side at +x), placed like the model does it (turned 30°, see SITE).
 // The area pattern: setup(host), step(now).
@@ -91,18 +92,17 @@ function buildArm(id) {
   j1.add(part(id + '_turret', [cylY(0.34, 0.36, 0.2, 0, 0.1, 0, 28), boxG(0.42, 0.5, 0.4, 0, 0.44, 0)],
     [cylY(0.345, 0.345, 0.03, 0, 0.2, 0, 28), cylX(0.21, 0.56, 0, SHOULDER - 0.66, 0, 24)]));
   const j2 = new THREE.Group(); j2.position.set(0, SHOULDER - 0.66, 0); j1.add(j2);
-  j2.add(part(id + '_upper', [cylY(0.1, 0.14, UPPER - 0.42, 0, UPPER / 2, 0, 20), cylX(0.17, 0.44, 0, 0, 0, 24)],
-    [cylY(0.142, 0.142, 0.025, 0, 0.24, 0, 20), cylY(0.102, 0.102, 0.025, 0, UPPER - 0.24, 0, 20), cylX(0.16, 0.4, 0, UPPER, 0, 24)]));
+  // a housing that only turns about its own axis sits in the next joint's mesh, so most links are
+  // one mesh: plaster links, black joints (fewer draw calls, the same look)
+  j2.add(part(id + '_upper', [cylY(0.1, 0.14, UPPER - 0.42, 0, UPPER / 2, 0, 20), cylX(0.17, 0.44, 0, 0, 0, 24)], []));
   const j3 = new THREE.Group(); j3.position.set(0, UPPER, 0); j2.add(j3);
-  j3.add(part(id + '_elbow', [cylY(0.105, 0.105, FORE0, 0, FORE0 / 2, 0, 20), cylX(0.12, 0.32, 0, 0, 0, 20)],
-    [cylY(0.112, 0.112, 0.04, 0, FORE0, 0, 20)]));
+  j3.add(part(id + '_elbow', [], [cylX(0.16, 0.4, 0, 0, 0, 24), cylY(0.105, 0.105, FORE0, 0, FORE0 / 2, 0, 20), cylY(0.112, 0.112, 0.04, 0, FORE0, 0, 20)]));
   const j4 = new THREE.Group(); j4.position.set(0, FORE0, 0); j3.add(j4);
-  j4.add(part(id + '_fore', [cylY(0.07, 0.1, FORE - 0.16, 0, (FORE - 0.16) / 2 + 0.03, 0, 18)],
-    [cylY(0.104, 0.104, 0.03, 0, 0.04, 0, 18), cylX(0.095, 0.26, 0, FORE, 0, 18)]));
+  j4.add(part(id + '_fore', [cylY(0.07, 0.1, FORE - 0.16, 0, (FORE - 0.16) / 2 + 0.03, 0, 18)], []));
   const j5 = new THREE.Group(); j5.position.set(0, FORE, 0); j4.add(j5);
-  j5.add(part(id + '_wrist', [cylY(0.06, 0.065, WRIST, 0, WRIST / 2, 0, 16), cylX(0.075, 0.2, 0, 0, 0, 16)], []));
+  j5.add(part(id + '_wrist', [], [cylX(0.095, 0.26, 0, 0, 0, 18), cylY(0.06, 0.065, WRIST, 0, WRIST / 2, 0, 16)]));
   const j6 = new THREE.Group(); j6.position.set(0, WRIST, 0); j5.add(j6);
-  j6.add(part(id + '_flange', [cylY(0.1, 0.1, 0.05, 0, 0.065, 0, 20)], [cylY(0.075, 0.075, 0.04, 0, 0.02, 0, 20)]));
+  j6.add(part(id + '_flange', [], [cylY(0.075, 0.075, 0.04, 0, 0.02, 0, 20), cylY(0.1, 0.1, 0.05, 0, 0.065, 0, 20)]));
   const mount = new THREE.Group(); mount.name = id + '_mount'; mount.position.set(0, 0.09, 0); j6.add(mount);   // a tool head docks here
   const joints = { j1, j2, j3, j4, j5, j6 };
   const set = (q) => {                                    // a pose: the six joint angles (radians)
@@ -148,7 +148,7 @@ const TOOL_LEN = { nozzle: 0.49, laser: 0.52, gripper: 0.37, welder: 0.5 };
 function buildTool(kind) {
   const pl = [], ln = [];
   TOOLS[kind](pl, ln);
-  const g = part('tool_' + kind, pl, ln);
+  const g = part('tool_' + kind, [], [...pl, ...ln]);      // a steel tool head: one black linework mesh
   g.userData.kind = kind;
   return g;
 }
