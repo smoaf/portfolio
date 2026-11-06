@@ -32,19 +32,19 @@ const L1 = 3.0, L2 = 0.3 + 2.4, SH = 1.25, J1Z = 0.12, FLANGE = 0.18 + 0.09;
 const KEYS = ['j1', 'j2', 'j3', 'j4', 'j5', 'j6'];
 const TUCK = { j1: 0, j2: -0.2, j3: 2.5, j4: 0, j5: 1.0, j6: 0 };
 const PARK = { j1: 0, j2: -0.25, j3: 2.85, j4: 0, j5: 0.54, j6: 0 };
-const SPEED = 1.35, TURN = 1.3;                             // m/s, rad/s (a little brisker than the print arm)
+const SPEED = 1.8, TURN = 1.5;                              // m/s, rad/s (brisker than the print arm: it has more to do)
 
 // ---- where it works (site frame)
 const LANE_X = 5.0;                                         // the front lane (the print arm uses it only to leave and to come home)
-const STATION_Y = 3.6;                                      // in front of the rack's cradles and the panel stack
+const STATION_Y = 2.4;                                      // in front of the rack's cradles, the panel stack just behind it
 const SOUTH = -1.5;                                         // the front lane's dock end: the print arm comes home through it
-const BAY_Y = [BAYS[0].c + J1Z, -1.4, BAYS[2].c + J1Z];     // the base's stop per bay (heading -y); bay 1 stops short of the dock end
+const BAY_Y = BAYS.map((b) => b.c + J1Z);                  // the base's stop per bay (heading -y): the shoulder level with the bay's middle
 const CROSS_Y = -1.75;                                      // where it ducks under the module to the lane behind it (between the ribs' feet)
 const BACK_X = -4.0;                                        // its stop behind the module, by the window bay
-const PALLET = { x: 5.0, y: 5.8, w: 1.5, d: 1.5, h: 0.12 };
-const BLANK = { x: 5.0, y: 5.8, w: 1.3, d: 1.3, t: 0.07, n: 4 };
+const PALLET = { x: 5.0, y: 4.55, w: 1.5, d: 1.5, h: 0.12 };
+const BLANK = { x: 5.0, y: 4.55, w: 1.3, d: 1.3, t: 0.07, n: 4 };
 const TILE = { w: 1.3, d: 1.2, x: 1.45 };                   // a floor panel: across the bay's open side, on the beams at x 0.7 and 2.0
-const FRAME_REST = { x: -5.15, y: -0.45, w: 1.0, d: 0.8, h: 0.1 };   // a small pallet behind the module, clear of the drums and the arm's turn
+const FRAME_REST = { x: -5.15, y: -0.25, w: 1.0, d: 0.8, h: 0.1 };   // a small pallet behind the module, clear of the drums and the arm's turn
 
 const at = (x, y, z, v = new THREE.Vector3()) => v.set(x, z, -y);
 const ss = (u) => u * u * (3 - 2 * u);
@@ -174,6 +174,8 @@ export function createFitLoop(W, A) {
     return out.set(arm.base.position.x + fx * fwd + fz * side, up, arm.base.position.z + fz * fwd - fx * side);
   }
   const setQ = (q) => { for (const k of KEYS) B.q[k] = q[k]; arm.set(B.q); };
+  // in the front lane the folded arm faces the module, so it never swings past a rib on its way into a bay
+  const SIDE = () => ({ ...TUCK, j1: solve(local(J1Z, -3, 2.0), 0, toolLen()).j1 });
   const toolLen = () => FLANGE + (arm.tool ? W.TOOL_LEN[arm.tool.userData.kind] : 0);
   function tipNow(len = toolLen()) {
     arm.mount.updateWorldMatrix(true, false);
@@ -195,7 +197,11 @@ export function createFitLoop(W, A) {
   function pose(target, dur) {
     let from, q;
     return mk(dur, (u) => { const e = ss(u), o = {}; for (const k of KEYS) o[k] = from[k] + (q[k] - from[k]) * e; setQ(o); },
-      () => { from = { ...B.q }; q = { ...(typeof target === 'function' ? target() : target) }; });
+      () => {
+        from = { ...B.q }; q = { ...(typeof target === 'function' ? target() : target) };
+        while (q.j1 - from.j1 > Math.PI) q.j1 -= 2 * Math.PI;   // the short way round
+        while (q.j1 - from.j1 < -Math.PI) q.j1 += 2 * Math.PI;
+      });
   }
   function turnTo(hx, hy) {
     let from, to, last = 0;
@@ -269,24 +275,24 @@ export function createFitLoop(W, A) {
     const steps = [];
     let k;
     steps.push(call(() => { k = arm.tool ? arm.tool.userData.kind : null; }));
-    steps.push(pose(() => (k ? solve(up(plateAt(k), 0.35), 0, FLANGE) : B.q), 1.6));
-    steps.push(tipMove(() => (k ? up(plateAt(k), 0.35) : tipNow(FLANGE)), () => (k ? plateAt(k) : tipNow(FLANGE)), 0, 0.8, () => FLANGE));
+    steps.push(pose(() => (k ? solve(up(plateAt(k), 0.3), 0, FLANGE) : B.q), 1.3));
+    steps.push(tipMove(() => (k ? up(plateAt(k), 0.3) : tipNow(FLANGE)), () => (k ? plateAt(k) : tipNow(FLANGE)), 0, 0.6, () => FLANGE));
     steps.push(call(() => { if (k) release(); }));
-    steps.push(mk(0.35, (u) => { if (!k) return; const t = W.tools[k]; t.position.lerp(W.toolHome[k].p, u); t.quaternion.slerp(W.toolHome[k].q, u); }));
-    steps.push(tipMove(() => tipNow(FLANGE), () => up(tipNow(FLANGE), 0.35), 0, 0.6, () => FLANGE));
+    steps.push(mk(0.3, (u) => { if (!k) return; const t = W.tools[k]; t.position.lerp(W.toolHome[k].p, u); t.quaternion.slerp(W.toolHome[k].q, u); }));
+    steps.push(tipMove(() => tipNow(FLANGE), () => up(tipNow(FLANGE), 0.3), 0, 0.45, () => FLANGE));
     return steps;
   }
   function take(kind) {                                      // a head from its cradle: over it, down, click in, lift out
     const steps = [];
-    steps.push(pose(() => solve(up(plateAt(kind), 0.35), 0, FLANGE), 1.4));
-    steps.push(tipMove(() => up(plateAt(kind), 0.35), () => plateAt(kind), 0, 0.8, () => FLANGE));
+    steps.push(pose(() => solve(up(plateAt(kind), 0.3), 0, FLANGE), 1.1));
+    steps.push(tipMove(() => up(plateAt(kind), 0.3), () => plateAt(kind), 0, 0.6, () => FLANGE));
     steps.push(call(() => attach(kind)));
-    steps.push(mk(0.4, (u) => { const t = arm.tool; t.position.multiplyScalar(1 - u); t.quaternion.slerp(tq.identity(), u); }));
+    steps.push(mk(0.3, (u) => { const t = arm.tool; t.position.multiplyScalar(1 - u); t.quaternion.slerp(tq.identity(), u); }));
     steps.push(mk(0.15, (u) => { arm.mount.position.y = 0.09 - 0.02 * Math.sin(u * Math.PI); }));   // the click-in
-    steps.push(tipMove(() => tipNow(FLANGE), () => up(tipNow(FLANGE), 0.4), 0, 0.7, () => FLANGE));
+    steps.push(tipMove(() => tipNow(FLANGE), () => up(tipNow(FLANGE), 0.4), 0, 0.55, () => FLANGE));
     return steps;
   }
-  function swap(kind) { return [...putBack(), ...take(kind), pose(TUCK, 1.3)]; }
+  function swap(kind) { return [...putBack(), ...take(kind), pose(SIDE, 1.1)]; }
   function attach(kind) {
     const t = W.tools[kind];
     arm.mount.attach(t);
@@ -317,39 +323,42 @@ export function createFitLoop(W, A) {
   function scan(k, dur) {                                    // the fan sweeps across the bay and back
     const bay = BAYS[k], above = at(TILE.x, bay.c, Z0 + 0.7, new THREE.Vector3());
     return [
-      pose(() => solve(above, 0, toolLen()), 1.8),
+      pose(() => solve(above, 0, toolLen()), 1.5),
       mk(dur, (u) => {
         const ys = bay.c + (bay.y1 - bay.y0 - 0.1) / 2 * Math.sin(u * Math.PI * 2);
         FX.scan = { y: ys, a: Math.min(1, Math.min(u, 1 - u) * 8) };
       }, () => { B.task = 'scan'; }, () => { FX.scan = null; B.task = ''; }),
-      pose(TUCK, 1.6),
+      pose(SIDE, 1.3),
     ];
   }
   function fitTile(k) {
     const t = B.tiles[k], bay = BAYS[k];
     const outside = at(3.75, bay.c, FLOOR_Z + 0.4, new THREE.Vector3()), over = at(TILE.x, bay.c, FLOOR_Z + 0.35, new THREE.Vector3());
     return [
-      pose(() => solve(outside, 0, toolLen()), 2.4),
-      tipMove(outside, over, 0, 1.8),
-      tipMove(over, () => bayTile(k), 0, 0.9),
+      pose(() => solve(outside, 0, toolLen()), 1.9),
+      tipMove(outside, over, 0, 1.4),
+      tipMove(over, () => bayTile(k), 0, 0.7),
       call(() => { drop(); t.position.copy(bayTile(k)); t.quaternion.identity(); B.task = 'fit'; W.host.markShadows(); }),
-      tipMove(() => bayTile(k), over, 0, 0.6),
-      tipMove(over, outside, 0, 1.4),
-      pose(TUCK, 1.8),
+      tipMove(() => bayTile(k), over, 0, 0.5),
+      tipMove(over, outside, 0, 1.1),
+      pose(SIDE, 1.5),
       call(() => { B.task = ''; }),
     ];
   }
   function weld(k) {                                         // two spots on each of the panel's joints with the ribs
     const bay = BAYS[k], steps = [], spots = [];
-    for (const sy of [-1, 1]) for (const x of [TILE.x - 0.4, TILE.x + 0.4]) spots.push(at(x, bay.c + sy * (TILE.d / 2 + 0.05), FLOOR_Z + 0.005, new THREE.Vector3()));
-    steps.push(pose(() => solve(up(spots[0], 0.3), 0, toolLen()), 2.4));
+    for (const sy of [-1, 1]) for (const x of [TILE.x - 0.3, TILE.x + 0.3]) spots.push(at(x, bay.c + sy * (TILE.d / 2 + 0.05), BEAM_TOP + BLANK.t + 0.005, new THREE.Vector3()));
+    const outside = at(3.75, bay.c, FLOOR_Z + 0.6, new THREE.Vector3());   // in from outside the bay, over the floor
+    steps.push(pose(() => solve(outside, 0, toolLen()), 1.5));
+    steps.push(tipMove(outside, up(spots[0], 0.25), 0, 1.0));
     spots.forEach((p, i) => {
-      if (i) steps.push(tipMove(() => tipNow(), up(p, 0.25), 0, 0.6));
-      steps.push(tipMove(up(p, 0.25), p, 0, 0.35));
-      steps.push(mk(0.45, (u) => { FX.weld = u < 0.55 ? 1 - u / 0.55 : 0; }, () => { B.task = 'weld'; FX.flashAt = tipNow(toolLen() - 0.12); FX.spawn = 10; FX.spawnAt = FX.flashAt.clone(); }, () => { FX.weld = 0; B.task = ''; }));
-      steps.push(tipMove(p, up(p, 0.25), 0, 0.3));
+      if (i) steps.push(tipMove(() => tipNow(), up(p, 0.25), 0, 0.45));
+      steps.push(tipMove(up(p, 0.25), p, 0, 0.3));
+      steps.push(mk(0.4, (u) => { FX.weld = u < 0.55 ? 1 - u / 0.55 : 0; }, () => { B.task = 'weld'; FX.flashAt = tipNow(toolLen() - 0.12); FX.spawn = 10; FX.spawnAt = FX.flashAt.clone(); }, () => { FX.weld = 0; B.task = ''; }));
+      steps.push(tipMove(p, up(p, 0.25), 0, 0.25));
     });
-    steps.push(pose(TUCK, 1.8));
+    steps.push(tipMove(() => tipNow(), outside, 0, 0.9));
+    steps.push(pose(SIDE, 1.3));
     return steps;
   }
 
@@ -360,11 +369,11 @@ export function createFitLoop(W, A) {
     steps.push(call(() => { top = blankTop(B.blanksLeft - 1); }));
     const yCut = BLANK.y - BLANK.d / 2 + (BLANK.d - TILE.d);
     const a = () => at(BLANK.x - BLANK.w / 2 - 0.05, yCut, top + 0.16, new THREE.Vector3()), b = () => at(BLANK.x + BLANK.w / 2 + 0.05, yCut, top + 0.16, new THREE.Vector3());
-    steps.push(pose(() => solve(up(a(), 0.25), 0, toolLen()), 1.8));
-    steps.push(tipMove(() => up(a(), 0.25), a, 0, 0.5));
+    steps.push(pose(() => solve(up(a(), 0.25), 0, toolLen()), 1.5));
+    steps.push(tipMove(() => up(a(), 0.25), a, 0, 0.4));
     steps.push(call(() => { FX.cutPts = []; FX.cutFade = 0; B.task = 'laser'; }));
     let path;
-    steps.push(mk(2.6, (u) => {
+    steps.push(mk(2.3, (u) => {
       tmp.lerpVectors(path[0], path[1], ss(u));
       setQ(solve(tmp, 0, toolLen()));
       laserHit(tmp.clone().setY(top), u > 0.04 && u < 0.96);
@@ -378,40 +387,44 @@ export function createFitLoop(W, A) {
       B.falling = { o, from: o.position.clone(), to: at(BLANK.x - 0.35 + 0.35 * k, BLANK.y - BLANK.d / 2 - 0.32 - 0.04 * k, 0.07 + 0.012 * k, new THREE.Vector3()), t: 0, spin: 0.5 - 0.4 * k };
       W.host.markShadows();
     }));
-    steps.push(tipMove(() => tipNow(), () => up(tipNow(), 0.4), 0, 0.6));
-    steps.push(pose(TUCK, 1.4));
+    steps.push(tipMove(() => tipNow(), () => up(tipNow(), 0.4), 0, 0.5));
+    steps.push(pose(SIDE, 1.2));
     return steps;
   }
   function lift(obj, at0, off = 0) {                         // the gripper down onto a part, close, lift it
     return [
-      pose(() => solve(up(at0(), 0.4), 0, toolLen()), 1.6),
-      tipMove(() => up(at0(), 0.4), at0, 0, 0.7),
-      mk(0.3, () => {}, null, () => carry(obj, off)),
-      tipMove(at0, () => up(at0(), 0.5), 0, 0.6, toolLen, () => placeCarry()),
+      pose(() => solve(up(at0(), 0.4), 0, toolLen()), 1.4),
+      tipMove(() => up(at0(), 0.4), at0, 0, 0.6),
+      mk(0.25, () => {}, null, () => carry(obj, off)),
+      tipMove(at0, () => up(at0(), 0.5), 0, 0.5, toolLen, () => placeCarry()),
     ];
   }
-  // driving with a panel: the arm folded, the panel high in front of the base
-  const CARRY = () => solve(local(1.3, 0, 2.3), 0, toolLen());
+  // driving with a panel: the arm folded, the panel high beside the base on the module's side
+  const CARRY = () => solve(local(0.12, -1.3, 2.3), 0, toolLen());
 
   // ---- the window bay from behind the module (after the print arm is home)
   // the arm stretched low in front, the forearm folded back over it, the tool pointing ahead: below the floor
   // beams (2.65 m) and the ribs' feet (2.3 m) while the base drives under the module
   const DUCK = { j1: 0, j2: 1.4, j3: 2.95, j4: 0, j5: Math.PI / 2 - 1.4 - 2.95, j6: 0 };
+  // behind the module, facing away from it: the arm reaches back over its shoulder to the wall, the
+  // elbow out over the open ground (REAR: turned round, leaning away from the wall, the tool hanging down)
+  const REAR = { j1: Math.PI, j2: -0.7, j3: 1.9, j4: 0, j5: Math.PI - 1.2, j6: 0 };
   function under(fn) {                                       // under the module to the lane behind it, fn(), and back
     return [
       ...goLane(CROSS_Y),
+      pose(TUCK, 1.0),
       turnTo(-1, 0),
-      pose(DUCK, 2.6),
+      pose(DUCK, 2.3),
       drive(BACK_X, CROSS_Y),
-      pose(TUCK, 2.6),
-      turnTo(1, 0),
+      pose(TUCK, 2.3),
       ...fn(),
+      pose(REAR, 1.6),
       pose(TUCK, 2.0),
-      turnTo(-1, 0),
-      pose(DUCK, 2.6),
+      pose(DUCK, 2.3),
       drive(LANE_X, CROSS_Y),
-      pose(TUCK, 2.6),
+      pose(TUCK, 2.3),
       turnTo(0, -1),
+      pose(SIDE, 1.2),
     ];
   }
   const win = (dy, dz, dx = 0) => at(WINDOW.x - 0.32 + dx, BAYS[WINDOW.bay].c + dy, WINDOW.zc + dz, new THREE.Vector3());
@@ -419,7 +432,8 @@ export function createFitLoop(W, A) {
     const hw = WINDOW.w / 2, hh = WINDOW.h / 2;
     const pts = [win(-hw, -hh), win(hw, -hh), win(hw, hh), win(-hw, hh), win(-hw, -hh)];
     return [
-      pose(() => solve(win(-hw, -hh, -0.2), Math.PI / 2, toolLen()), 2.4),
+      pose(REAR, 2.4),
+      pose(() => solve(win(-hw, -hh, -0.2), Math.PI / 2, toolLen()), 1.8),
       tipMove(() => win(-hw, -hh, -0.2), () => pts[0], Math.PI / 2, 0.6),
       call(() => { FX.cutPts = []; FX.cutFade = 0; B.task = 'laser'; }),
       tipPath(pts, Math.PI / 2, 0.55, (u, p) => laserHit(tmp2.copy(p).setX(p.x + 0.32 - 0.09), u > 0.01 && u < 0.99)),
@@ -434,7 +448,9 @@ export function createFitLoop(W, A) {
       ...lift(B.frame, () => at(FRAME_REST.x, FRAME_REST.y, FRAME_REST.h + 0.05, new THREE.Vector3())),
       call(() => { B.carry.to = FRAME_UP; B.carry.u = 0; }),
       mk(1.2, (u) => { B.carry.u = u; }),                    // the frame turned upright in the gripper
-      pose(() => solve(front(), Math.PI / 2, toolLen()), 2.6),
+      pose(TUCK, 1.6),
+      pose(REAR, 2.4),
+      pose(() => solve(front(), Math.PI / 2, toolLen()), 1.8),
       tipMove(front, inPlace, Math.PI / 2, 1.4, toolLen, () => placeCarry()),
       mk(0.3, () => {}, null, () => { drop(); B.frame.position.copy(framePlace()); B.frame.quaternion.copy(FRAME_UP); B.task = 'fit'; W.host.markShadows(); }),
       tipMove(inPlace, front, Math.PI / 2, 0.8),
@@ -451,7 +467,7 @@ export function createFitLoop(W, A) {
     S(drive(LANE_X, W.DOCK[1].y));
     S(turnTo(0, -1));
     S(goLane(STATION_Y));
-    S(take('gripper')); S(pose(TUCK, 1.3));
+    S(take('gripper')); S(pose(SIDE, 1.3));
     S(goLane(BAY_Y[0])); S(scan(0, 2.4));
     for (let k = 0; k < 3; k++) {
       // laser: cut a panel at the stack
@@ -459,7 +475,7 @@ export function createFitLoop(W, A) {
       // fit: the gripper lifts it and sets it into the bay
       S(swap('gripper'));
       S(lift(B.tiles[k], () => B.tiles[k].position.clone()));
-      S(pose(CARRY, 1.8));
+      S(pose(CARRY, 1.5));
       S(goLane(BAY_Y[k])); S(fitTile(k));
       // weld: the spot welder on the joints
       S(goLane(STATION_Y)); S(swap('welder'));
