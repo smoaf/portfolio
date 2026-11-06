@@ -26,7 +26,7 @@ Simon Winkler's ("Smo") portfolio site, live at https://smoaf.github.io/portfoli
   - `hub/`: hanging slideshow screens (`screens.json`).
   - `media/`: showroom 360° video and hub films (files in `assets/media/`).
   - `showroom/`: the six-legged robot on the showroom floor: `robot-model.js` (built from `assets/robot/orbweaver.glb`), `robot-motion.js` (IK, gait, blended clips), `robot.js` (behaviour, hover, click).
-  - `newmodule/`: the New module's robot worksite (`worksite.js`): two 6-axis arms on tracked bases parked at their dock, the spare tool heads in the rack, the material hose (the fixed equipment is in the model, `3d/scripts/construction.py`).
+  - `newmodule/`: the New module's robot worksite (`worksite.js`): two 6-axis arms on tracked bases at their dock, the spare tool heads in the rack, the material hose (the fixed equipment is in the model, `3d/scripts/construction.py`); `printloop.js`: arm A's 5-minute loop printing the open bays.
   - `camp/`: van interior with start screen, photo album, message form (`config.js` holds `FORM_ENDPOINT`). The camp click logic itself is still in `index.html`.
   - `safari/`: Photo Safari minigame, loaded only when a route starts. `index.js` engine, `routes/` canyon and jungle, `fauna/` species, `hud.js`, `photo.js` scoring, `fieldlog.js`, `leaderboard.js`, `audio.js` (also used by media, relay and workshop).
 - `assets/`: album photos, hub placeholders, media videos, the thesis PDF (public on purpose).
