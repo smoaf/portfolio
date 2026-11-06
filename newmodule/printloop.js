@@ -209,6 +209,7 @@ export function createPrintLoop(W) {
   function portAt(out) { arm.base.updateMatrix(); return out.set(0, 0.7, -0.85).applyMatrix4(arm.base.matrix); }   // root frame
   function pullHose() {
     const p = HOSE.pts, n = p.length, rest = HOSE.rest, g = 0.06;
+    const dyn = W.partner ? W.partner.keepOut() : null;      // FEAT-025c: the second arm's base pushes the hose aside
     portAt(p[n - 1]);
     // from the arm back towards the pump: a piece only moves when it is pulled
     for (let i = n - 2; i >= 2; i--) {
@@ -218,6 +219,10 @@ export function createPrintLoop(W) {
       p[i].y = g;
       for (const [cx, cy, r] of KEEP_OUT) {                 // never across the equipment: pushed out sideways
         const dx = p[i].x - cx, dz = p[i].z + cy, l = Math.hypot(dx, dz);
+        if (l < r) { const s = r / Math.max(l, 1e-3); p[i].x = cx + dx * s; p[i].z = -cy + dz * s; }
+      }
+      if (dyn) {
+        const [cx, cy, r] = dyn, dx = p[i].x - cx, dz = p[i].z + cy, l = Math.hypot(dx, dz);
         if (l < r) { const s = r / Math.max(l, 1e-3); p[i].x = cx + dx * s; p[i].z = -cy + dz * s; }
       }
     }
@@ -290,7 +295,8 @@ export function createPrintLoop(W) {
       () => { a = (typeof from === 'function' ? from() : from).clone(); b = (typeof to === 'function' ? to() : to).clone(); });
   }
   const call = (fn) => mk(0, () => {}, fn);
-  
+  const waitFor = (cond) => { const s = mk(1e6, () => {}); s.until = cond; return s; };   // FEAT-025c: holds until cond() is true
+
   // where the tool's tip is now (root frame)
   function tipNow(len) {
     arm.mount.updateWorldMatrix(true, false);
@@ -343,7 +349,7 @@ export function createPrintLoop(W) {
     const plate = () => { const t = W.tools.nozzle; t.updateWorldMatrix(true, false); return W.root.worldToLocal(t.getWorldPosition(new THREE.Vector3())); };
     const flangeLen = () => FLANGE;
     const above = (fn, dy, dx = 0) => () => { const v = fn().clone(); v.y += dy; v.x += dx; return v; };
-    steps.push(call(() => { shadows(false); }));
+    steps.push(call(() => { shadows(false); P.stage = 'front'; }));
     steps.push(pose(TUCK, 2.6));                                         // unplug, fold up for the drive
     steps.push(drive(FRONT_X, W.DOCK[0].y));
     steps.push(turnTo(0, 1));
@@ -359,6 +365,7 @@ export function createPrintLoop(W) {
     // round the module's open end to the lane behind it
     steps.push(turnTo(0, -1));
     steps.push(drive(FRONT_X, END_Y));
+    steps.push(call(() => { P.stage = 'back'; }));                   // FEAT-025c: the front lane is free for the second arm
     steps.push(turnTo(-1, 0));
     steps.push(drive(BACK_X, END_Y));
     steps.push(turnTo(0, 1));
@@ -374,7 +381,9 @@ export function createPrintLoop(W) {
       steps.push(pose(() => ({ ...P.q, j1: 0 }), 1.4));               // high up the arm turns along the lane
       steps.push(pose(TUCK, 2.4));
     });
-    // back to the dock and plug in
+    // back to the dock and plug in (FEAT-025c: first the second arm leaves the front lane's far end)
+    steps.push(call(() => { P.stage = 'return'; }));
+    steps.push(waitFor(() => !W.partner || !W.partner.inSouth()));
     steps.push(turnTo(0, -1));
     steps.push(drive(BACK_X, END_Y));
     steps.push(turnTo(1, 0));
@@ -384,7 +393,7 @@ export function createPrintLoop(W) {
     steps.push(turnTo(-1, 0));
     steps.push(drive(W.DOCK[0].x, W.DOCK[0].y, true));
     steps.push(pose(PARK, 2.6));
-    steps.push(call(() => { shadows(true); P.phase = 'done'; }));
+    steps.push(call(() => { shadows(true); P.phase = 'done'; P.stage = 'home'; }));
     return steps;
   }
   function attachTool() {
@@ -417,7 +426,7 @@ export function createPrintLoop(W) {
     W.hose.geometry = HOSE.oldGeo;
     shadows(true);
     P.bay = -1; P.layer = -1; P.extruding = false;
-    P.phase = 'idle';
+    P.phase = 'idle'; P.stage = 'dock';
   }
 
   function onScreen() {
@@ -441,7 +450,9 @@ export function createPrintLoop(W) {
         P.cur = P.steps.shift(); P.cur.t = 0;
         if (P.cur.start) P.cur.start();
       }
-      const c = P.cur, need = c.dur - c.t, use = Math.min(left, need);
+      const c = P.cur;
+      if (c.until && c.until()) c.t = c.dur;
+      const need = c.dur - c.t, use = Math.min(left, need);
       c.t += use; left -= use;
       c.update(c.dur > 0 ? Math.min(1, c.t / c.dur) : 1);
       if (c.t >= c.dur - 1e-9) { if (c.end) c.end(); P.cur = null; if (P.phase !== 'running') break; }
@@ -453,12 +464,15 @@ export function createPrintLoop(W) {
     const dt = P.last ? Math.min(0.05, Math.max(0, (now - P.last) / 1000)) : 0;
     P.last = now;
     P.onScreen = onScreen();
+    const B = W.partner;
     if (!P.onScreen) {
-      if (P.phase === 'done') reset();                        // the walls go only while nobody sees them
+      if (P.phase === 'done' && (!B || B.done())) { reset(); if (B) B.reset(); }   // the walls go only while nobody sees them
       return;
     }
     advance(dt);
+    if (B) B.advance(dt);
     afterMove();
+    if (B) B.afterMove();
   }
   function afterMove() {
     if (P.hoseDirty) { pullHose(); drawHose(); P.hoseDirty = false; }
@@ -493,7 +507,20 @@ export function createPrintLoop(W) {
   return {
     step,
     // tests: run the loop forward by sec seconds (as if on screen), and the state
-    run(sec, dt = 1 / 30) { for (let t = 0; t < sec; t += dt) { if (P.phase === 'done') break; advance(dt); afterMove(); } return this.state(); },
+    run(sec, dt = 1 / 30, each) {
+      const B = W.partner;
+      for (let t = 0; t < sec; t += dt) {
+        if (P.phase === 'done' && (!B || B.done())) break;
+        advance(dt); if (B) B.advance(dt);
+        afterMove(); if (B) B.afterMove();
+        if (each) each(t);
+      }
+      return this.state();
+    },
+    // FEAT-025c: for the second arm
+    info: () => ({ phase: P.phase, stage: P.stage || 'dock', bay: P.bay }),
+    placeCleats: (i, track) => placeCleats(P.cleats[i], track),
+    hoseDirty: () => { P.hoseDirty = true; },
     reset,
     state: () => ({ phase: P.phase, clock: +P.clock.toFixed(1), left: P.steps.length, bay: P.bay, layer: P.layer, onScreen: P.onScreen,
       shown: P.walls.map((w) => `${w.shown}/${w.order.length}`), tool: arm.tool ? arm.tool.userData.kind : null, extruding: !!P.extruding,
