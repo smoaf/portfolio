@@ -1,6 +1,6 @@
 // New module worksite (FEAT-025a): two robot arms will build the module instead of scaffolds.
-// This part only sets the site up; nothing moves yet (the print arm's loop is FEAT-025b, the second
-// arm's work FEAT-025c, clicking an arm FEAT-025d).
+// This part sets the site up; the print arm's loop (FEAT-025b) is in printloop.js; the second
+// arm's work is FEAT-025c, clicking an arm FEAT-025d.
 //   - the fixed equipment is in the station model (3d/scripts/construction.py, worksite_equipment):
 //     tool rack, material silo and drums, offcuts by the panel stacks, charging dock with two spots,
 //     cable reel and control console
@@ -21,6 +21,7 @@
 // The area pattern: setup(host), step(now).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { createPrintLoop } from './printloop.js';
 
 // where the model puts the site (3d/scripts/arrangement_v5.py: rot = phi + 90°, d_fut along phi)
 const SITE = { x: -6.777112, y: -27.839059, rot: Math.PI / 6 };
@@ -36,7 +37,7 @@ const SHOULDER = 1.25, UPPER = 3.0, FORE0 = 0.3, FORE = 2.4, WRIST = 0.18;
 // parked: upper arm leaning back a little, forearm folded down in front, the flange pointing at the deck
 const PARK = { j1: 0, j2: -0.25, j3: 2.85, j4: 0, j5: 0.54, j6: 0 };
 
-const S = { host: null, ready: false, root: null, arms: [], tools: {}, hose: null, mats: null };
+const S = { host: null, ready: false, root: null, arms: [], tools: {}, hose: null, mats: null, loop: null };
 
 // ---- small helpers
 const tr = (g, x, y, z) => { g.translate(x, y, z); return g; };
@@ -167,7 +168,7 @@ function buildHose(arm) {
   const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
   const geo = new THREE.TubeGeometry(curve, 220, 0.055, 8, false);
   const m = mesh('hose', geo, S.mats.line);
-  m.userData.length = curve.getLength();
+  m.userData.length = curve.getLength(); m.userData.curve = curve;
   return m;
 }
 
@@ -209,12 +210,17 @@ function setup(host, model) {
   root.updateMatrixWorld(true);
   S.hose = buildHose(S.arms[0]);
   root.add(S.hose);
+  // FEAT-025b: the print arm's loop (newmodule/printloop.js)
+  const toolHome = {};
+  for (const k in S.tools) toolHome[k] = { p: S.tools[k].position.clone(), q: S.tools[k].quaternion.clone() };
+  S.loop = createPrintLoop({ root, arms: S.arms, tools: S.tools, hose: S.hose, mats: S.mats, host, DOCK, DOCK_TOP, TOOL_LEN, toolHome });
   S.ready = true;
   host.markShadows();
 }
-function step() { /* nothing moves at the site yet (FEAT-025b, FEAT-025c) */ }
+function step(now) { if (S.loop) S.loop.step(now); }
 
 export const worksite = { setup, step,
+  get loop() { return S.loop; },
   // tests and the later parts
   get arms() { return S.arms; }, get tools() { return S.tools; }, get root() { return S.root; },
   state: () => ({ ready: S.ready, arms: S.arms.length, tools: Object.keys(S.tools), hose: S.hose ? +S.hose.userData.length.toFixed(1) : 0,

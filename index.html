@@ -3036,8 +3036,8 @@ const gdHost = {
 const mdHost = { scene, place: () => (nav.place ? nav.place.id : null) };
 
 // --- the showroom robot (showroom/robot.js): runs while the showroom is open, darkens with its roof
-// --- the New module's worksite (newmodule/worksite.js): two robot arms parked at their dock (FEAT-025a)
-const wkHost = { scene, markShadows: () => markShadows() };
+// --- the New module's worksite (newmodule/worksite.js): two robot arms at their dock (FEAT-025a); arm A prints the open bays in a loop (FEAT-025b)
+const wkHost = { scene, camera, markShadows: () => markShadows(), night: () => skyState.d };   // FEAT-025b: the print arm runs while the site is on screen
 
 const rbHost = {
   scene, camera, ray, setRay, reduceMotion, timeOfDay, ask: askOpen,
