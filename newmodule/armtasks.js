@@ -9,7 +9,8 @@
 //     on the pile
 //   - print a module foot: the station's A-frame leg at small scale, printed layer by layer with the
 //     glowing bead; the gripper lays it on the pile
-// The tasks are done in a corner of their own beside the site (east of the dock, towards the visitor):
+// The tasks are done in a corner of their own beside the site (past the module's open end, in view from
+// the place on a computer and a phone):
 // a small task rack (a cradle to park the arm's own head, then nozzle, laser, gripper, welder), a stack of
 // panel offcuts, a print plate and the pile for the next module. So a task never needs a head the other
 // arm is working with, and it never enters the lanes the other arm works in: both arms drive there along
@@ -30,14 +31,14 @@ const SPEED = 1.7, TURN = 1.4;
 
 // ---- where (site frame)
 const STRIP_Y = -6.6;                                      // past the module's open end (the print arm's END_Y)
-const CORNER_X = 11.6;                                     // up to the corner, east of the dock
-const K = { x: 11.6, y: -2.4 };                            // the task station: the base stops here facing +y
-const STAND = { x: 13.78, post: 14.03, top: 1.15, slots: [-3.4, -2.8, -2.2, -1.6, -1.0] };   // slot 0 parks the arm's own head
+const CORNER_X = 1.0;                                      // from the strip south to the corner
+const K = { x: 1.0, y: -8.5 };                             // the task station: the base stops here facing -y
+const STAND = { y: -10.75, top: 1.15, slots: [-0.2, 0.4, 1.0, 1.6, 2.2] };   // a small rack along x, its cradles facing the station; slot 0 parks the arm's own head
 const KINDS = ['nozzle', 'laser', 'gripper', 'welder'];   // in slots 1..4
-const WORK = { x: 13.2, y: -4.4, w: 0.9, d: 0.9, h: 0.06 };   // the print plate
-const OFF = { x: 12.9, y: 0.2, w: 0.95, d: 0.85, h: 0.1, pw: 0.8, pd: 0.7, t: 0.05, n: 6 };   // pallet with panel offcuts
-const PILE = { x: 10.4, y: 0.2, w: 1.1, d: 1.0, h: 0.1, max: 10 };
-const SCRAP = { x: 13.85, y: 0.35 };                       // the trimmed strips drop here
+const WORK = { x: 3.1, y: -9.4, w: 0.9, d: 0.9, h: 0.06 };   // the print plate
+const OFF = { x: -1.1, y: -9.75, w: 0.95, d: 0.85, h: 0.1, pw: 0.8, pd: 0.7, t: 0.05, n: 6 };   // pallet with panel offcuts
+const PILE = { x: -1.3, y: -8.1, w: 1.1, d: 1.0, h: 0.1, max: 10 };
+const SCRAP = { x: -2.2, y: -10.2 };                       // the trimmed strips drop here
 // the dock's slab (construction.py): the bases ride up onto it
 const SLAB = { x0: 6.4, x1: 9.2, y0: -4.9, y1: 0.9 };
 
@@ -73,21 +74,21 @@ export function createArmTasks(W, loops) {
   // the print plate, the pile's pallet
   {
     const pl = [], st = [];
-    const ry0 = STAND.slots[0] - 0.4, ry1 = STAND.slots[4] + 0.4, rx = STAND.x + 0.02;
     const rod = (a, b, r) => {                               // a thin rod between two site points
       const A = at(...a), B = at(...b), d = B.clone().sub(A), g = new THREE.CylinderGeometry(r, r, d.length(), 6);
       g.applyQuaternion(tq.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()));
       return g.translate((A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2);
     };
     const sbox = (w, d, h, x, y, z) => box(w, h, d, x, z, -y);   // a box in site measures (x, y, z up)
-    pl.push(sbox(0.9, ry1 - ry0 + 0.4, 0.1, rx, (ry0 + ry1) / 2, 0.05));
-    for (const y of [ry0, ry1]) st.push(rod([rx + 0.25, y, 0.1], [rx + 0.25, y, 1.65], 0.04));
-    st.push(rod([rx + 0.25, ry0 - 0.12, 1.6], [rx + 0.25, ry1 + 0.12, 1.6], 0.03));
-    st.push(rod([rx + 0.25, ry0 - 0.12, 0.55], [rx + 0.25, ry1 + 0.12, 0.55], 0.025));
-    for (const y of STAND.slots) {
-      pl.push(sbox(0.5, 0.46, 0.06, rx - 0.02, y, 1.12));
-      for (const dy of [-0.19, 0.19]) st.push(rod([rx + 0.25, y + dy, 1.16], [rx - 0.26, y + dy, 1.16], 0.018));
-      st.push(rod([rx + 0.25, y, 1.15], [rx + 0.25, y, 1.6], 0.018));
+    const rx0 = STAND.slots[0] - 0.4, rx1 = STAND.slots[4] + 0.4, ry = STAND.y - 0.02, back = ry - 0.25;   // the posts on the far side
+    pl.push(sbox(rx1 - rx0 + 0.4, 0.9, 0.1, (rx0 + rx1) / 2, ry, 0.05));
+    for (const x of [rx0, rx1]) st.push(rod([x, back, 0.1], [x, back, 1.65], 0.04));
+    st.push(rod([rx0 - 0.12, back, 1.6], [rx1 + 0.12, back, 1.6], 0.03));
+    st.push(rod([rx0 - 0.12, back, 0.55], [rx1 + 0.12, back, 0.55], 0.025));
+    for (const x of STAND.slots) {
+      pl.push(sbox(0.46, 0.5, 0.06, x, ry + 0.02, 1.12));
+      for (const dx of [-0.19, 0.19]) st.push(rod([x + dx, back, 1.16], [x + dx, ry + 0.26, 1.16], 0.018));
+      st.push(rod([x, back, 1.15], [x, back, 1.6], 0.018));
     }
     pl.push(sbox(WORK.w, WORK.d, WORK.h, WORK.x, WORK.y, WORK.h / 2));                 // the print plate
     st.push(sbox(WORK.w + 0.02, 0.02, 0.012, WORK.x, WORK.y - WORK.d / 2, WORK.h));      // its edges
@@ -115,7 +116,7 @@ export function createArmTasks(W, loops) {
   // ---- the task rack's heads (built like the site's; the gripper's fingers move)
   const homes = {};                                         // kind → { slot, p, q }
   const hang = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI);
-  const slotAt = (s, kind) => at(STAND.x, STAND.slots[s], STAND.top + W.TOOL_LEN[kind] + 0.06);
+  const slotAt = (s, kind) => at(STAND.slots[s], STAND.y, STAND.top + W.TOOL_LEN[kind] + 0.06);
   const heads = {};
   KINDS.forEach((k, i) => {
     let t;
@@ -434,7 +435,7 @@ export function createArmTasks(W, loops) {
       return laserPath(r, [at(WORK.x - 0.3, y, 0), at(WORK.x + 0.2, y, 0)].map((v) => v.setY(WORK.h)), WORK.h, 0.4);
     }
     if (kind === 'gripper') {                                  // held up in front, the fingers open and close twice
-      const p = () => at(K.x + 0.9, K.y + 1.6, 2.4);
+      const p = () => at(K.x + 1.0, K.y - 1.6, 2.4);
       return [
         reach(r, p, Math.PI / 2 - 0.4, 1.6),
         mk(2.4, (u) => grip(0.5 + 0.5 * Math.cos(u * Math.PI * 4))),
@@ -553,7 +554,7 @@ export function createArmTasks(W, loops) {
     steps.push(call(() => { r.road = W.road == null; W.road = r.i; }));
     r.wps = route(r);
     r.wps.forEach(([x, y]) => steps.push(...goTo(r, x, y)));
-    steps.push(turnTo(r, () => [0, 1]));
+    steps.push(turnTo(r, () => [0, -1]));
     return steps;
   }
   function tripBack(r) {
@@ -791,7 +792,7 @@ export function createArmTasks(W, loops) {
 
   placeOffcuts(OFF.n);
   // the hose keeps out of the corner's things
-  [[STAND.x + 0.1, -3.2, 0.55], [STAND.x + 0.1, -2.2, 0.55], [STAND.x + 0.1, -1.2, 0.55], [WORK.x, WORK.y, 0.7], [OFF.x, OFF.y, 0.7], [PILE.x, PILE.y, 0.8], [SCRAP.x, SCRAP.y, 0.4]]
+  [[0.0, STAND.y, 0.55], [1.0, STAND.y, 0.55], [2.0, STAND.y, 0.55], [WORK.x, WORK.y, 0.7], [OFF.x, OFF.y, 0.7], [PILE.x, PILE.y, 0.8], [SCRAP.x, SCRAP.y, 0.4]]
     .forEach((c) => loops[0].keepOut(c));
   W.host.markShadows();
 
@@ -799,10 +800,11 @@ export function createArmTasks(W, loops) {
     advance, afterMove, busy, offScreen, tap, hover, request,
     close: () => { R.forEach((r) => { if (r.state === 'look') { closeAsk(); goBack(r); } else if (r.state === 'wait') { r.loop.cancelHold(); r.state = 'free'; } }); },
     pick: (i, id) => { const r = R[i]; if (r.state === 'look') { closeAsk(); runTask(r, id); } },
-    sphere: (s) => { W.root.localToWorld(s.center.set(12.0, 1.5, 2.2)); s.radius = 3.6; return s; },
+    sphere: (s) => { W.root.localToWorld(s.center.set(0.9, 1.5, 9.4)); s.radius = 3.4; return s; },
     // tests
     state: () => ({ arms: R.map((r) => ({ state: r.state, left: r.steps.length, base: [+r.arm.base.position.x.toFixed(2), +(-r.arm.base.position.z).toFixed(2)], tool: r.arm.tool ? r.arm.tool.userData.kind + (r.arm.tool.userData.task ? '*' : '') : null, own: r.own ? r.own.userData.kind : null })),
       road: W.road, pile: T.pile.length, scrap: T.scrap.length, offcuts: T.offLeft, ask: T.ask }),
+    cam: () => W.host.camera,
     screen(i) {                                              // where on the page arm i's upper arm is
       const r = R[i], v = new THREE.Vector3();
       r.arm.joints.j3.getWorldPosition(v).project(W.host.camera);
