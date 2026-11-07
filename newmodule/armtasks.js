@@ -542,7 +542,7 @@ export function createArmTasks(W, loops) {
   function route(r) {                                        // the waypoints from the stop to the station
     const { x, y } = r.stop, w = [];
     if (near(x, 5.0)) w.push([5.0, STRIP_Y]);
-    else if (near(x, W.DOCK[0].x) && near(y, W.DOCK[0].y)) w.push([x, STRIP_Y]);
+    else if (near(x, W.DOCK[0].x) && near(y, W.DOCK[0].y)) w.push([x, -6.1], [5.0, STRIP_Y]);   // clear of the floodlight
     else if (near(x, W.DOCK[1].x)) w.push([5.0, y], [5.0, STRIP_Y]);
     else if (x < -3) w.push([x, STRIP_Y]);
     w.push([CORNER_X, STRIP_Y], [K.x, K.y]);
