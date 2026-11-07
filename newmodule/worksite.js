@@ -1,6 +1,6 @@
 // New module worksite (FEAT-025a): two robot arms will build the module instead of scaffolds.
 // This part sets the site up; the print arm's loop (FEAT-025b) is in printloop.js; the second
-// arm's work (FEAT-025c) in fitarm.js; clicking an arm is FEAT-025d.
+// arm's work (FEAT-025c) in fitarm.js; clicking an arm gives it a task (FEAT-025d, armtasks.js).
 //   - the fixed equipment is in the station model (3d/scripts/construction.py, worksite_equipment):
 //     tool rack, material silo and drums, offcuts by the panel stacks, charging dock with two spots,
 //     cable reel and control console
@@ -23,6 +23,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createPrintLoop } from './printloop.js';
 import { createFitLoop } from './fitarm.js';
+import { createArmTasks } from './armtasks.js';
 
 // where the model puts the site (3d/scripts/arrangement_v5.py: rot = phi + 90°, d_fut along phi)
 const SITE = { x: -6.777112, y: -27.839059, rot: Math.PI / 6 };
@@ -38,7 +39,7 @@ const SHOULDER = 1.25, UPPER = 3.0, FORE0 = 0.3, FORE = 2.4, WRIST = 0.18;
 // parked: upper arm leaning back a little, forearm folded down in front, the flange pointing at the deck
 const PARK = { j1: 0, j2: -0.25, j3: 2.85, j4: 0, j5: 0.54, j6: 0 };
 
-const S = { host: null, ready: false, root: null, arms: [], tools: {}, hose: null, mats: null, loop: null, fit: null };
+const S = { host: null, ready: false, root: null, arms: [], tools: {}, hose: null, mats: null, loop: null, fit: null, tasks: null };
 
 // ---- small helpers
 const tr = (g, x, y, z) => { g.translate(x, y, z); return g; };
@@ -214,18 +215,26 @@ function setup(host, model) {
   // FEAT-025b: the print arm's loop (newmodule/printloop.js)
   const toolHome = {};
   for (const k in S.tools) toolHome[k] = { p: S.tools[k].position.clone(), q: S.tools[k].quaternion.clone() };
-  const W = { root, arms: S.arms, tools: S.tools, hose: S.hose, mats: S.mats, host, DOCK, DOCK_TOP, TOOL_LEN, toolHome };
+  const W = { root, arms: S.arms, tools: S.tools, hose: S.hose, mats: S.mats, host, DOCK, DOCK_TOP, TOOL_LEN, toolHome, buildTool, road: null };
   S.loop = createPrintLoop(W);
   // FEAT-025c: the second arm works alongside in the same loop (newmodule/fitarm.js)
   S.fit = createFitLoop(W, S.loop);
   W.partner = S.fit;
+  // FEAT-025d: click an arm to give it a task (newmodule/armtasks.js)
+  S.tasks = createArmTasks(W, [S.loop, S.fit]);
+  W.tasks = S.tasks;
   S.ready = true;
   host.markShadows();
 }
 function step(now) { if (S.loop) S.loop.step(now); }
 
-export const worksite = { setup, step,
-  get loop() { return S.loop; }, get fit() { return S.fit; },
+// FEAT-025d: a tap on an arm (true when it was one); a tap elsewhere sends an asking arm back to work
+const tap = (ev) => (S.tasks ? S.tasks.tap(ev) : false);
+const hover = (ev) => (S.tasks ? S.tasks.hover(ev) : false);
+const reset = () => { if (S.tasks) S.tasks.close(); };    // leaving the place: the bubble closes, the arm goes back to work
+
+export const worksite = { setup, step, tap, hover, reset,
+  get loop() { return S.loop; }, get fit() { return S.fit; }, get tasks() { return S.tasks; },
   // tests and the later parts
   get arms() { return S.arms; }, get tools() { return S.tools; }, get root() { return S.root; },
   state: () => ({ ready: S.ready, arms: S.arms.length, tools: Object.keys(S.tools), hose: S.hose ? +S.hose.userData.length.toFixed(1) : 0,
