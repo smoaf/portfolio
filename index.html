@@ -2608,7 +2608,9 @@ function placeArmAsk() {
   o.at(vTmp).project(camera);
   const r = el.getBoundingClientRect(), bw = b.offsetWidth, bh = b.offsetHeight;
   const x = r.left + (vTmp.x + 1) / 2 * r.width, y = r.top + (1 - vTmp.y) / 2 * r.height;
-  const top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 77) + 12;
+  let top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 77) + 12;
+  const ban = document.querySelector('.tour-banner');               // below the first-visit banner while it shows (it would cover the bubble's ✕)
+  if (ban && !ban.hidden && ban.offsetHeight) top = Math.max(top, ban.getBoundingClientRect().bottom + 10);
   const cx = Math.max(16 + bw / 2, Math.min(window.innerWidth - 16 - bw / 2, x)), cy = Math.max(top + bh, Math.min(window.innerHeight - 12, y));
   b.style.left = cx + 'px'; b.style.top = cy + 'px';
   b.style.setProperty('--tail', Math.max(18, Math.min(bw - 18, bw / 2 + x - cx)) + 'px');
