@@ -235,6 +235,9 @@
   .robot-ask .bubble-lead { margin: 0 0 4px; font: 400 14px/1.3 var(--font-display); color: var(--glass-soft); }
   .robot-ask .bubble-close { position: absolute; top: 4px; right: 4px; min-width: 36px; min-height: 36px; padding: 0; font-size: 13px; }
   body.tour-on .robot-ask, body.safari-on .robot-ask { display: none !important; }
+  /* FEAT-025d: a robot arm at the New module offers three tasks (no Tour or message) */
+  .arm-ask .bubble-actions { flex-direction: column; align-items: stretch; }
+  .arm-ask .bubble-actions .btn { text-align: left; }
   /* while a robot's form is open, like the camp's form: nothing lies over it (the hub film's sound button would cover its Close) */
   body.robot-msg .md-sound, body.robot-msg .tour-banner, body.robot-msg .nav, body.robot-msg .gear, body.robot-msg .controls, body.robot-msg .skypanel, body.robot-msg .markers { display: none !important; }
   /* FEAT-023: first-visit banner, the guide's speech card on the tour, the top menu pulsing at its end */
@@ -384,6 +387,11 @@
   <p class="bubble-lead" id="robot-ask-lead" hidden></p>
   <p>Hi! Tour or leave a message?</p>
   <div class="bubble-actions"><button class="btn" id="robot-ask-tour" type="button">Tour</button><button class="btn" id="robot-ask-msg" type="button">Leave a message</button></div>
+</div>
+<div class="bubble robot-ask arm-ask" id="arm-ask" hidden role="dialog" aria-label="The robot arm">
+  <button class="btn ghost bubble-close" id="arm-ask-close" type="button" aria-label="Close">✕</button>
+  <p data-placeholder="true">Need something?</p>
+  <div class="bubble-actions"><button class="btn" data-task="swap" type="button">Swap tool and show it</button><button class="btn" data-task="cut" type="button">Laser-cut a part</button><button class="btn" data-task="foot" type="button">Print a module foot</button></div>
 </div>
 <aside class="panel" id="msg-panel" aria-hidden="true" aria-label="Leave a message">
   <button class="btn ghost panel-close" id="msg-close" aria-label="Close">Close ✕</button>
@@ -1908,6 +1916,7 @@ function tapOwn(ev) {
   if (nav.place.id === 'library') return library.tap(ev);
   if (nav.place.id === 'hub') return guide.tap(ev);
   if (nav.place.id === 'showroom') { if (robot.tap(ev)) return true; if (hitRoof(ev)) { setRoof(!roof.closed); return true; } }
+  if (nav.place.id === 'new-module') return worksite.tap(ev);   // FEAT-025d: an arm takes a task
   return false;
 }
 el.addEventListener('wheel', (ev) => {
@@ -1950,6 +1959,7 @@ function hoverOwn(ev) {
   if (nav.place.id === 'relay') return relay.hover(ev);
   if (nav.place.id === 'library') return library.hover(ev);
   if (nav.place.id === 'hub') { const on = guide.hover(ev); el.style.cursor = on ? 'pointer' : ''; return on; }
+  if (nav.place.id === 'new-module') { const on = worksite.hover(ev); el.style.cursor = on ? 'pointer' : ''; return on; }
   return false;
 }
 el.addEventListener('pointerleave', () => { setTip(null); robot.hover(null); guide.hover(null); });
@@ -2572,7 +2582,48 @@ window.addEventListener('keydown', (e) => {          // Esc closes the question 
   e.preventDefault(); e.stopImmediatePropagation();
   askEnd();
 }, true);
-function askReset() { if (ask.cur || (camp.msgOpen && camp.msgFrom === 'robot')) askEnd(); }
+function askReset() { if (ask.cur || (camp.msgOpen && camp.msgFrom === 'robot')) askEnd(); armAskEnd(true); }
+// FEAT-025d: a robot arm at the New module offers three tasks in a bubble like the robots' (no Tour or
+// message). The arm's code calls armAskOpen({ at, tasks, pick, close }); ✕, Esc, a tap elsewhere or
+// leaving the place close it, and the arm goes back to work.
+const armAsk = { el: document.getElementById('arm-ask'), cur: null };
+function armAskOpen(o) {
+  armAsk.cur = o;
+  armAsk.el.querySelectorAll('[data-task]').forEach((b) => { b.disabled = !o.tasks[b.dataset.task]; });
+  const b = armAsk.el;
+  if (b.hidden) { b.hidden = false; requestAnimationFrame(() => { if (armAsk.cur) b.classList.add('on'); }); }
+  placeArmAsk();
+  setTimeout(() => { if (!b.hidden) b.querySelector('[data-task]').focus({ preventScroll: true }); }, 50);
+}
+function armAskHide() { armAsk.el.classList.remove('on'); armAsk.el.hidden = true; }
+function armAskEnd(tellArm) {                          // tellArm: the arm still waits for an answer (✕, Esc, leaving)
+  const o = armAsk.cur;
+  armAsk.cur = null; armAskHide();
+  if (tellArm && o) o.close();
+  if (tellArm) worksite.reset();
+}
+function placeArmAsk() {
+  const b = armAsk.el, o = armAsk.cur;
+  if (b.hidden || !o) return;
+  o.at(vTmp).project(camera);
+  const r = el.getBoundingClientRect(), bw = b.offsetWidth, bh = b.offsetHeight;
+  const x = r.left + (vTmp.x + 1) / 2 * r.width, y = r.top + (1 - vTmp.y) / 2 * r.height;
+  const top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 77) + 12;
+  const cx = Math.max(16 + bw / 2, Math.min(window.innerWidth - 16 - bw / 2, x)), cy = Math.max(top + bh, Math.min(window.innerHeight - 12, y));
+  b.style.left = cx + 'px'; b.style.top = cy + 'px';
+  b.style.setProperty('--tail', Math.max(18, Math.min(bw - 18, bw / 2 + x - cx)) + 'px');
+}
+document.getElementById('arm-ask-close').addEventListener('click', () => armAskEnd(true));
+armAsk.el.querySelectorAll('[data-task]').forEach((btn) => btn.addEventListener('click', () => {
+  const o = armAsk.cur;
+  armAsk.cur = null; armAskHide();
+  if (o) o.pick(btn.dataset.task);
+}));
+window.addEventListener('keydown', (e) => {          // Esc closes the arm's bubble, not the place
+  if (e.key !== 'Escape' || !armAsk.cur) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  armAskEnd(true);
+}, true);
 function endTalk() {
   tour.introLeft();
   closeMsg(); showBubble(false);
@@ -2709,7 +2760,7 @@ async function endSafari(opts = {}) {
 function stepCamp(now) {
   const dt = camp.last ? Math.min(0.1, (now - camp.last) / 1000) : 0; camp.last = now;
   stepJab(dt); stepSparks(dt, now / 1000); stepCampKeys();
-  placeBubble(); placeAsk(); stepFigureGlow(now);
+  placeBubble(); placeAsk(); placeArmAsk(); stepFigureGlow(now);
   const id = camp.hover;
   if (id && !campEls.tip.hidden) {
     TARGETS[id].anchor(vTmp).project(camera);
@@ -3037,7 +3088,8 @@ const mdHost = { scene, place: () => (nav.place ? nav.place.id : null) };
 
 // --- the showroom robot (showroom/robot.js): runs while the showroom is open, darkens with its roof
 // --- the New module's worksite (newmodule/worksite.js): two robot arms at their dock (FEAT-025a); arm A prints the open bays in a loop (FEAT-025b)
-const wkHost = { scene, camera, markShadows: () => markShadows(), night: () => skyState.d };   // FEAT-025b: the print arm runs while the site is on screen
+const wkHost = { scene, camera, markShadows: () => markShadows(), night: () => skyState.d,   // FEAT-025b: the print arm runs while the site is on screen
+  el, ray, setRay, armAsk: (o) => armAskOpen(o), armAskClose: () => armAskEnd(false) };     // FEAT-025d: click an arm, it offers three tasks
 
 const rbHost = {
   scene, camera, ray, setRay, reduceMotion, timeOfDay, ask: askOpen,
@@ -3081,6 +3133,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__robot = robot;
   window.__worksite = worksite;
   window.__robotScreen = () => { robot.bodyAt(vTmp).project(camera); const r = el.getBoundingClientRect(); return [r.left + (vTmp.x + 1) / 2 * r.width, r.top + (1 - vTmp.y) / 2 * r.height]; };
+  window.__armAsk = () => ({ open: !armAsk.el.hidden, cur: !!armAsk.cur, rect: armAsk.el.getBoundingClientRect().toJSON(), buttons: [...armAsk.el.querySelectorAll('button')].map((b) => b.textContent + (b.disabled ? ' (off)' : '')) });
   window.__ask = () => ({ open: !ask.el.hidden, cur: !!ask.cur, msg: camp.msgOpen, from: camp.msgFrom || null });
   window.__guide = guide;
   window.__tour = tour;

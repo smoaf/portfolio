@@ -14,6 +14,7 @@
 // the printed walls never vanish in view.
 // Coordinates as in worksite.js: the site frame (z up, the module's long axis along y, the open side +x).
 import * as THREE from 'three';
+import { holdCheck, folded } from './hold.js';
 
 // ---- the module's section (3d/scripts/construction.py, build_station_v4.py P: keep in step)
 const Z0 = 4.1;                                             // the module's middle above the ground (lift 2.3 + height/2)
@@ -289,14 +290,15 @@ export function createPrintLoop(W) {
     });
     return s;
   }
-  function tipMove(from, to, tau, dur, lenFn = toolTipLen) {   // the tool's tip in a straight line (root-frame points or functions)
+  function tipMove(from, to, tau, dur, lenFn = toolTipLen, tau2 = tau) {   // the tool's tip in a straight line (root-frame points or functions)
     let a, b;
-    return mk(dur, (u) => { const e = ss(u); tmp2.lerpVectors(a, b, e); setQ(solve(tmp2, tau, lenFn())); },
+    return mk(dur, (u) => { const e = ss(u); tmp2.lerpVectors(a, b, e); setQ(solve(tmp2, tau + (tau2 - tau) * e, lenFn())); },
       () => { a = (typeof from === 'function' ? from() : from).clone(); b = (typeof to === 'function' ? to() : to).clone(); });
   }
   const call = (fn) => mk(0, () => {}, fn);
   const waitFor = (cond) => { const s = mk(1e6, () => {}); s.until = cond; return s; };   // FEAT-025c: holds until cond() is true
 
+  const above = (fn, dy, dx = 0) => () => { const v = fn().clone(); v.y += dy; v.x += dx; return v; };
   // where the tool's tip is now (root frame)
   function tipNow(len) {
     arm.mount.updateWorldMatrix(true, false);
@@ -313,22 +315,43 @@ export function createPrintLoop(W) {
   // leans out (the arm stays outside the fresh wall)
   const tauAt = (L) => { const v = Math.max(0, (L / (LAYERS - 1) - 0.35) / 0.65); return -0.45 + 1.65 * Math.pow(v, 1.2); };
 
-  function printBay(bi) {
+  function printBay(bi) {                                       // one step per layer (FEAT-025d: a task can stop it between layers)
     const bay = BAYS[bi], w = P.walls[bi], len = bay.y1 - bay.y0 - 2 * END;
     const tLayer = len / PRINT_V + PRINT_TURN;
     const y0 = bay.y0 + END, y1 = bay.y1 - END;
-    const p = new THREE.Vector3();
-    return mk(LAYERS * tLayer, (u) => {
-      const t = u * LAYERS * tLayer;
-      const L = Math.min(LAYERS - 1, Math.floor(t / tLayer));
-      const f = Math.min(1, (t - L * tLayer) / (len / PRINT_V));
-      const y = L % 2 ? y1 + (y0 - y1) * f : y0 + (y1 - y0) * f;
-      layerTip(L, y, p);
-      const yb = L % 2 ? bay.y1 + (bay.y0 - bay.y1) * f : bay.y0 + (bay.y1 - bay.y0) * f;   // the bead reaches the ribs
-      setQ(solve(p, tauAt(L), toolTipLen()));
-      P.bay = bi; P.layer = L;
-      reveal(w, L, yb, u >= 1);
-    }, () => { P.bay = bi; P.layer = 0; P.extruding = true; }, () => { P.extruding = false; finishWall(w); });
+    const p = new THREE.Vector3(), steps = [];
+    for (let L = 0; L < LAYERS; L++) {
+      const s = mk(tLayer, (u) => {
+        const f = Math.min(1, u * tLayer / (len / PRINT_V));
+        const y = L % 2 ? y1 + (y0 - y1) * f : y0 + (y1 - y0) * f;
+        layerTip(L, y, p);
+        const yb = L % 2 ? bay.y1 + (bay.y0 - bay.y1) * f : bay.y0 + (bay.y1 - bay.y0) * f;   // the bead reaches the ribs
+        setQ(solve(p, tauAt(L), toolTipLen()));
+        P.bay = bi; P.layer = L;
+        reveal(w, L, yb, false);
+      }, () => { P.bay = bi; P.layer = L; P.extruding = true; }, L === LAYERS - 1 ? () => { P.extruding = false; finishWall(w); } : null);
+      s.layer = { bi, L, end: L % 2 ? y0 : y1 };
+      steps.push(s);
+    }
+    return steps;
+  }
+  // FEAT-025d: off the wall between two layers (as after a bay: up, out over the lane, turn along it, fold) and back on
+  function layerExit(bi, L) {
+    const bay = BAYS[bi];
+    return [
+      call(() => { P.extruding = false; }),
+      tipMove(() => tipNow(toolTipLen()), above(() => tipNow(toolTipLen()), 0.4), tauAt(L), 0.7),
+      tipMove(() => tipNow(toolTipLen()), () => at(-3.4, bay.c, Z0 + WALL_Z1 + 0.5, new THREE.Vector3()), tauAt(L), 1.4, toolTipLen, tauAt(LAYERS - 1)),
+      pose(() => ({ ...P.q, j1: 0 }), 1.4),
+      pose(TUCK, 2.4),
+    ];
+  }
+  function layerEnter(bi, L, y) {                               // to the start of layer L at y
+    return [
+      pose(SIDE, 1.8),
+      pose(() => solve(above(() => layerTip(L, y), 0.4)(), tauAt(L), toolTipLen()), 2.6),
+      tipMove(above(() => layerTip(L, y), 0.4), () => layerTip(L, y), tauAt(L), 0.8),
+    ];
   }
   function reveal(w, L, y, all) {
     let n = w.shown;
@@ -348,8 +371,8 @@ export function createPrintLoop(W) {
     const steps = [];
     const plate = () => { const t = W.tools.nozzle; t.updateWorldMatrix(true, false); return W.root.worldToLocal(t.getWorldPosition(new THREE.Vector3())); };
     const flangeLen = () => FLANGE;
-    const above = (fn, dy, dx = 0) => () => { const v = fn().clone(); v.y += dy; v.x += dx; return v; };
-    steps.push(call(() => { shadows(false); P.stage = 'front'; }));
+    steps.push(waitFor(() => W.road == null || W.road === 0));         // FEAT-025d: not while an arm drives to its task corner
+    steps.push(call(() => { W.road = 0; shadows(false); P.stage = 'front'; }));
     steps.push(pose(TUCK, 2.6));                                         // unplug, fold up for the drive
     steps.push(drive(FRONT_X, W.DOCK[0].y));
     steps.push(turnTo(0, 1));
@@ -369,12 +392,13 @@ export function createPrintLoop(W) {
     steps.push(turnTo(-1, 0));
     steps.push(drive(BACK_X, END_Y));
     steps.push(turnTo(0, 1));
+    steps.push(call(() => { if (W.road === 0) W.road = null; }));
     BAYS.forEach((bay, bi) => {
       steps.push(drive(BACK_X, bay.c - J1Z));                        // the shoulder level with the bay's middle
       steps.push(pose(SIDE, 1.8));
       steps.push(pose(() => solve(above(() => layerTip(0, bay.y0 + END), 0.4)(), tauAt(0), toolTipLen()), 2.6));
       steps.push(tipMove(above(() => layerTip(0, bay.y0 + END), 0.4), () => layerTip(0, bay.y0 + END), tauAt(0), 0.8));
-      steps.push(printBay(bi));
+      steps.push(...printBay(bi));
       // up off the wall, out over the lane, turn along it, then fold (never back down through the module)
       steps.push(tipMove(() => tipNow(toolTipLen()), above(() => tipNow(toolTipLen()), 0.4), tauAt(LAYERS - 1), 0.7));
       steps.push(tipMove(() => tipNow(toolTipLen()), () => at(-3.4, bay.c, Z0 + WALL_Z1 + 0.5, new THREE.Vector3()), tauAt(LAYERS - 1), 1.4));
@@ -383,7 +407,8 @@ export function createPrintLoop(W) {
     });
     // back to the dock and plug in (FEAT-025c: first the second arm leaves the front lane's far end)
     steps.push(call(() => { P.stage = 'return'; }));
-    steps.push(waitFor(() => !W.partner || !W.partner.inSouth()));
+    steps.push(waitFor(() => (!W.partner || !W.partner.inSouth()) && (W.road == null || W.road === 0)));
+    steps.push(call(() => { W.road = 0; }));
     steps.push(turnTo(0, -1));
     steps.push(drive(BACK_X, END_Y));
     steps.push(turnTo(1, 0));
@@ -393,7 +418,7 @@ export function createPrintLoop(W) {
     steps.push(turnTo(-1, 0));
     steps.push(drive(W.DOCK[0].x, W.DOCK[0].y, true));
     steps.push(pose(PARK, 2.6));
-    steps.push(call(() => { shadows(true); P.phase = 'done'; P.stage = 'home'; }));
+    steps.push(call(() => { shadows(true); P.phase = 'done'; P.stage = 'home'; if (W.road === 0) W.road = null; }));
     return steps;
   }
   function attachTool() {
@@ -427,6 +452,8 @@ export function createPrintLoop(W) {
     shadows(true);
     P.bay = -1; P.layer = -1; P.extruding = false;
     P.phase = 'idle'; P.stage = 'dock';
+    P.prev = null; P.hold = null; P.held = false;
+    if (W.road === 0) W.road = null;
   }
 
   function onScreen() {
@@ -436,26 +463,45 @@ export function createPrintLoop(W) {
     P.frustum.setFromProjectionMatrix(P.m4);
     W.root.localToWorld(P.sphere.center.set(0, 3, 0));
     P.sphere.radius = 8.5;
+    if (P.frustum.intersectsSphere(P.sphere)) return true;
+    if (!W.tasks) return false;                                 // FEAT-025d: the arms' task corner beside the site counts too
+    W.tasks.sphere(P.sphere);
     return P.frustum.intersectsSphere(P.sphere);
   }
 
+  // FEAT-025d: where the arm may stop for a task: folded (travelling, parked, turned to a bay), or between
+  // two layers of a wall (then it first goes up off the wall and folds, and afterwards comes back onto it)
+  function breakInfo() {
+    const prev = P.prev, next = P.steps[0];
+    if (prev && prev.layer && next && next.layer && next.layer.bi === prev.layer.bi) {
+      return { exit: layerExit(prev.layer.bi, prev.layer.L), enter: layerEnter(next.layer.bi, next.layer.L, prev.layer.end) };
+    }
+    if (prev && prev.layer) return null;                       // the last layer: the bay's own moves off the wall follow
+    return folded(P.q) ? { exit: [], enter: [] } : null;
+  }
   function advance(dt) {
     P.clock += dt; uNow.value = P.clock;
+    if (P.held) return;
+    if (P.phase !== 'running' && P.hold) { const r = P.hold; P.hold = null; P.held = true; r(); return; }   // parked: at once
     if (P.phase === 'idle') { P.steps = program(); P.cur = null; P.phase = 'running'; }
     if (P.phase !== 'running') return;
     let left = dt;
     while (left > 0 || (P.cur && P.cur.dur === 0)) {
+      if (P.held) break;
       if (!P.cur) {
+        if (holdCheck(P, false, breakInfo)) continue;
         if (!P.steps.length) break;
         P.cur = P.steps.shift(); P.cur.t = 0;
         if (P.cur.start) P.cur.start();
+        if (P.held) { P.cur = null; break; }
       }
       const c = P.cur;
+      if (c.until && !c.until() && holdCheck(P, true, breakInfo)) continue;
       if (c.until && c.until()) c.t = c.dur;
       const need = c.dur - c.t, use = Math.min(left, need);
       c.t += use; left -= use;
       c.update(c.dur > 0 ? Math.min(1, c.t / c.dur) : 1);
-      if (c.t >= c.dur - 1e-9) { if (c.end) c.end(); P.cur = null; if (P.phase !== 'running') break; }
+      if (c.t >= c.dur - 1e-9) { if (c.end) c.end(); P.prev = c; P.cur = null; if (P.phase !== 'running') break; }
       else break;
     }
   }
@@ -465,14 +511,18 @@ export function createPrintLoop(W) {
     P.last = now;
     P.onScreen = onScreen();
     const B = W.partner;
+    const T = W.tasks;
     if (!P.onScreen) {
-      if (P.phase === 'done' && (!B || B.done())) { reset(); if (B) B.reset(); }   // the walls go only while nobody sees them
+      if (P.phase === 'done' && (!B || B.done()) && !(T && T.busy())) { reset(); if (B) B.reset(); }   // the walls go only while nobody sees them
+      if (T) T.offScreen();                                       // FEAT-025d: and the pile of parts
       return;
     }
     advance(dt);
     if (B) B.advance(dt);
+    if (T) T.advance(dt);
     afterMove();
     if (B) B.afterMove();
+    if (T) T.afterMove();
   }
   function afterMove() {
     if (P.hoseDirty) { pullHose(); drawHose(); P.hoseDirty = false; }
@@ -510,15 +560,23 @@ export function createPrintLoop(W) {
     run(sec, dt = 1 / 30, each) {
       const B = W.partner;
       for (let t = 0; t < sec; t += dt) {
-        if (P.phase === 'done' && (!B || B.done())) break;
-        advance(dt); if (B) B.advance(dt);
-        afterMove(); if (B) B.afterMove();
+        if (P.phase === 'done' && (!B || B.done()) && !(W.tasks && W.tasks.busy())) break;
+        advance(dt); if (B) B.advance(dt); if (W.tasks) W.tasks.advance(dt);
+        afterMove(); if (B) B.afterMove(); if (W.tasks) W.tasks.afterMove();
         if (each) each(t);
       }
       return this.state();
     },
     // FEAT-025c: for the second arm
     info: () => ({ phase: P.phase, stage: P.stage || 'dock', bay: P.bay }),
+    // FEAT-025d: the arm's tasks (newmodule/armtasks.js)
+    hold: (ready) => { P.hold = ready; },
+    cancelHold: () => { P.hold = null; },
+    release: () => { P.held = false; },
+    held: () => P.held,
+    q: () => ({ ...P.q }),
+    get track() { return P.track; },
+    keepOut: (c) => { KEEP_OUT.push(c); },
     placeCleats: (i, track) => placeCleats(P.cleats[i], track),
     hoseDirty: () => { P.hoseDirty = true; },
     reset,

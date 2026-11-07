@@ -19,6 +19,7 @@
 // module; where the lanes meet (the dock end of the front lane) the arms wait for each other.
 // Coordinates as in worksite.js: the site frame (z up, the module's long axis along y, the open side +x).
 import * as THREE from 'three';
+import { holdCheck, folded } from './hold.js';
 
 // ---- the module (printloop.js, construction.py: keep in step)
 const Z0 = 4.1;
@@ -596,18 +597,32 @@ export function createFitLoop(W, A) {
   }
 
   // ---- run
+  // FEAT-025d: where the arm may stop for a task: folded and empty-handed, in the front lane or at its dock
+  // (not while it carries a panel or works behind the module)
+  function breakInfo() {
+    const x = arm.base.position.x;
+    if (B.carry || !(Math.abs(x - LANE_X) < 0.05 || Math.abs(x - W.DOCK[1].x) < 0.05)) return null;
+    return folded(B.q) ? { exit: [], enter: [] } : null;
+  }
   function advance(dt) {
     B.clock += dt;
+    B.dt = dt;
+    if (B.held) return;
+    if (B.phase !== 'running' && B.hold) { const r = B.hold; B.hold = null; B.held = true; r(); return; }   // parked: at once
     if (B.phase === 'idle') { B.steps = program(); B.cur = null; B.phase = 'running'; }
     if (B.phase !== 'running') return;
     let left = dt;
     while (left > 0 || (B.cur && B.cur.dur === 0)) {
+      if (B.held) break;
       if (!B.cur) {
+        if (holdCheck(B, false, breakInfo)) continue;
         if (!B.steps.length) break;
         B.cur = B.steps.shift(); B.cur.t = 0;
         if (B.cur.start) B.cur.start();
+        if (B.held) { B.cur = null; break; }
       }
       const c = B.cur;
+      if (c.until && !c.until() && holdCheck(B, true, breakInfo)) continue;
       if (c.until && c.until()) c.t = c.dur;
       const need = c.dur - c.t, use = Math.min(left, need);
       c.t += use; left -= use;
@@ -645,6 +660,7 @@ export function createFitLoop(W, A) {
     shadows(true);
     B.south = false; B.task = '';
     B.phase = 'idle';
+    B.hold = null; B.held = false;
   }
 
   placeBlanks(BLANK.n);
@@ -655,7 +671,15 @@ export function createFitLoop(W, A) {
     advance, afterMove, reset,
     done: () => B.phase === 'done',
     inSouth: () => B.south,
-    keepOut: () => (B.phase === 'running' ? [arm.base.position.x, -arm.base.position.z, 1.0] : null),
+    keepOut: () => [arm.base.position.x, -arm.base.position.z, 1.0],   // FEAT-025d: also when it drives to a task after its loop
+    // FEAT-025d: the arm's tasks (newmodule/armtasks.js)
+    hold: (ready) => { B.hold = ready; },
+    cancelHold: () => { B.hold = null; },
+    release: () => { B.held = false; },
+    held: () => B.held,
+    q: () => ({ ...B.q }),
+    get track() { return B.track; },
+    moved: () => { B.moved = true; },
     state: () => ({ phase: B.phase, clock: +B.clock.toFixed(1), left: B.steps.length, task: B.task, tool: arm.tool ? arm.tool.userData.kind : null,
       base: [+arm.base.position.x.toFixed(2), +(-arm.base.position.z).toFixed(2)], reach: +B.reach.toFixed(2), blanks: B.blanksLeft,
       tiles: B.tiles.map((t) => (t.visible ? [+t.position.x.toFixed(2), +(-t.position.z).toFixed(2), +t.position.y.toFixed(2)] : null)),
