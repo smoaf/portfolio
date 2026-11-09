@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>CONNECT 2 Case Study</title>
+<meta name="description" content="Case study in Simon Winkler's portfolio: the CONNECT 2 audio interface by LEWITT and my role in it.">
+<link rel="preload" href="../../fonts/archivo-100-900-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* fonts from the site itself, as on the main page (../../fonts/) */
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* the site's colour tokens and glass (index.html): light by day; dark = the site's dark scheme with its night glass */
+  :root {
+    --stage: #d8d3cb; --ink: #1d1b18; --ink-soft: #5e5850; --rule: rgba(29, 27, 24, 0.16); --accent: #b3602d;
+    --glass: rgba(246, 243, 238, 0.58); --glass-strong: rgba(246, 243, 238, 0.86); --glass-line: rgba(255, 255, 255, 0.55);
+    --glass-ink: #1d1b18; --glass-soft: #5e5850; --blur: blur(10px) saturate(1.15);
+    --anthracite: #2a2b2e; --anthracite-2: #35363a; --panel-ink: #e9e6e0; --panel-soft: #a19d96;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(16px, 5vw, 64px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+      --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+      --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+    --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+    --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--stage); color: var(--ink); font: 400 18px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { color: var(--accent); }
+  img, video { display: block; max-width: 100%; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* the site's header (index.html: .site, .bar, .name, .menu, .drop); each entry goes to its place on the station */
+  .site { position: fixed; left: 0; right: 0; top: 0; z-index: 20; color: var(--glass-ink);
+          background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          padding-top: env(safe-area-inset-top, 0px); }
+  .site .name:hover, .site .drop-item:hover { color: inherit; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
+  .name { font: 700 23px/0.9 var(--font); font-stretch: 116%; font-variation-settings: 'wdth' 116; letter-spacing: 0.02em; text-transform: uppercase;
+          color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .name span { display: inline-block; width: max-content; white-space: nowrap; }
+  .site button { background: transparent; border: 0; cursor: pointer; }
+  .menu { display: flex; gap: 6px; }
+  .menu button, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+          padding: 12px 12px; min-height: 44px; position: relative; }
+  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu-toggle { display: none; }
+  .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
+  .drop.open { grid-template-rows: 1fr; }
+  .drop-inner { overflow: hidden; }
+  .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
+  .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-decoration: none; }
+  .drop-item .t { display: block; font: 600 17px/1.2 var(--font); }
+  .drop-item .s { display: block; font: 400 13px/1.4 var(--font); color: var(--glass-soft); margin-top: 3px; }
+  .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
+  .drop-cat { display: none; }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; }
+    .name { font-size: 19px; }
+    .menu { display: none; }
+    .menu-toggle { display: block; padding-right: 0; }
+    .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+    .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
+  }
+
+  .bar-right { display: flex; align-items: center; gap: 18px; }
+  .bar-buy { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none;
+             font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s; }
+  .bar-buy.show { opacity: 1; transform: none; pointer-events: auto; }
+  .bar-buy:hover { background: var(--accent); color: var(--stage); }
+
+  /* hero: LEWITT's own hero film, the name set over it; it settles back as you scroll */
+  .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #1a1418; color: #f4f1ec; }
+  .hero video, .hero .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 60%; will-change: transform; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,14,18,0) 45%, rgba(20,14,18,.72) 100%); pointer-events: none; }
+  .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
+  h1 { margin: 0 0 0 -0.085em; white-space: nowrap; font: 300 clamp(54px, 12vw, 168px)/0.84 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+  h1 b { font-weight: 800; }
+  .claim { margin: clamp(10px, 1.6vw, 18px) 0 0; font: 400 clamp(20px, 2.6vw, 34px)/1.2 var(--font); font-stretch: 104%; font-variation-settings: 'wdth' 104; }
+  .hero .credit { position: absolute; right: var(--gutter); top: calc(var(--hh, 77px) + 8px); z-index: 2; font-size: 12px; color: rgba(244,241,236,.7); }
+
+  /* my role */
+  .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .role h2 { margin: 0 0 10px; font: 700 clamp(28px, 3vw, 38px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .role p { margin: 0 0 12px; max-width: 34rem; }
+  .role h2.h-product { margin-top: clamp(36px, 5vw, 56px); }
+  .roles { margin: 6px 0 0; }
+  .roles dt { font-weight: 650; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .roles dt:first-child { padding-top: 0; border-top: 0; }
+  .roles dd { margin: 4px 0 16px; color: var(--ink-soft); font-size: 16px; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: clamp(32px, 4vw, 48px) 0 clamp(56px, 8vw, 104px); }
+  .buy { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; padding: 0 44px; border-radius: 999px;
+         background: var(--ink); color: var(--stage); text-decoration: none; font: 650 17px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; transition: background .2s; }
+  .buy:hover { background: var(--accent); color: var(--stage); }
+  .actions a:not(.buy) { font-size: 16px; }
+
+  /* the hardware: pinned while you scroll, the views slide by; the small views show where you are and jump there */
+  .views { position: relative; height: 330vh; }
+  .views-pin { position: sticky; top: 0; height: 100svh; display: flex; align-items: center; padding-top: var(--hh, 77px); }
+  .views-pin > .wrap { width: 100%; }
+  .views h2 { margin: 0 0 16px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .view-stage { height: calc(100svh - 330px); min-height: 260px; background: #fff; border-radius: 10px; overflow: hidden; }
+  .slides { display: flex; height: 100%; will-change: transform; }
+  .slide { flex: 0 0 auto; height: 100%; transition: opacity .2s; }
+  .slide img { width: 100%; height: 100%; object-fit: contain; }
+  .thumbs { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0 18px; }
+  .thumbs button { width: 64px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink-soft); font: 500 12px/1.3 var(--font); text-align: center; }
+  .thumbs img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: contain; background: #fff; border-radius: 6px; opacity: .55; transition: opacity .2s; }
+  .thumbs span { display: block; margin-top: 5px; }
+  .thumbs button[aria-pressed="true"] { color: var(--ink); }
+  .thumbs button[aria-pressed="true"] img { opacity: 1; box-shadow: 0 0 0 2px var(--ink); }
+  @media (prefers-reduced-motion: reduce) {
+    .views { height: auto; }
+    .views-pin { position: static; height: auto; padding: clamp(56px, 8vw, 104px) 0 0; }
+    .view-stage { height: min(70vh, 640px); }
+    .slides { transition: none; }
+  }
+
+  .cc-wrap { padding: clamp(56px, 8vw, 104px) var(--gutter); }
+  .cc-wrap .part { padding-top: 0; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+
+  /* the video player */
+  .deck { background: var(--anthracite); color: var(--panel-ink); padding: clamp(28px, 4vw, 56px) 0; }
+  .deck h2 { margin: 0 0 18px; font: 700 clamp(28px, 3vw, 38px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .deck-in { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); gap: 12px clamp(12px, 1.6vw, 20px); }
+  .screen { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; border-radius: 10px; }
+  .screen iframe { position: absolute; top: 0; left: 50%; height: 100%; width: 100%; transform: translateX(-50%); border: 0; }
+  .screen.tall iframe { width: calc(100% * 9 / 16 * 9 / 16); }
+  .cue { position: absolute; inset: 0; border: 0; width: 100%; padding: clamp(16px, 3vw, 36px); background: #1c1d20 center / cover no-repeat;
+         color: var(--panel-ink); display: grid; grid-template-rows: 1fr auto; text-align: left; font: inherit; cursor: pointer; }
+  .cue::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.65)); }
+  .cue > * { position: relative; }
+  .cue .ring { justify-self: center; align-self: center; width: clamp(72px, 10vw, 124px); aspect-ratio: 1; border-radius: 50%; border: 2px solid currentColor;
+               display: grid; place-items: center; transition: transform .25s; background: rgba(0,0,0,.25); }
+  .cue .ring svg { width: 30%; margin-left: 8%; }
+  .cue:hover .ring { transform: scale(1.06); }
+  .cue-title { display: block; font: 650 clamp(18px, 2.2vw, 28px)/1.15 var(--font); font-stretch: 106%; font-variation-settings: 'wdth' 106; }
+  .cue-by { display: block; color: rgba(233,230,224,.75); font-size: 15px; margin-top: 4px; }
+  .sources { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-rows: 1fr; gap: 8px; }
+  .sources button { width: 100%; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-content: center; text-align: left; padding: 14px 16px;
+                    background: var(--anthracite-2); color: var(--panel-ink); border: 0; border-radius: 10px; font: inherit; cursor: pointer; transition: background .2s; }
+  .sources button:hover { background: #3d3f44; }
+  .sources button { opacity: .62; }
+  .sources button[aria-pressed="true"] { opacity: 1; background: #46484d; }
+  .src-title { font: 600 clamp(15px, 1.3vw, 18px)/1.25 var(--font); }
+  .src-by { color: var(--panel-soft); font-size: 14px; }
+  .deck-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 20px; font-size: 14px; color: var(--panel-soft); }
+  .deck a { color: var(--panel-ink); }
+
+  /* content parts: heading left, text right */
+  .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .part h2 { margin: 0; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .part p { margin: 0 0 14px; max-width: 40rem; }
+
+  /* what it does: the steps scroll on the left, the picture on the right follows the step in the middle of the screen */
+  .does { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .does h2 { margin: 0 0 12px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .does-intro { margin: 0; max-width: 40rem; }
+  .scrolly { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: clamp(24px, 4vw, 56px); align-items: start; margin-top: clamp(24px, 4vw, 48px); }
+  .steps { list-style: none; margin: 0; padding: 18vh 0 30vh; }
+  .step { padding: 0 0 0 18px; margin: 0 0 22vh; border-left: 2px solid var(--rule); transition: border-color .25s; }
+  .step:last-child { margin-bottom: 0; }
+  .step button { background: none; border: 0; padding: 0; font: 650 clamp(20px, 2vw, 26px)/1.2 var(--font); font-stretch: 106%; font-variation-settings: 'wdth' 106; color: var(--ink-soft); cursor: pointer; text-align: left; transition: color .25s; }
+  .step p { margin: 6px 0 0; font-size: 16px; color: var(--ink-soft); max-width: 26rem; opacity: .55; transition: opacity .25s; }
+  .step.on { border-left-color: var(--ink); }
+  .step.on button { color: var(--ink); }
+  .step.on p { opacity: 1; }
+  .stage { position: sticky; top: calc(50vh - min(28vw, 330px) / 2 + 30px); aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; background: #111; }
+  .stage .m { position: absolute; inset: 0; opacity: 0; transition: opacity .35s; overflow: hidden; }
+  .stage .m.on { opacity: 1; }
+  .stage .m > img, .stage .m > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .stage .m.fit > img { object-fit: contain; }
+  .stage .m > [data-crop] { inset: auto; max-width: none; object-fit: fill; }
+
+  /* LEWITT's film shows the software on the right half of a white frame: crop to the window */
+  .cc-media { position: relative; margin: 0 0 22px; border-radius: 8px; overflow: hidden; background: #f3f3f8; aspect-ratio: 8.56 / 4.5; }
+  .cc-media video { position: absolute; width: 186.9%; max-width: none; left: -84.1%; top: -54%; height: auto; }
+  .cc-list { margin: 4px 0 18px; padding-left: 20px; max-width: 40rem; }
+  .cc-list li + li { margin-top: 6px; }
+
+  .specs-wrap { display: block; }
+  .specs { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); font-size: 16px; }
+  .specs dt, .specs dd { padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .specs dt { color: var(--ink-soft); padding-right: 28px; }
+  .specs dd { margin: 0; }
+  .specs-img { border-radius: 6px; background: #fff; }
+  .spec-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .spec-tabs button { font: 500 15px/1 var(--font); padding: 10px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--rule); background: none; color: var(--ink-soft); cursor: pointer; }
+  .spec-tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--stage); }
+  .specs[hidden] { display: none; }
+  .spec-note { margin: 14px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+  .credit-note { margin: clamp(64px, 9vw, 120px) 0 0; padding: 24px 0 56px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); max-width: 46rem; }
+  .close { margin-top: clamp(64px, 9vw, 120px); padding: 32px 0 64px; border-top: 1px solid var(--rule); display: grid; grid-template-columns: minmax(0, 14rem) auto minmax(0, 1fr); gap: 24px 40px; align-items: center; }
+  .close img { border-radius: 6px; background: #fff; }
+  .close p { margin: 0; font-size: 14px; color: var(--ink-soft); max-width: 40rem; }
+
+  @media (max-width: 860px) {
+    .role, .deck-in, .part, .specs-wrap, .close { grid-template-columns: minmax(0, 1fr); }
+    .view-stage { height: calc(100svh - 400px); }
+    .thumbs { gap: 8px; }
+    .thumbs button { width: 56px; }
+    /* phone: the picture sticks under the header, the steps scroll beneath it */
+    .scrolly { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .stage { order: -1; top: calc(var(--hh, 62px) + 8px); z-index: 2; box-shadow: 0 10px 24px -12px rgba(0,0,0,.35); }
+    .steps { padding: 6vh 0 24vh; }
+    .step { margin-bottom: 16vh; }
+    .sources { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-rows: auto; }
+    .feat { grid-template-columns: minmax(0, 1fr); }
+    .specs-img, .close img { max-width: 260px; }
+  }
+  @media (max-width: 480px) {
+    .buy { width: 100%; }
+    .sources { grid-template-columns: minmax(0, 1fr); }
+    .specs { grid-template-columns: minmax(0, 1fr); }
+    .specs dt { border-bottom: 0; padding-bottom: 0; }
+    .specs dd { padding-top: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site" id="site">
+  <div class="bar">
+    <a class="name" href="../../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+    <div class="bar-right">
+      <a class="bar-buy" id="bar-buy" href="https://shop.lewitt-audio.com/cart/add?id=47601361486155&amp;quantity=1" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">Get it</a>
+      <nav class="menu" id="menu" aria-label="Main">
+        <button type="button" data-cat="work" aria-expanded="false">Work</button>
+        <button type="button" data-cat="play" aria-expanded="false">Play</button>
+        <button type="button" data-cat="about" aria-expanded="false">About</button>
+        <button type="button" data-cat="contact" aria-expanded="false">Contact</button>
+      </nav>
+      <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
+    </div>
+  </div>
+  <div class="drop" id="drop"><div class="drop-inner"><div class="drop-list" id="drop-list"></div></div></div>
+</header>
+
+<main>
+  <section class="hero" aria-label="CONNECT 2">
+    <img class="poster" alt="" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_2600x2600/public/2024-05/connect-2-hero-shot-desktop-first-frame.jpg">
+    <video id="hero-film" muted loop playsinline preload="metadata" aria-hidden="true"
+           poster="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_2600x2600/public/2024-05/connect-2-hero-shot-desktop-first-frame.jpg"
+           data-src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/videos/desktop/connect-2-hero-shot-desktop-v2.mp4"></video>
+    <div class="wrap hero-text">
+      <h1>CONNECT <b>2</b></h1>
+      <p class="claim">The most user-friendly audio interface.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="role">
+      <div>
+        <h2>My role at LEWITT</h2>
+        <p>As Product Manager I was responsible for CONNECT 2, from definition through development to the market launch in May 2024. Across other projects, among them headphones, microphones, audio interfaces and VST plug-ins, I worked in audio engineering, testing and UX design. I researched product categories, what users need in them, and how to innovate and find new solutions.</p>
+        <h2 class="h-product">The product</h2>
+        <p>CONNECT 2 is a USB-C audio interface for musicians, content creators and anyone with a dedicated setup for gaming or meetings. Inputs for microphone and instrument and outputs for speakers and headphones, in both jack sizes, sit neatly on the back for a clean setup. Its form factor and touch controls rethink how an audio interface is used, and every function is designed to be easy to understand for anyone. The controls give clear visual feedback, and together with the CONTROL CENTER software they make good sound possible in a few clicks.</p>
+      </div>
+      <dl class="roles">
+        <dt>Product management</dt>
+        <dd>Owned product from definition to market launch, including market and competitor analysis, positioning, pricing, features and schedule. Prepared launch with messaging, sales and support training, release planning for software and firmware.</dd>
+        <dt>Product ownership</dt>
+        <dd>Ran Scrum process with development team, translated requirements into prioritised backlog, reviewed sprint results.</dd>
+        <dt>Audio engineering</dt>
+        <dd>Defined electronic specifications, ran listening tests and acoustic measurements for specifications of different products. Contributed to DSP work. Recorded reference material, sound samples, launch videos.</dd>
+        <dt>UX design</dt>
+        <dd>Developed user experience across product categories, from graphical user interfaces to physical controls, light feedback and packaging. Ran usability tests.</dd>
+        <dt>Testing</dt>
+        <dd>Planned and ran tests of firmware, software and hardware samples, including compatibility. Measured against specifications.</dd>
+      </dl>
+    </div>
+    <div class="actions" id="main-actions">
+      <a class="buy" href="https://shop.lewitt-audio.com/cart/add?id=47601361486155&amp;quantity=1" target="_blank" rel="noopener">Get it</a>
+      <a href="https://www.lewitt-audio.com/connect-2" target="_blank" rel="noopener">Product page</a>
+      <a href="https://www.lewitt-audio.com/support-downloads" target="_blank" rel="noopener">Get CONTROL CENTER</a>
+      <a href="https://www.lewitt-audio.com/support/online-guides/connect2" target="_blank" rel="noopener">Online guide</a>
+    </div>
+  </div>
+
+  <section class="views" id="views" aria-labelledby="h-views">
+    <div class="views-pin">
+      <div class="wrap">
+        <h2 id="h-views">Hardware</h2>
+        <div class="view-stage" id="view-stage" aria-label="CONNECT 2 from all sides">
+          <div class="slides" id="slides">
+            <div class="slide"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_a_1.jpg" alt="CONNECT 2 seen from above"></div>
+            <div class="slide"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_d_text_en_1.jpg" alt="The back panel of CONNECT 2 with its connectors labelled"></div>
+            <div class="slide"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_b_1.jpg" alt="CONNECT 2 from the front at an angle" loading="lazy"></div>
+            <div class="slide"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_c_0.jpg" alt="CONNECT 2 from the side" loading="lazy"></div>
+            <div class="slide"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_n_0.jpg" alt="CONNECT 2 with its USB-C cable and adapter" loading="lazy"></div>
+          </div>
+        </div>
+        <div class="thumbs" id="thumbs" aria-label="Views">
+          <button type="button" aria-pressed="true"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_a_1.jpg" alt="" loading="lazy"><span>Top</span></button>
+          <button type="button" aria-pressed="false"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_d_text_en_1.jpg" alt="" loading="lazy"><span>Back</span></button>
+          <button type="button" aria-pressed="false"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_b_1.jpg" alt="" loading="lazy"><span>Angle</span></button>
+          <button type="button" aria-pressed="false"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_c_0.jpg" alt="" loading="lazy"><span>Side</span></button>
+          <button type="button" aria-pressed="false"><img src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_720x720/public/shopimages/lewitt_connect2_product-image_n_0.jpg" alt="" loading="lazy"><span>In the box</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap cc-wrap">
+    <section class="part" aria-labelledby="h-cc">
+      <h2 id="h-cc">CONTROL CENTER</h2>
+      <div>
+        <div class="cc-media">
+          <video muted loop playsinline preload="none" aria-label="CONTROL CENTER on a computer screen"
+                 data-src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/videos/desktop/connect-2-control-center-desktop.mp4"></video>
+        </div>
+        <p>Free companion software for <a href="https://www.lewitt-audio.com/software/cc3-mac/latest" target="_blank" rel="noopener">Mac</a> and <a href="https://www.lewitt-audio.com/software/cc3-win/latest" target="_blank" rel="noopener">Windows</a>.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="deck" aria-labelledby="h-videos">
+    <div class="wrap">
+      <h2 id="h-videos">Watch</h2>
+      <div class="deck-in">
+        <div class="screen" id="screen">
+          <button class="cue" id="cue" type="button"><span class="ring" aria-hidden="true"><svg viewBox="0 0 10 12"><path d="M0 0 L10 6 L0 12 Z" fill="currentColor"/></svg></span>
+            <span><span class="cue-title" id="cue-title"></span><span class="cue-by" id="cue-by"></span></span></button>
+        </div>
+        <ul class="sources" id="sources" aria-label="Choose a video">
+          <li><button type="button" aria-pressed="true" data-id="jJJRx9l5m_4" data-title="CONNECT 2 features explained" data-by="LEWITT">
+            <span class="src-title">Features explained</span><span class="src-by">LEWITT</span></button></li>
+          <li><button type="button" aria-pressed="false" data-id="QcmMJTSPJGU" data-tall="1" data-title="Clipguard in 30 seconds" data-by="LEWITT, short">
+            <span class="src-title">Clipguard in 30 seconds</span><span class="src-by">LEWITT, short</span></button></li>
+          <li><button type="button" aria-pressed="false" data-id="7TfLPs_AIHs" data-title="Hands-on review" data-by="Tom Buck">
+            <span class="src-title">Hands-on review</span><span class="src-by">Tom Buck</span></button></li>
+          <li><button type="button" aria-pressed="false" data-id="43aLO_OR9Z8" data-title="Measured and tested" data-by="Julian Krause">
+            <span class="src-title">Measured and tested</span><span class="src-by">Julian Krause</span></button></li>
+        </ul>
+        <div class="deck-foot">
+          <a id="yt-link" href="https://www.youtube.com/watch?v=jJJRx9l5m_4" target="_blank" rel="noopener">Watch on YouTube</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+
+    <section class="does" aria-labelledby="h-does">
+      <h2 id="h-does">What it does</h2>
+      <p class="does-intro">CONNECT 2 records one microphone and one instrument over USB-C. A ten-second soundcheck is enough for Autogain to set the input level, and Autosetup configures the remaining processing, so a recording sounds clean without any knowledge of gain staging.</p>
+      <div class="scrolly">
+        <ol class="steps" id="steps">
+            <li class="step on" data-i="0"><button type="button">Autosetup</button><p>Finds suitable settings by itself, using the integrated Clipguard, Denoiser, Compressor and the three preamp sounds.</p></li>
+            <li class="step" data-i="1"><button type="button">Clipguard</button><p>Keeps the signal safe from clipping with one click, even when things get loud.</p></li>
+            <li class="step" data-i="2"><button type="button">Autogain</button><p>Sets the input level after a ten-second soundcheck.</p></li>
+            <li class="step" data-i="3"><button type="button">Denoiser</button><p>Reduces background noise and hum with one click.</p></li>
+            <li class="step" data-i="4"><button type="button">Compressor</button><p>A polished, even sound with one click.</p></li>
+            <li class="step" data-i="5"><button type="button">Three preamp sounds</button><p>Clean for clarity, Warm for a vintage vibe and a smoother high end, Vivid for more articulation.</p></li>
+            <li class="step" data-i="6"><button type="button">Direct mute</button><p>Mute every channel on the device or in the software, or hold MUTE to silence everything at once.</p></li>
+            <li class="step" data-i="7"><button type="button">Custom button</button><p>Assign a workflow shortcut, such as switching from recording to monitoring or opening CONTROL CENTER.</p></li>
+            <li class="step" data-i="8"><button type="button">Your colours</button><p>Colour and brightness of all LEDs, set in CONTROL CENTER.</p></li>
+            <li class="step" data-i="9"><button type="button">Monitoring</button><p>Mix the input with the computer playback at any ratio. Effects run on the device's DSP, so monitoring has no latency.</p></li>
+            <li class="step" data-i="10"><button type="button">Loopback</button><p>Captures the computer's playback audio, for samples, calls, streams or playing along.</p></li>
+        </ol>
+        <div class="stage" id="stage">
+            <div class="m on" style="background:#f3f3f8"><video muted loop playsinline preload="none" aria-hidden="true" data-crop="0.05 0.24 0.495 0.81" data-src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/videos/desktop/connect-2-autosetup-measurement-desktop-v2.mp4"></video></div>
+            <div class="m" style="background:#111"><video muted loop playsinline preload="none" aria-hidden="true" data-src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/videos/accordion/clipguard-animation-3-2.mp4"></video></div>
+            <div class="m" style="background:#111"><video muted loop playsinline preload="none" aria-hidden="true" data-src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/videos/accordion/autogain-animation-3-2.mp4"></video></div>
+            <div class="m" style="background:#2a2a2a"><img loading="lazy" alt="" data-crop="0.048 0.235 0.272 0.86" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/accordion/images/connect2_website_denoise_3x2.jpg"></div>
+            <div class="m" style="background:#2a2a2a"><img loading="lazy" alt="" data-crop="0.048 0.235 0.272 0.86" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/accordion/images/connect2_website_compressor_3x2.jpg"></div>
+            <div class="m" style="background:#2a2a2a"><img loading="lazy" alt="" data-crop="0.471 0.33 0.681 0.742" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/2024-04/connect2_website_2560x1440_cc_v3.jpg"></div>
+            <div class="m" style="background:#000"><img loading="lazy" alt="" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/2024-04/connect2_website_2560x1440_mute_v2.jpg"></div>
+            <div class="m" style="background:#000"><img loading="lazy" alt="" data-crop="0.47 0.08 0.985 0.92" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/2024-04/connect2_website_2560x1440_custom_0.jpg"></div>
+            <div class="m" style="background:#000"><img loading="lazy" alt="" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/2024-05/connect2_website_2560x1440_leds_0-copy.jpg"></div>
+            <div class="m fit" style="background:#f4f4f7"><img loading="lazy" alt="" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/2024-05/connect2_website_monitoring_1080x0180_-copy.jpg"></div>
+            <div class="m fit" style="background:#f4f4f7"><img loading="lazy" alt="" src="https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/2024-05/connect2_website_loopback_1080x0180_-copy.jpg"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="part" aria-labelledby="h-specs">
+      <h2 id="h-specs">Specs</h2>
+      <div class="specs-wrap">
+        <div>
+        <div class="spec-tabs" role="tablist" aria-label="Specification groups">
+          <button type="button" role="tab" id="st0" aria-selected="true" aria-controls="sp0" tabindex="0">Device</button>
+          <button type="button" role="tab" id="st1" aria-selected="false" aria-controls="sp1" tabindex="-1">Digital</button>
+          <button type="button" role="tab" id="st2" aria-selected="false" aria-controls="sp2" tabindex="-1">Mic input</button>
+          <button type="button" role="tab" id="st3" aria-selected="false" aria-controls="sp3" tabindex="-1">Instrument</button>
+          <button type="button" role="tab" id="st4" aria-selected="false" aria-controls="sp4" tabindex="-1">Speakers</button>
+          <button type="button" role="tab" id="st5" aria-selected="false" aria-controls="sp5" tabindex="-1">Headphones</button>
+        </div>
+        <dl class="specs" role="tabpanel" id="sp0" aria-labelledby="st0">
+          <dt>Features</dt><dd>RGBW LEDs, MUTE, custom button, autogain, input / playback mix, gain reduction display, Kensington lock, 48 V on/off button</dd>
+          <dt>Control</dt><dd>Capacitive touch</dd>
+          <dt>Inputs</dt><dd>1x Microphone: balanced 3-pin XLR, 1x Instrument: Hi-Z 6.3 mm jack</dd>
+          <dt>Outputs</dt><dd>2x Speaker: 6.3 mm balanced jack, 1x Headphone: 6.3 mm jack, 1x Headphone: 3.5 mm jack</dd>
+          <dt>Metering</dt><dd>25 step high-resolution</dd>
+          <dt>Dimensions and weight</dt><dd>151 x 110 x 41 mm, 394 g</dd>
+          <dt>Power requirements</dt><dd>USB bus-powered</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp1" aria-labelledby="st1" hidden>
+          <dt>Type</dt><dd>USB-C audio interface</dd>
+          <dt>Software</dt><dd>LEWITT CONTROL CENTER</dd>
+          <dt>DAW included</dt><dd>Steinberg Cubase LE, Cubasis LE</dd>
+          <dt>Compatibility</dt><dd>macOS, Windows, iOS (plug and play with USB-C devices, devices with Lightning connector require Camera Connection Kit and external bus power)</dd>
+          <dt>ASIO driver</dt><dd>Yes</dd>
+          <dt>Sample rate</dt><dd>44.1 kHz, 48 kHz, 96 kHz</dd>
+          <dt>Bit rate</dt><dd>24</dd>
+          <dt>USB Audio Class</dt><dd>2.0</dd>
+          <dt>Signal flow</dt><dd>Input / playback mix</dd>
+          <dt>DSP powered</dt><dd>Yes</dd>
+          <dt>Loopback</dt><dd>Yes</dd>
+          <dt>Inputs / Outputs</dt><dd>4 (includes 2 software channels) / 2</dd>
+          <dt>Streaming modes</dt><dd>macOS mode, mobile mode</dd>
+          <dt>Min. system requirements</dt><dd>Windows 10 (64 bits): 4 GB RAM minimum, USB 2.0 connector. macOS 10.15 and higher: 4 GB RAM minimum, USB 2.0 connector</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp2" aria-labelledby="st2" hidden>
+          <dt>Features</dt><dd>DSP (low-cut filter, clipguard, preamp modes, denoise, compressor, autogain, autosetup)</dd>
+          <dt>Type</dt><dd>balanced</dd>
+          <dt>Connector</dt><dd>3-pin XLR</dd>
+          <dt>Phantom power</dt><dd>48 V</dd>
+          <dt>Gain range</dt><dd>0 - 72 dB</dd>
+          <dt>Equivalent input noise</dt><dd>–129 dBV (A)</dd>
+          <dt>Dynamic range</dt><dd>118 dB (A)</dd>
+          <dt>Max input level</dt><dd>15.8 dBV</dd>
+          <dt>Total harmonic distortion</dt><dd>0.001%</dd>
+          <dt>Frequency response</dt><dd>20 Hz - 20 kHz (± 0.1 dB)</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp3" aria-labelledby="st3" hidden>
+          <dt>Features</dt><dd>DSP (low-cut filter, clipguard, preamp modes, denoise, compressor, autogain, autosetup)</dd>
+          <dt>Type</dt><dd>Hi-Z, differential ground loop break circuit</dd>
+          <dt>Connector</dt><dd>6.3 mm jack</dd>
+          <dt>Gain range</dt><dd>0 - 60 dB</dd>
+          <dt>Input impedance</dt><dd>2.5 MΩ</dd>
+          <dt>Equivalent input noise</dt><dd>–108 dBV (A)</dd>
+          <dt>Dynamic range</dt><dd>121 dB (A), without clipguard 105 dB (A)</dd>
+          <dt>Max input level</dt><dd>12.5 dBV</dd>
+          <dt>Total harmonic distortion</dt><dd>0.0008%</dd>
+          <dt>Frequency response</dt><dd>20 Hz - 20 kHz (± 0.1 dB)</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp4" aria-labelledby="st4" hidden>
+          <dt>Features</dt><dd>High volume speaker mode, Mute, Volume, Map system volume controls</dd>
+          <dt>Connector</dt><dd>2x 6.3 mm jack, balanced</dd>
+          <dt>Frequency response</dt><dd>20 Hz - 20 kHz (± 0.1 dB)</dd>
+          <dt>Max output level</dt><dd>12.2 dBV (high volume mode)</dd>
+          <dt>Total harmonic distortion</dt><dd>0.0023%</dd>
+          <dt>Impedance</dt><dd>200 Ω</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp5" aria-labelledby="st5" hidden>
+          <dt>Features</dt><dd>High impedance headphone mode, Mute, Volume, Map system volume controls</dd>
+          <dt>Connector</dt><dd>1x 6.3 mm jack, stereo, 1x 3.5 mm jack, stereo</dd>
+          <dt>Frequency response</dt><dd>20 Hz - 20 kHz (± 0.2 dB)</dd>
+          <dt>Max output level</dt><dd>6.8 dBV (high impedance mode)</dd>
+          <dt>Total harmonic distortion</dt><dd>0.003%</dd>
+          <dt>Impedance</dt><dd>1.9 Ω</dd>
+        </dl>
+        <p class="spec-note">Interface measured according to AES17-2020. Phantom power according to IEC 61938. Noise measured according to IEC 60268-1. Source: <a href="https://www.lewitt-audio.com/connect-2" target="_blank" rel="noopener">lewitt-audio.com</a></p>
+        </div>
+      </div>
+    </section>
+
+    <p class="credit-note">CONNECT 2 is a product of LEWITT. Product facts, photos and films from <a href="https://www.lewitt-audio.com/connect-2" target="_blank" rel="noopener">lewitt-audio.com</a>, review videos by Tom Buck and Julian Krause on YouTube. This page describes my contribution as part of the team and is not an official LEWITT page.</p>
+  </div>
+</main>
+
+<script>
+// the site's header menu (entries as MENU in index.html; keep the two in step): each entry goes to its place on the station
+(function () {
+  var STATION = '../../';
+  var MENU = {
+    work: [
+      { to: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
+      { to: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
+      { to: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
+      { to: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
+      { to: 'new-module', t: 'New: museum & curation', s: 'Work in progress' }
+    ],
+    play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
+    about: [
+      { to: 'hub', t: 'About Simon', s: 'Who builds this station' },
+      { to: 'cv', t: 'CV', s: 'Download as PDF' },
+      { to: 'station', t: 'The station', s: 'Why a research station' }
+    ],
+    contact: [{ to: 'relay', t: 'Get in touch', s: 'Email and links' }]
+  };
+  var site = document.getElementById('site'), drop = document.getElementById('drop'), list = document.getElementById('drop-list'),
+      toggle = document.getElementById('menu-toggle'), menuButtons = document.querySelectorAll('#menu button'), cat = null, timer = 0;
+  function render(c) {
+    var cats = c === 'all' ? ['work', 'play', 'about', 'contact'] : [c];
+    list.innerHTML = '';
+    cats.forEach(function (k) {
+      if (c === 'all') { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
+      MENU[k].forEach(function (it) {
+        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + '#' + it.to;
+        a.innerHTML = '<span class="t">' + it.t + '</span><span class="s">' + it.s + '</span>';
+        list.appendChild(a);
+      });
+    });
+  }
+  function open(c) {
+    clearTimeout(timer);
+    if (cat !== c) render(c);
+    cat = c; drop.classList.add('open');
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', String(b.dataset.cat === c)); });
+    toggle.setAttribute('aria-expanded', String(c === 'all'));
+  }
+  function close() {
+    drop.classList.remove('open'); cat = null;
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  menuButtons.forEach(function (b) {
+    // a mouse opens the menu by hovering; a tap only clicks
+    b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') open(b.dataset.cat); });
+    b.addEventListener('click', function () { if (cat === b.dataset.cat) close(); else open(b.dataset.cat); });
+  });
+  site.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') timer = setTimeout(close, 250); });
+  site.addEventListener('pointerenter', function () { clearTimeout(timer); });
+  toggle.addEventListener('click', function () { if (cat) close(); else open('all'); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && cat) close(); });
+  document.addEventListener('pointerdown', function (e) { if (cat && !site.contains(e.target)) close(); });
+
+  // the name's two lines set to the same width, as on the station
+  function fitName() {
+    var a = document.getElementById('name-1'), b = document.getElementById('name-2');
+    a.style.letterSpacing = ''; b.style.letterSpacing = ''; a.style.marginRight = ''; b.style.marginRight = '';
+    var s = a.offsetWidth < b.offsetWidth ? a : b, l = s === a ? b : a;
+    var extra = (l.offsetWidth - s.offsetWidth) / (s.textContent.length - 1);
+    s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
+  }
+  function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
+  fitName(); measure();
+  if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
+  addEventListener('resize', function () { fitName(); measure(); });
+})();
+
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // films from LEWITT load only when they come into view, and pause when they leave it
+  function load(v) { if (v.dataset.src && !v.src) { v.src = v.dataset.src; } }
+  var films = document.querySelectorAll('video[data-src]');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        var v = e.target;
+        if (e.isIntersecting && (!v.closest('.stage') || v.parentElement.classList.contains('on'))) { load(v); if (!reduce) v.play().catch(function () {}); }
+        else if (!e.isIntersecting) v.pause();
+      });
+    }, { threshold: 0.25 });
+    films.forEach(function (v) { io.observe(v); });
+  }
+  var heroFilm = document.getElementById('hero-film');
+  if (reduce) { heroFilm.remove(); }
+
+  // one scroll handler: the hero settles back, the photo series moves sideways
+  var hero = document.querySelector('.hero'), heroMedia = hero.querySelectorAll('video, .poster');
+  function onScroll() {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if (!reduce && y < h) { var k = 1 + Math.min(y / h, 1) * 0.08; heroMedia.forEach(function (m) { m.style.transform = 'scale(' + k + ') translateY(' + (y * 0.12) + 'px)'; }); }
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  onScroll();
+
+  // what it does: crop each picture to its region, and show the one whose step is in the middle of the screen
+  function fit(el) {
+    var c = el.dataset.crop.split(' ').map(Number), box = el.parentElement.getBoundingClientRect();
+    var sw = el.videoWidth || el.naturalWidth, sh = el.videoHeight || el.naturalHeight; if (!sw || !box.width) return;
+    var rw = (c[2] - c[0]) * sw, rh = (c[3] - c[1]) * sh, k = Math.min(box.width / rw, box.height / rh);
+    el.style.width = sw * k + 'px'; el.style.height = sh * k + 'px';
+    el.style.left = (box.width - rw * k) / 2 - c[0] * sw * k + 'px';
+    el.style.top = (box.height - rh * k) / 2 - c[1] * sh * k + 'px';
+    el.style.clipPath = 'inset(' + c[1] * 100 + '% ' + (1 - c[2]) * 100 + '% ' + (1 - c[3]) * 100 + '% ' + c[0] * 100 + '%)';
+  }
+  var crops = document.querySelectorAll('[data-crop]');
+  crops.forEach(function (el) { el.addEventListener(el.tagName === 'VIDEO' ? 'loadedmetadata' : 'load', function () { fit(el); }); if (el.complete) fit(el); });
+  addEventListener('resize', function () { crops.forEach(fit); });
+
+  var stepEls = document.querySelectorAll('#steps .step'), stage = document.getElementById('stage').children, currentStep = -1;
+  function activate(i) {
+    if (i === currentStep) return; currentStep = i;
+    stepEls.forEach(function (st, j) { st.classList.toggle('on', j === i); });
+    [].forEach.call(stage, function (m, j) {
+      m.classList.toggle('on', j === i);
+      var v = m.querySelector('video');
+      if (v) { if (j === i) { load(v); if (!reduce) v.play().catch(function () {}); } else v.pause(); }
+    });
+  }
+  if ('IntersectionObserver' in window) {
+    var so = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) activate(+e.target.dataset.i); });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    stepEls.forEach(function (st) { so.observe(st); });
+  }
+  stepEls.forEach(function (st) {
+    st.querySelector('button').addEventListener('click', function () {
+      activate(+st.dataset.i);
+      st.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    });
+  });
+  activate(0);
+
+  // the hardware: scrolling down slides through the views; a small view jumps the page to it
+  var viewsSec = document.getElementById('views'), slides = document.getElementById('slides'),
+      thumbs = document.querySelectorAll('#thumbs button'), nViews = thumbs.length;
+  // each view is as wide as it is tall, so the views sit right next to each other on the white stage; the neighbours stay faint
+  var slideEls = slides.children, stageEl = document.getElementById('view-stage');
+  function placeSlides(pos) {
+    var W = stageEl.clientWidth, w = Math.min(W, stageEl.clientHeight);
+    [].forEach.call(slideEls, function (el, i) { el.style.width = w + 'px'; el.style.opacity = String(1 - Math.min(1, Math.abs(i - pos)) * 0.75); });
+    slides.style.transform = 'translateX(' + ((W - w) / 2 - pos * w) + 'px)';
+  }
+  function viewsScroll() {
+    var p = 0;
+    if (!reduce) {
+      var r = viewsSec.getBoundingClientRect(), span = viewsSec.offsetHeight - innerHeight;
+      p = Math.max(0, Math.min(1, -r.top / span));
+    } else { placeSlides(slides.dataset.pos ? +slides.dataset.pos : 0); return; }
+    var pos = p * (nViews - 1);
+    placeSlides(pos);
+    var cur = Math.round(pos);
+    thumbs.forEach(function (b, i) { b.setAttribute('aria-pressed', String(i === cur)); });
+  }
+  thumbs.forEach(function (b, i) {
+    b.addEventListener('click', function () {
+      if (reduce) {
+        placeSlides(i);
+        thumbs.forEach(function (o, j) { o.setAttribute('aria-pressed', String(j === i)); });
+        return;
+      }
+      var top = viewsSec.getBoundingClientRect().top + scrollY, span = viewsSec.offsetHeight - innerHeight;
+      scrollTo({ top: top + span * i / (nViews - 1), behavior: 'smooth' });
+    });
+  });
+  addEventListener('scroll', viewsScroll, { passive: true });
+  addEventListener('resize', viewsScroll);
+  viewsScroll();
+
+  // the small Get it in the header strip, once the main one has scrolled away
+  var mainActions = document.getElementById('main-actions'), barBuy = document.getElementById('bar-buy');
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      var away = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+      barBuy.classList.toggle('show', away); barBuy.tabIndex = away ? 0 : -1; barBuy.setAttribute('aria-hidden', String(!away));
+    }).observe(mainActions);
+  }
+
+  // spec tabs: click, or arrow keys between tabs
+  var specTabs = document.querySelectorAll('.spec-tabs [role=tab]');
+  function pick(t) {
+    specTabs.forEach(function (o) { var on = o === t; o.setAttribute('aria-selected', String(on)); o.tabIndex = on ? 0 : -1;
+      document.getElementById(o.getAttribute('aria-controls')).hidden = !on; });
+  }
+  specTabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { pick(t); });
+    t.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
+      var n = specTabs[(i + d + specTabs.length) % specTabs.length]; pick(n); n.focus(); e.preventDefault();
+    });
+  });
+
+  // YouTube player: a cue card first, the player only after a press on play
+  var screen = document.getElementById('screen'), cue = document.getElementById('cue'),
+      title = document.getElementById('cue-title'), by = document.getElementById('cue-by'),
+      link = document.getElementById('yt-link'), buttons = document.querySelectorAll('#sources button'), current = buttons[0];
+  function show(btn) {
+    current = btn;
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    var old = screen.querySelector('iframe'); if (old) old.remove();
+    screen.classList.toggle('tall', !!btn.dataset.tall);
+    title.textContent = btn.dataset.title; by.textContent = btn.dataset.by;
+    cue.setAttribute('aria-label', 'Play: ' + btn.dataset.title);
+    cue.style.backgroundImage = btn.dataset.id === 'jJJRx9l5m_4'
+      ? 'url(https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_1300x1300/public/2024-04/connect2_website_2560x1440_autosetup.jpg)' : '';
+    cue.hidden = false;
+    link.href = btn.dataset.tall ? 'https://www.youtube.com/shorts/' + btn.dataset.id : 'https://www.youtube.com/watch?v=' + btn.dataset.id;
+  }
+  function play() {
+    var f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/' + current.dataset.id + '?autoplay=1&rel=0&playsinline=1';
+    f.title = current.dataset.title;
+    f.referrerPolicy = 'strict-origin-when-cross-origin';
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true;
+    cue.hidden = true; screen.appendChild(f);
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { show(b); play(); }); });
+  cue.addEventListener('click', play);
+  show(current);
+})();
+</script>
+</body>
+</html>
