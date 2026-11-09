@@ -34,7 +34,7 @@ Simon Winkler's ("Smo") portfolio site, live at https://smoaf.github.io/portfoli
 - `3d/scripts/`: Python (trimesh) generators that build `arrangement_v7.glb`; `3d/scripts/README.md` says which file builds which part and how to rebuild. Copy a rebuilt `.glb` to the top folder to update the site.
 
 ## Tech
-- Static site on GitHub Pages: plain HTML/CSS/JS ES modules, no build step, no backend. three.js 0.160 from jsDelivr via the import map in `index.html`.
+- Static site on GitHub Pages: plain HTML/CSS/JS ES modules, no build step, no backend. three.js 0.160.0 served from the site itself (`vendor/three/`, only the addon files in use) via the import map in `index.html`; fonts self-hosted in `fonts/` (`@font-face` in `index.html`). The site loads nothing from outside servers; a new three.js addon has to be copied into `vendor/three/examples/jsm/` with the files it imports.
 - Model coordinates are z-up; the viewer is y-up (`W2T`). In the default view +x is to the left. glTF drops the `/` from node names (`library/shell` becomes `libraryshell`); code finds parts by these names.
 - `localStorage` only for per-visitor data (sky settings, field log, leaderboard), every access in try/catch.
 - Preview: `python3 -m http.server 8000` in the repository, then http://localhost:8000 (add `?test`, http://localhost:8000/?test, to get the test hooks; without it no `window.__*` command exists). Test hooks: `window.__go('workshop')` flies to a place, `window.__explore('canyon', 'day')` starts a safari route, `window.__set({ mode: 'night' })`.
