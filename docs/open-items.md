@@ -6,6 +6,8 @@ Collected 16 Oct 2026 from the progress logs of all build runs (Photo Safari, wo
 - Real-phone check: every feature was tested only in a headless cloud browser. Frame rate, touch targets and sound are unverified on phones. One tap now acts everywhere (run 09), checked with emulated touch only.
 - Placeholders: texts, captions, rack remarks, the tape card (draft translation), demo audio (guitar loop, tape demo; Smo's own audio file is still to come).
 - Model size: `arrangement_v7.glb` is 14 MB. Compress (Draco or meshopt) before sharing the site widely.
+- Nothing from outside servers (FEAT-027): fonts and three.js are served from the site. If the model gets compressed (Draco or meshopt), its decoder has to be copied into `vendor/three/` too, not loaded from a CDN. Agreed exception (FEAT-028): the CONNECT 2 case study and the hero still on its Products card load the maker's photos, films and YouTube from their servers.
+- Case study pages (FEAT-028, `work/connect-2/`): the header's menu entries are a copy of `MENU` in `index.html`; keep the two in step (or move `MENU` into a shared file).
 - Loading (run 08): the shader precompile and the fade were measured only with software GL. Check on a real phone that the dots keep moving until the station shows. Seen while testing, old and new build alike: a second long stall (13–18 s with software GL) some seconds after the station appears, probably the robot model (loaded 1.5 s later) or other late materials compiling; not part of the loading screen.
 
 ## Per area

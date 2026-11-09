@@ -131,6 +131,9 @@
   .card .ph { aspect-ratio: 16 / 9; background: repeating-linear-gradient(135deg, rgba(127,127,127,.14) 0 10px, rgba(127,127,127,.06) 10px 20px); margin-bottom: 10px; }
   .card h3 { font: 600 17px/1.25 var(--font-display); margin: 0 0 4px; }
   .card p { font: 400 14px/1.45 var(--font-display); margin: 0; color: var(--glass-soft); }
+  a.card { display: block; color: inherit; text-decoration: none; }
+  a.card img.ph { display: block; width: 100%; object-fit: cover; background: none; }
+  a.card:hover h3, a.card:focus-visible h3 { text-decoration: underline; text-underline-offset: 3px; }
   .panel-close { position: absolute; right: 24px; top: 14px; }
   .panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
   @media (max-width: 720px) {
@@ -2184,7 +2187,11 @@ function stepSway(now) {
 }
 overviewControls();
 { const h = homePose(); camera.position.copy(h.pos); controls.target.copy(h.target); controls.update(); }
-if (location.hash.length > 1) setTimeout(() => route(location.hash.slice(1)), 0);
+if (location.hash.length > 1) setTimeout(() => {
+  const id = location.hash.slice(1);
+  if (!PLACES.some((q) => q.id === id) && PAGES[id]) openPanel(id);   // FEAT-028: #cv, #station (About entries without a place) open their panel
+  else route(id);
+}, 0);
 
 // --- camp interactions (Phase 1, Smo): at the camp the figure, the fire and the van can be clicked.
 // Mouse: hovering shows a glow and a label, a click acts. Touch: one tap acts (a near miss counts).
@@ -2869,7 +2876,10 @@ const MENU = {
 };
 const PAGES = {
   library: { kicker: 'Work · Research', title: 'Research', line: 'Thesis, publications and talks.', lead: 'Placeholder: a short introduction to the research, the thesis on non-human communication and related publications.' },
-  office: { kicker: 'Work · Products', title: 'Products', line: 'Product management and case studies.', lead: 'Placeholder: how products were shaped, with whom, and what came of it.' },
+  office: { kicker: 'Work · Products', title: 'Products', line: 'Product management and case studies.', lead: 'Placeholder: how products were shaped, with whom, and what came of it.',
+    // FEAT-028: project 1 is the CONNECT 2 case study (its own page, same tab; the hero still stays on the maker's server, an agreed exception)
+    projects: [{ title: 'CONNECT 2', line: 'The most user-friendly audio interface.', href: 'work/connect-2/',
+                 img: 'https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_2600x2600/public/2024-05/connect-2-hero-shot-desktop-first-frame.jpg' }] },
   workshop: { kicker: 'Work · Technology & AI', title: 'Technology & AI', line: 'Prototypes, devices and AI work.', lead: 'Placeholder: technical projects, prototypes and work with machine learning.' },
   showroom: { kicker: 'Work · Media & installations', title: 'Media & installations', line: 'Immersive sound, projection and exhibitions.', lead: 'Placeholder: media works, installations and exhibitions.' },
   'new-module': { kicker: 'Work · In progress', title: 'Museum & curation', line: 'The module being built.', lead: 'Placeholder: what is being built next.' },
@@ -2939,7 +2949,11 @@ function openPanel(id) {
   if (tourNoPanel && tourNoPanel === id) { tourNoPanel = null; return; }   // FEAT-023: on the tour the place's panel stays shut
   const c = PAGES[id]; if (!c) return;
   const n = c.cards === 0 ? 0 : 3;
-  const cards = Array.from({ length: n }, (_, i) => `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`).join('');
+  const cards = Array.from({ length: n }, (_, i) => {
+    const pr = c.projects && c.projects[i];
+    if (pr) return `<a class="card project" href="${pr.href}"><img class="ph" src="${pr.img}" alt="" loading="lazy" referrerpolicy="no-referrer"><h3>${pr.title}</h3><p>${pr.line}</p></a>`;
+    return `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`;
+  }).join('');
   document.getElementById('panel-body').innerHTML = `<div class="kicker">${c.kicker}</div><h2>${c.title}</h2><p class="lead">${c.lead}</p>
     <p class="note">Placeholder content. Real texts, images and videos follow.</p><div class="cards">${cards}</div>
     <div class="panel-actions"><a class="btn" href="#" onclick="return false">Open as page ↗</a></div>`;
