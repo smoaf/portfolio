@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>OHRGUSS Concept</title>
+<meta name="description" content="Concept in Simon Winkler's portfolio: OHRGUSS, an open web app that designs custom-fit earplugs and exports everything needed to print or cast them.">
+<link rel="preload" href="../../fonts/archivo-100-900-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* fonts from the site itself, as on the main page (../../fonts/) */
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* the site's colour tokens and glass (index.html): light by day; dark = the site's dark scheme with its night glass */
+  :root {
+    --stage: #d8d3cb; --ink: #1d1b18; --ink-soft: #5e5850; --rule: rgba(29, 27, 24, 0.16); --accent: #b3602d;
+    --glass: rgba(246, 243, 238, 0.58); --glass-strong: rgba(246, 243, 238, 0.86); --glass-line: rgba(255, 255, 255, 0.55);
+    --glass-ink: #1d1b18; --glass-soft: #5e5850; --blur: blur(10px) saturate(1.15);
+    --anthracite: #2a2b2e; --anthracite-2: #35363a; --panel-ink: #e9e6e0; --panel-soft: #a19d96;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(16px, 5vw, 64px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+      --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+      --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+    --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+    --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--stage); color: var(--ink); font: 400 18px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { color: var(--accent); }
+  img, video { display: block; max-width: 100%; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* the site's header (index.html: .site, .bar, .name, .menu, .drop); each entry goes to its place on the station */
+  .site { position: fixed; left: 0; right: 0; top: 0; z-index: 20; color: var(--glass-ink);
+          background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          padding-top: env(safe-area-inset-top, 0px); }
+  .site .name:hover, .site .drop-item:hover { color: inherit; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
+  .name { font: 700 23px/0.9 var(--font); font-stretch: 116%; font-variation-settings: 'wdth' 116; letter-spacing: 0.02em; text-transform: uppercase;
+          color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .name span { display: inline-block; width: max-content; white-space: nowrap; }
+  .site button { background: transparent; border: 0; cursor: pointer; }
+  .menu { display: flex; gap: 6px; }
+  .menu button, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+          padding: 12px 12px; min-height: 44px; position: relative; }
+  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu-toggle { display: none; }
+  .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
+  .drop.open { grid-template-rows: 1fr; }
+  .drop-inner { overflow: hidden; }
+  .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
+  .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-decoration: none; }
+  .drop-item .t { display: block; font: 600 17px/1.2 var(--font); }
+  .drop-item .s { display: block; font: 400 13px/1.4 var(--font); color: var(--glass-soft); margin-top: 3px; }
+  .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
+  .drop-cat { display: none; }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; }
+    .name { font-size: 19px; }
+    .menu { display: none; }
+    .menu-toggle { display: block; padding-right: 0; }
+    .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+    .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
+  }
+
+  .bar-right { display: flex; align-items: center; gap: 18px; }
+  .bar-buy { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none;
+             font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s; }
+  .bar-buy.show { opacity: 1; transform: none; pointer-events: auto; }
+  .bar-buy:hover { background: var(--accent); color: var(--stage); }
+
+  /* hero: the two plugs on a dark ground, the name set over them; it settles back as you scroll */
+  .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #1a1418; color: #f4f1ec; }
+  .hero .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; transform-origin: 50% 60%; will-change: transform; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,14,18,0) 45%, rgba(20,14,18,.72) 100%); pointer-events: none; }
+  .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
+  h1 { margin: 0 0 0 -0.085em; white-space: nowrap; font: 800 clamp(54px, 12vw, 168px)/0.84 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+  .claim { margin: clamp(10px, 1.6vw, 18px) 0 0; font: 400 clamp(20px, 2.6vw, 34px)/1.2 var(--font); font-stretch: 104%; font-variation-settings: 'wdth' 104; }
+  .kicker { margin: 0 0 clamp(10px, 1.4vw, 16px); font: 500 12px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(244,241,236,.75); }
+
+  /* the idea and my role */
+  .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .role h2 { margin: 0 0 10px; font: 700 clamp(28px, 3vw, 38px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .role p { margin: 0 0 12px; max-width: 34rem; }
+  .role h2.h-second { margin-top: clamp(36px, 5vw, 56px); }
+  .roles { margin: 6px 0 0; }
+  .roles dt { font-weight: 650; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .roles dt:first-child { padding-top: 0; border-top: 0; }
+  .roles dd { margin: 4px 0 16px; color: var(--ink-soft); font-size: 16px; }
+  .ph-mark { color: var(--ink-soft); font-style: italic; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: clamp(32px, 4vw, 48px) 0 clamp(56px, 8vw, 104px); }
+  .buy { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 0 44px; border-radius: 999px;
+         background: var(--ink); color: var(--stage); text-decoration: none; font: 650 17px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; transition: background .2s; }
+  .buy:hover { background: var(--accent); color: var(--stage); }
+  .buy svg { width: 14px; height: 14px; }
+  .actions a:not(.buy) { font-size: 16px; }
+  .live-note { flex-basis: 100%; margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+  /* the parts: pinned while you scroll, the parts slide by; the small views show where you are and jump there */
+  .views { position: relative; height: 300vh; }
+  .views-pin { position: sticky; top: 0; height: 100svh; display: flex; align-items: center; padding-top: var(--hh, 77px); }
+  .views-pin > .wrap { width: 100%; }
+  .views h2 { margin: 0 0 16px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .view-stage { height: calc(100svh - 330px); min-height: 260px; background: #e4e0d9; border-radius: 10px; overflow: hidden; }
+  .slides { display: flex; height: 100%; will-change: transform; }
+  .slide { flex: 0 0 auto; height: 100%; transition: opacity .2s; }
+  .slide img { width: 100%; height: 100%; object-fit: contain; }
+  .thumbs { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0 18px; }
+  .thumbs button { width: 64px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink-soft); font: 500 12px/1.3 var(--font); text-align: center; }
+  .thumbs img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: contain; background: #e4e0d9; border-radius: 6px; opacity: .55; transition: opacity .2s; }
+  .thumbs span { display: block; margin-top: 5px; }
+  .thumbs button[aria-pressed="true"] { color: var(--ink); }
+  .thumbs button[aria-pressed="true"] img { opacity: 1; box-shadow: 0 0 0 2px var(--ink); }
+  @media (prefers-reduced-motion: reduce) {
+    .views { height: auto; }
+    .views-pin { position: static; height: auto; padding: clamp(56px, 8vw, 104px) 0 0; }
+    .view-stage { height: min(70vh, 640px); }
+    .slides { transition: none; }
+  }
+
+  /* content parts: heading left, text right */
+  .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .part h2 { margin: 0; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .part p { margin: 0 0 14px; max-width: 40rem; }
+  .status { margin: 0 0 18px; padding: 0; list-style: none; max-width: 40rem; }
+  .status li { padding: 11px 0 11px 28px; border-bottom: 1px solid var(--rule); position: relative; }
+  .status li::before { content: ""; position: absolute; left: 4px; top: 19px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--ink-soft); }
+  .status li.done::before { background: var(--ink); border-color: var(--ink); }
+  .status b { font-weight: 650; }
+
+  /* how it works: the steps scroll on the left, the picture on the right follows the step in the middle of the screen */
+  .does { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .does h2 { margin: 0 0 12px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .does-intro { margin: 0; max-width: 40rem; }
+  .scrolly { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: clamp(24px, 4vw, 56px); align-items: start; margin-top: clamp(24px, 4vw, 48px); }
+  .steps { list-style: none; margin: 0; padding: 18vh 0 30vh; }
+  .step { padding: 0 0 0 18px; margin: 0 0 22vh; border-left: 2px solid var(--rule); transition: border-color .25s; }
+  .step:last-child { margin-bottom: 0; }
+  .step button { background: none; border: 0; padding: 0; font: 650 clamp(20px, 2vw, 26px)/1.2 var(--font); font-stretch: 106%; font-variation-settings: 'wdth' 106; color: var(--ink-soft); cursor: pointer; text-align: left; transition: color .25s; }
+  .step p { margin: 6px 0 0; font-size: 16px; color: var(--ink-soft); max-width: 26rem; opacity: .55; transition: opacity .25s; }
+  .step.on { border-left-color: var(--ink); }
+  .step.on button { color: var(--ink); }
+  .step.on p { opacity: 1; }
+  .stage { position: sticky; top: calc(50vh - min(28vw, 330px) / 2 + 30px); aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; background: #e4e0d9; }
+  .stage .m { position: absolute; inset: 0; opacity: 0; transition: opacity .35s; overflow: hidden; background: #e4e0d9; }
+  .stage .m.on { opacity: 1; }
+  .stage .m > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .stage .m.dark { background: #0e0e10; }
+  .stage .m.dark > img { object-fit: cover; }
+
+  .specs-wrap { display: block; }
+  .specs { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); font-size: 16px; }
+  .specs dt, .specs dd { padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .specs dt { color: var(--ink-soft); padding-right: 28px; }
+  .specs dd { margin: 0; }
+  .spec-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .spec-tabs button { font: 500 15px/1 var(--font); padding: 10px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--rule); background: none; color: var(--ink-soft); cursor: pointer; }
+  .spec-tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--stage); }
+  .specs[hidden] { display: none; }
+  .spec-note { margin: 14px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+  .credit-note { margin: clamp(64px, 9vw, 120px) 0 0; padding: 24px 0 56px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); max-width: 46rem; }
+  .credit-note p { margin: 0 0 10px; }
+  .credit-note strong { color: var(--ink); }
+
+  @media (max-width: 860px) {
+    .role, .part, .specs-wrap { grid-template-columns: minmax(0, 1fr); }
+    .view-stage { height: calc(100svh - 400px); }
+    .thumbs { gap: 8px; }
+    .thumbs button { width: 56px; }
+    /* phone: the picture sticks under the header, the steps scroll beneath it */
+    .scrolly { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .stage { order: -1; top: calc(var(--hh, 62px) + 8px); z-index: 2; box-shadow: 0 10px 24px -12px rgba(0,0,0,.35); }
+    .steps { padding: 6vh 0 24vh; }
+    .step { margin-bottom: 16vh; }
+  }
+  @media (max-width: 720px) {
+    /* an upright phone: the square shot of the plugs sits above the name instead of the wide one */
+    .hero .poster { object-fit: contain; object-position: 50% 32%; }
+  }
+  @media (max-width: 480px) {
+    .buy { width: 100%; }
+    .specs { grid-template-columns: minmax(0, 1fr); }
+    .specs dt { border-bottom: 0; padding-bottom: 0; }
+    .specs dd { padding-top: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site" id="site">
+  <div class="bar">
+    <a class="name" href="../../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+    <div class="bar-right">
+      <a class="bar-buy" id="bar-buy" href="https://smoaf.github.io/OHRGUSS/" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">Open the app</a>
+      <nav class="menu" id="menu" aria-label="Main">
+        <button type="button" data-cat="work" aria-expanded="false">Work</button>
+        <button type="button" data-cat="play" aria-expanded="false">Play</button>
+        <button type="button" data-cat="about" aria-expanded="false">About</button>
+        <button type="button" data-cat="contact" aria-expanded="false">Contact</button>
+      </nav>
+      <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
+    </div>
+  </div>
+  <div class="drop" id="drop"><div class="drop-inner"><div class="drop-list" id="drop-list"></div></div></div>
+</header>
+
+<main>
+  <section class="hero" aria-label="OHRGUSS">
+    <picture>
+      <source media="(max-width: 720px)" srcset="media/plugs.webp">
+      <img class="poster" alt="A left and a right earplug in blue, generated by the app" src="media/hero.webp">
+    </picture>
+    <div class="wrap hero-text">
+      <p class="kicker">Concept · open source</p>
+      <h1>OHRGUSS</h1>
+      <p class="claim">Custom-fit earplugs from a browser.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="role">
+      <div>
+        <h2>The idea</h2>
+        <p>Custom-moulded earplugs fit better and are more comfortable than foam plugs, but they usually need an ear impression taken by an audiologist and a lab to make them. Ohrguss tries to make that path cheaper and more accessible: a web app designs a pair of plugs for your own ears and exports everything needed to print or cast them at home or at a local print shop.</p>
+        <p>The project supplies the tool and the open designs. It does not manufacture or sell earplugs.</p>
+        <h2 class="h-second">My role</h2>
+        <p><span class="ph-mark">Placeholder:</span> concept, research, interface and geometry of the app.</p>
+      </div>
+      <dl class="roles">
+        <dt>One design for both ears</dt>
+        <dd>Canal and concha are set per ear; filter, extras and colour are shared. One package holds everything for the pair.</dd>
+        <dt>The canal from a library</dt>
+        <dd>A phone cannot capture the ear canal well, so the canal comes from premade variants based on published measurements, checked with a printed sizing kit. The concha comes from a scan or a photo.</dd>
+        <dt>Made for a filament printer</dt>
+        <dd>Every part is planned for an ordinary filament (FDM) printer; the plug itself is cast in skin-safe silicone in the printed mould.</dd>
+        <dt>Open, and no protection claims</dt>
+        <dd>Free and open source under GPL-3.0. The files are a prototype, not certified hearing protection, and the app says so.</dd>
+      </dl>
+    </div>
+    <div class="actions" id="main-actions">
+      <a class="buy" href="https://smoaf.github.io/OHRGUSS/" target="_blank" rel="noopener">Open the app <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2h8v8M12 2 2 12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></a>
+      <a href="https://github.com/smoaf/OHRGUSS" target="_blank" rel="noopener">Source on GitHub</a>
+      <a href="https://github.com/smoaf/OHRGUSS/blob/main/docs/printing.md" target="_blank" rel="noopener">Printing and casting guide</a>
+      <a href="https://github.com/smoaf/OHRGUSS/blob/main/docs/concept.md" target="_blank" rel="noopener">Concept and research</a>
+      <p class="live-note">The app opens in a new tab, always in its latest version. It runs in desktop and phone browsers.</p>
+    </div>
+  </div>
+
+  <section class="views" id="views" aria-labelledby="h-views">
+    <div class="views-pin">
+      <div class="wrap">
+        <h2 id="h-views">What it makes</h2>
+        <div class="view-stage" id="view-stage" aria-label="The four parts the app exports">
+          <div class="slides" id="slides">
+            <div class="slide"><img src="media/plugs.webp" alt="A left and a right plug with a filter bore"></div>
+            <div class="slide"><img src="media/mould.webp" alt="The two-part mould for both plugs, with a keyed core per ear"></div>
+            <div class="slide"><img src="media/case.webp" alt="The case, shaped to the two plugs" loading="lazy"></div>
+            <div class="slide"><img src="media/kit.webp" alt="The sizing kit: two rows of canal gauges" loading="lazy"></div>
+          </div>
+        </div>
+        <div class="thumbs" id="thumbs" aria-label="Parts">
+          <button type="button" aria-pressed="true"><img src="media/plugs.webp" alt="" loading="lazy"><span>Plugs</span></button>
+          <button type="button" aria-pressed="false"><img src="media/mould.webp" alt="" loading="lazy"><span>Mould</span></button>
+          <button type="button" aria-pressed="false"><img src="media/case.webp" alt="" loading="lazy"><span>Case</span></button>
+          <button type="button" aria-pressed="false"><img src="media/kit.webp" alt="" loading="lazy"><span>Sizing kit</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+
+    <section class="does" aria-labelledby="h-does">
+      <h2 id="h-does">How it works</h2>
+      <p class="does-intro">From the first fitting to the print files in seven steps. Every part is built from the same plug shape, so mould, case and plug always match.</p>
+      <div class="scrolly">
+        <ol class="steps" id="steps">
+          <li class="step on" data-i="0"><button type="button">Size it</button><p>Print the sizing kit, two rows of canal gauges, one per ear: all sizes, fine size steps or bend steps. The gauge that seals comfortably sets the canal.</p></li>
+          <li class="step" data-i="1"><button type="button">Choose the canal</button><p>15 canal variants, five sizes from published ear-canal measurements times three bends, plus fine tuning for each ear.</p></li>
+          <li class="step" data-i="2"><button type="button">Fit the concha</button><p>Width, height and thickness per ear, shown as measuring bars on the model. Load a 3D scan of your ear, or a true-size photo with a coin for scale, to match the plug to your ear.</p></li>
+          <li class="step" data-i="3"><button type="button">Filter or solid</button><p>A seat and sound bore for a filter insert, shaped as a cylinder or from a 3D scan of your own filter. Or a solid plug with an optional pressure vent.</p></li>
+          <li class="step" data-i="4"><button type="button">Cast in silicone</button><p>One closed two-part mould for both plugs. A separate keyed core per ear forms the filter seat and bore.</p></li>
+          <li class="step" data-i="5"><button type="button">A case that fits</button><p>Shaped to your two plugs and clicks shut; a hinge, lanyard loop or magnets as options.</p></li>
+          <li class="step" data-i="6"><button type="button">One package</button><p>A single zip with all STL files, a readme and your design file, so you can continue on another device.</p></li>
+        </ol>
+        <div class="stage" id="stage">
+          <div class="m on"><img alt="The sizing kit: two rows of canal gauges" src="media/kit.webp"></div>
+          <div class="m"><img loading="lazy" alt="15 canal variants in three rows, from slight to strong bend" src="media/variants.webp"></div>
+          <div class="m dark"><img loading="lazy" alt="The app with the concha menu open and a measuring bar on the plug" src="media/app.webp"></div>
+          <div class="m"><img loading="lazy" alt="A plug cut open to show the filter seat and the sound bore" src="media/filter.webp"></div>
+          <div class="m"><img loading="lazy" alt="The two-part mould with a blue core for each ear" src="media/mould.webp"></div>
+          <div class="m"><img loading="lazy" alt="The open case with the two plugs beside it" src="media/case.webp"></div>
+          <div class="m"><img loading="lazy" alt="Everything in one package: mould, cores, plugs, case and sizing kit" src="media/package.webp"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-status">
+      <h2 id="h-status">Where it stands</h2>
+      <div>
+        <p>Version 0.2, a working prototype.</p>
+        <ul class="status">
+          <li class="done"><b>Done:</b> every part comes out as a closed, single-piece mesh across a range of designs, checked by automatic tests on each change; the app runs in desktop and phone browsers.</li>
+          <li><b>Not tested yet:</b> printing and casting, real ear scans, ear photos and filter scans. Tolerances for the click latch, hinge, magnets and mould cores need tuning on real printers.</li>
+          <li><b>Needs a local version:</b> true photogrammetry and a phone link by QR code; a web page cannot do the reconstruction.</li>
+          <li><b>Planned:</b> a listening fit check, plug in versus plug out, and a trademark check for the name.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-specs">
+      <h2 id="h-specs">Specs</h2>
+      <div class="specs-wrap">
+        <div>
+        <div class="spec-tabs" role="tablist" aria-label="Specification groups">
+          <button type="button" role="tab" id="st0" aria-selected="true" aria-controls="sp0" tabindex="0">Output</button>
+          <button type="button" role="tab" id="st1" aria-selected="false" aria-controls="sp1" tabindex="-1">Canal</button>
+          <button type="button" role="tab" id="st2" aria-selected="false" aria-controls="sp2" tabindex="-1">Concha</button>
+          <button type="button" role="tab" id="st3" aria-selected="false" aria-controls="sp3" tabindex="-1">Runs on</button>
+          <button type="button" role="tab" id="st4" aria-selected="false" aria-controls="sp4" tabindex="-1">Project</button>
+        </div>
+        <dl class="specs" role="tabpanel" id="sp0" aria-labelledby="st0">
+          <dt>Parts</dt><dd>Plugs, two-part mould with keyed cores, case, sizing kit</dd>
+          <dt>Format</dt><dd>STL in millimetres, one zip per design with a readme and the design file</dd>
+          <dt>Printer</dt><dd>Filament (FDM) as the baseline</dd>
+          <dt>Plug</dt><dd>Filter seat and sound bore, or solid with an optional pressure vent</dd>
+          <dt>Extras</dt><dd>Cord ring or removal grip, engraved L and R marks, colour for all parts</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp1" aria-labelledby="st1" hidden>
+          <dt>Variants</dt><dd>15: five sizes times three bends</dd>
+          <dt>Size M</dt><dd>Entrance 9.4 × 6.5 mm; the five sizes span about ±20 %</dd>
+          <dt>Bend</dt><dd>8°, 20° or 35°, placed 8 mm inside the entrance</dd>
+          <dt>Tip</dt><dd>85 % of the entrance size, as the canal narrows inward</dd>
+          <dt>Check</dt><dd>Printed sizing kit with all sizes, fine size steps or bend steps</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp2" aria-labelledby="st2" hidden>
+          <dt>Defaults</dt><dd>Height 18.5 mm, thickness 9 mm, width 16 mm (an estimate, not a measured value)</dd>
+          <dt>From a scan</dt><dd>One 3D scan of the ear or head; mark each canal opening, the concha is trimmed to the skin</dd>
+          <dt>From a photo</dt><dd>One true-size photo per ear, with a coin for scale</dd>
+          <dt>Per ear</dt><dd>Left and right are set separately, or copied to the other ear</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp3" aria-labelledby="st3" hidden>
+          <dt>Platform</dt><dd>Desktop and phone browsers with WebGL; an offline single-file version</dd>
+          <dt>Storage</dt><dd>Settings stay in the browser; nothing is uploaded</dd>
+          <dt>Geometry</dt><dd>Signed distance functions, meshed with surface nets and Taubin smoothing, in a Web Worker</dd>
+          <dt>Code</dt><dd>Plain HTML, CSS and JavaScript, no build step</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp4" aria-labelledby="st4" hidden>
+          <dt>Status</dt><dd>Version 0.2, working prototype</dd>
+          <dt>License</dt><dd>GPL-3.0</dd>
+          <dt>Tests</dt><dd>Automatic geometry tests on every change, then publishing</dd>
+          <dt>Source</dt><dd><a href="https://github.com/smoaf/OHRGUSS" target="_blank" rel="noopener">github.com/smoaf/OHRGUSS</a></dd>
+        </dl>
+        <p class="spec-note">Canal and concha values from published ear measurements; sources in the <a href="https://github.com/smoaf/OHRGUSS/blob/main/docs/concept.md" target="_blank" rel="noopener">concept and research notes</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="credit-note">
+      <p><strong>Prototype, not certified hearing protection.</strong> Plugs made from these files have no tested attenuation. Use certified hearing protection wherever protection is required, for example at work.</p>
+      <p>Pictures rendered from the app's own geometry. Texts are drafts from the project's documentation until the final ones follow.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+// the site's header menu (entries as MENU in index.html; keep the two in step): each entry goes to its place on the station
+(function () {
+  var STATION = '../../';
+  var MENU = {
+    work: [
+      { to: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
+      { to: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
+      { to: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
+      { to: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
+      { to: 'new-module', t: 'New: museum & curation', s: 'Work in progress' }
+    ],
+    play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
+    about: [
+      { to: 'hub', t: 'About Simon', s: 'Who builds this station' },
+      { to: 'cv', t: 'CV', s: 'Download as PDF' },
+      { to: 'station', t: 'The station', s: 'Why a research station' }
+    ],
+    contact: [{ to: 'relay', t: 'Get in touch', s: 'Email and links' }]
+  };
+  var site = document.getElementById('site'), drop = document.getElementById('drop'), list = document.getElementById('drop-list'),
+      toggle = document.getElementById('menu-toggle'), menuButtons = document.querySelectorAll('#menu button'), cat = null, timer = 0;
+  function render(c) {
+    var cats = c === 'all' ? ['work', 'play', 'about', 'contact'] : [c];
+    list.innerHTML = '';
+    cats.forEach(function (k) {
+      if (c === 'all') { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
+      MENU[k].forEach(function (it) {
+        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + '#' + it.to;
+        a.innerHTML = '<span class="t">' + it.t + '</span><span class="s">' + it.s + '</span>';
+        list.appendChild(a);
+      });
+    });
+  }
+  function open(c) {
+    clearTimeout(timer);
+    if (cat !== c) render(c);
+    cat = c; drop.classList.add('open');
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', String(b.dataset.cat === c)); });
+    toggle.setAttribute('aria-expanded', String(c === 'all'));
+  }
+  function close() {
+    drop.classList.remove('open'); cat = null;
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  menuButtons.forEach(function (b) {
+    // a mouse opens the menu by hovering; a tap only clicks
+    b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') open(b.dataset.cat); });
+    b.addEventListener('click', function () { if (cat === b.dataset.cat) close(); else open(b.dataset.cat); });
+  });
+  site.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') timer = setTimeout(close, 250); });
+  site.addEventListener('pointerenter', function () { clearTimeout(timer); });
+  toggle.addEventListener('click', function () { if (cat) close(); else open('all'); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && cat) close(); });
+  document.addEventListener('pointerdown', function (e) { if (cat && !site.contains(e.target)) close(); });
+
+  // the name's two lines set to the same width, as on the station
+  function fitName() {
+    var a = document.getElementById('name-1'), b = document.getElementById('name-2');
+    a.style.letterSpacing = ''; b.style.letterSpacing = ''; a.style.marginRight = ''; b.style.marginRight = '';
+    var s = a.offsetWidth < b.offsetWidth ? a : b, l = s === a ? b : a;
+    var extra = (l.offsetWidth - s.offsetWidth) / (s.textContent.length - 1);
+    s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
+  }
+  function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
+  fitName(); measure();
+  if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
+  addEventListener('resize', function () { fitName(); measure(); });
+})();
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // the hero settles back as you scroll
+  var hero = document.querySelector('.hero'), heroMedia = hero.querySelectorAll('.poster');
+  function onScroll() {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if (!reduce && y < h) { var k = 1 + Math.min(y / h, 1) * 0.08; heroMedia.forEach(function (m) { m.style.transform = 'scale(' + k + ') translateY(' + (y * 0.12) + 'px)'; }); }
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  onScroll();
+
+  // how it works: show the picture whose step is in the middle of the screen
+  var stepEls = document.querySelectorAll('#steps .step'), stage = document.getElementById('stage').children, currentStep = -1;
+  function activate(i) {
+    if (i === currentStep) return; currentStep = i;
+    stepEls.forEach(function (st, j) { st.classList.toggle('on', j === i); });
+    [].forEach.call(stage, function (m, j) { m.classList.toggle('on', j === i); });
+  }
+  if ('IntersectionObserver' in window) {
+    var so = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) activate(+e.target.dataset.i); });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    stepEls.forEach(function (st) { so.observe(st); });
+  }
+  stepEls.forEach(function (st) {
+    st.querySelector('button').addEventListener('click', function () {
+      activate(+st.dataset.i);
+      st.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    });
+  });
+  activate(0);
+
+  // the parts: scrolling down slides through them; a small view jumps the page to it
+  var viewsSec = document.getElementById('views'), slides = document.getElementById('slides'),
+      thumbs = document.querySelectorAll('#thumbs button'), nViews = thumbs.length;
+  var slideEls = slides.children, stageEl = document.getElementById('view-stage');
+  function placeSlides(pos) {
+    var W = stageEl.clientWidth, w = Math.min(W, stageEl.clientHeight);
+    [].forEach.call(slideEls, function (el, i) { el.style.width = w + 'px'; el.style.opacity = String(1 - Math.min(1, Math.abs(i - pos)) * 0.75); });
+    slides.style.transform = 'translateX(' + ((W - w) / 2 - pos * w) + 'px)';
+  }
+  function viewsScroll() {
+    if (reduce) { placeSlides(slides.dataset.pos ? +slides.dataset.pos : 0); return; }
+    var r = viewsSec.getBoundingClientRect(), span = viewsSec.offsetHeight - innerHeight;
+    var p = Math.max(0, Math.min(1, -r.top / span)), pos = p * (nViews - 1);
+    placeSlides(pos);
+    var cur = Math.round(pos);
+    thumbs.forEach(function (b, i) { b.setAttribute('aria-pressed', String(i === cur)); });
+  }
+  thumbs.forEach(function (b, i) {
+    b.addEventListener('click', function () {
+      if (reduce) {
+        slides.dataset.pos = i; placeSlides(i);
+        thumbs.forEach(function (o, j) { o.setAttribute('aria-pressed', String(j === i)); });
+        return;
+      }
+      var top = viewsSec.getBoundingClientRect().top + scrollY, span = viewsSec.offsetHeight - innerHeight;
+      scrollTo({ top: top + span * i / (nViews - 1), behavior: 'smooth' });
+    });
+  });
+  addEventListener('scroll', viewsScroll, { passive: true });
+  addEventListener('resize', viewsScroll);
+  viewsScroll();
+
+  // the small Open the app in the header strip, once the main one has scrolled away
+  var mainActions = document.getElementById('main-actions'), barBuy = document.getElementById('bar-buy');
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      var away = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+      barBuy.classList.toggle('show', away); barBuy.tabIndex = away ? 0 : -1; barBuy.setAttribute('aria-hidden', String(!away));
+    }).observe(mainActions);
+  }
+
+  // spec tabs: click, or arrow keys between tabs
+  var specTabs = document.querySelectorAll('.spec-tabs [role=tab]');
+  function pick(t) {
+    specTabs.forEach(function (o) { var on = o === t; o.setAttribute('aria-selected', String(on)); o.tabIndex = on ? 0 : -1;
+      document.getElementById(o.getAttribute('aria-controls')).hidden = !on; });
+  }
+  specTabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { pick(t); });
+    t.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
+      var n = specTabs[(i + d + specTabs.length) % specTabs.length]; pick(n); n.focus(); e.preventDefault();
+    });
+  });
+})();
+</script>
+</body>
+</html>
