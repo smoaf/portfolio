@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>KLEX Case Study</title>
+<meta name="description" content="Case study in Simon Winkler's portfolio: KLEX, a creativity app concept for children, with business plan figures and a clickable prototype.">
+<link rel="preload" href="../../fonts/archivo-100-900-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* fonts from the site itself, as on the main page (../../fonts/) */
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* the site's colour tokens and glass (index.html): light by day; dark = the site's dark scheme with its night glass */
+  :root {
+    --stage: #d8d3cb; --ink: #1d1b18; --ink-soft: #5e5850; --rule: rgba(29, 27, 24, 0.16); --accent: #b3602d;
+    --glass: rgba(246, 243, 238, 0.58); --glass-strong: rgba(246, 243, 238, 0.86); --glass-line: rgba(255, 255, 255, 0.55);
+    --glass-ink: #1d1b18; --glass-soft: #5e5850; --blur: blur(10px) saturate(1.15);
+    --anthracite: #2a2b2e; --anthracite-2: #35363a; --panel-ink: #e9e6e0; --panel-soft: #a19d96;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(16px, 5vw, 64px);
+    /* the page's own chart colours */
+    --card: rgba(255, 255, 255, 0.5); --yes: #2f8f46; --no: #c2452f; --blue: #2f7ee0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+      --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+      --anthracite: #201e1b; --anthracite-2: #33302b; --card: rgba(255, 255, 255, 0.06); --yes: #5fc878; --no: #f08a76; --blue: #6fb0ff; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+    --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+    --anthracite: #201e1b; --anthracite-2: #33302b; --card: rgba(255, 255, 255, 0.06); --yes: #5fc878; --no: #f08a76; --blue: #6fb0ff; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--stage); color: var(--ink); font: 400 18px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { color: var(--accent); }
+  img { display: block; max-width: 100%; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+  h2 { margin: 0; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; text-wrap: balance; }
+  h3 { margin: 0 0 8px; font: 650 19px/1.25 var(--font); font-stretch: 106%; font-variation-settings: 'wdth' 106; }
+
+  /* the site's header (index.html: .site, .bar, .name, .menu, .drop); each entry goes to its place on the station */
+  .site { position: fixed; left: 0; right: 0; top: 0; z-index: 20; color: var(--glass-ink);
+          background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          padding-top: env(safe-area-inset-top, 0px); }
+  .site .name:hover, .site .drop-item:hover { color: inherit; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
+  .name { font: 700 23px/0.9 var(--font); font-stretch: 116%; font-variation-settings: 'wdth' 116; letter-spacing: 0.02em; text-transform: uppercase;
+          color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .name span { display: inline-block; width: max-content; white-space: nowrap; }
+  .site button { background: transparent; border: 0; cursor: pointer; }
+  .menu { display: flex; gap: 6px; }
+  .menu button, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+          padding: 12px 12px; min-height: 44px; position: relative; }
+  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu-toggle { display: none; }
+  .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
+  .drop.open { grid-template-rows: 1fr; }
+  .drop-inner { overflow: hidden; }
+  .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
+  .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-decoration: none; }
+  .drop-item .t { display: block; font: 600 17px/1.2 var(--font); }
+  .drop-item .s { display: block; font: 400 13px/1.4 var(--font); color: var(--glass-soft); margin-top: 3px; }
+  .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
+  .drop-cat { display: none; }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; }
+    .name { font-size: 19px; }
+    .menu { display: none; }
+    .menu-toggle { display: block; padding-right: 0; }
+    .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+    .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
+  }
+
+  .bar-right { display: flex; align-items: center; gap: 18px; }
+  .bar-try { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none;
+             font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s; }
+  .bar-try.show { opacity: 1; transform: none; pointer-events: auto; }
+  .bar-try:hover { background: var(--accent); color: var(--stage); }
+
+  /* hero: the app's own clay world on its charcoal table, the name set over it */
+  .hero { position: relative; height: min(100svh, 900px); min-height: 560px; overflow: hidden; background: #1f1f20; color: #f4f1ec; }
+  .hero .scene { position: absolute; inset: 0; transform-origin: 50% 70%; will-change: transform; }
+  .hero .scene img { position: absolute; bottom: 0; height: auto; filter: drop-shadow(0 20px 22px rgba(0,0,0,.5)); }
+  .hero .t1 { right: 30%; width: min(24vw, 300px); bottom: 3% !important; }
+  .hero .t2 { right: 9%; width: min(34vw, 430px); bottom: 2% !important; }
+  .hero .t3 { right: -3%; width: min(22vw, 280px); bottom: 3% !important; opacity: .95; }
+  .hero .av { right: 32%; width: min(27vw, 350px); bottom: 6% !important; z-index: 2; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(31,31,32,.92) 0%, rgba(31,31,32,.55) 38%, rgba(31,31,32,0) 62%), linear-gradient(180deg, rgba(31,31,32,0) 55%, rgba(31,31,32,.6) 100%); pointer-events: none; z-index: 3; }
+  .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 4; }
+  h1 { margin: 0 0 0 -0.06em; white-space: nowrap; font: 800 clamp(64px, 14vw, 190px)/0.84 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+  .claim { margin: clamp(10px, 1.6vw, 18px) 0 0; font: 400 clamp(20px, 2.6vw, 34px)/1.2 var(--font); font-stretch: 104%; font-variation-settings: 'wdth' 104; }
+  .kicker { margin: 0 0 14px; font: 500 13px/1 var(--font); letter-spacing: .16em; text-transform: uppercase; color: rgba(244,241,236,.72); }
+
+  .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .role h2 { margin: 0 0 10px; font-size: clamp(28px, 3vw, 38px); }
+  .role p { margin: 0 0 12px; max-width: 34rem; }
+  .role h2.h-product { margin-top: clamp(36px, 5vw, 56px); }
+  .roles { margin: 6px 0 0; }
+  .roles dt { font-weight: 650; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .roles dt:first-child { padding-top: 0; border-top: 0; }
+  .roles dd { margin: 4px 0 16px; color: var(--ink-soft); font-size: 16px; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: clamp(32px, 4vw, 48px) 0 clamp(56px, 8vw, 104px); }
+  .buy { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; padding: 0 44px; border-radius: 999px;
+         background: var(--ink); color: var(--stage); text-decoration: none; font: 650 17px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; transition: background .2s; }
+  .buy:hover { background: var(--accent); color: var(--stage); }
+  .actions a:not(.buy) { font-size: 16px; }
+
+  /* the prototype, running live */
+  .deck { background: var(--anthracite); color: var(--panel-ink); padding: clamp(28px, 4vw, 56px) 0; }
+  .deck h2 { margin: 0 0 8px; font-size: clamp(28px, 3vw, 38px); }
+  .deck p { margin: 0 0 18px; max-width: 44rem; color: var(--panel-soft); font-size: 16px; }
+  .deck a { color: var(--panel-ink); }
+  .appframe { position: relative; aspect-ratio: 1184 / 896; max-height: 86svh; margin: 0 auto; background: #0c0c0d; border-radius: 14px; overflow: hidden; }
+  .appframe iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .deck-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; margin-top: 12px; font-size: 14px; color: var(--panel-soft); }
+  @media (max-width: 640px) { .appframe { aspect-ratio: 390 / 760; max-height: none; } }
+
+  /* how it works: the steps scroll on the left, the screen on the right follows */
+  .does { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .does h2 { margin-bottom: 12px; }
+  .does-intro { margin: 0; max-width: 40rem; }
+  .scrolly { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: clamp(24px, 4vw, 56px); align-items: start; margin-top: clamp(24px, 4vw, 48px); }
+  .steps { list-style: none; margin: 0; padding: 18vh 0 30vh; }
+  .step { padding: 0 0 0 18px; margin: 0 0 22vh; border-left: 2px solid var(--rule); transition: border-color .25s; }
+  .step:last-child { margin-bottom: 0; }
+  .step button { background: none; border: 0; padding: 0; font: 650 clamp(20px, 2vw, 26px)/1.2 var(--font); font-stretch: 106%; font-variation-settings: 'wdth' 106; color: var(--ink-soft); cursor: pointer; text-align: left; transition: color .25s; }
+  .step p { margin: 6px 0 0; font-size: 16px; color: var(--ink-soft); max-width: 26rem; opacity: .55; transition: opacity .25s; }
+  .step.on { border-left-color: var(--ink); }
+  .step.on button { color: var(--ink); }
+  .step.on p { opacity: 1; }
+  .stage { position: sticky; top: calc(50vh + var(--hh, 77px) / 2 - min(24vw, 290px)); aspect-ratio: 1184 / 896; border-radius: 14px; overflow: hidden; background: #1f1f20; box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); }
+  .stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s; }
+  .stage img.on { opacity: 1; }
+
+  /* content parts: heading left, content right */
+  .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .part p { margin: 0 0 14px; max-width: 40rem; }
+  .part .lead { color: var(--ink-soft); font-size: 16px; margin-top: 10px; max-width: 15rem; }
+  .src { font-size: 13px; color: var(--ink-soft); margin: 14px 0 0; }
+
+  /* market: the funnel from all children to the goal, one scale per row */
+  .funnel { display: grid; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; }
+  .funnel li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 14px; align-items: center; }
+  .funnel .k { font-size: 15px; color: var(--ink-soft); line-height: 1.25; }
+  .funnel .k b { display: block; color: var(--ink); font-weight: 650; font-size: 16px; }
+  .funnel .barrow { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .funnel .b { height: 34px; border-radius: 8px; background: var(--blue); min-width: 4px; flex: 0 0 auto; }
+  .funnel .v { font: 650 20px/1 var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .funnel li.goal .b { background: var(--accent); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0; }
+  .tile { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; }
+  .tile .n { font: 750 clamp(26px, 3vw, 36px)/1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; font-variant-numeric: tabular-nums; }
+  .tile .t { margin-top: 6px; font-size: 15px; color: var(--ink-soft); line-height: 1.35; }
+
+  /* plans */
+  .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .plan { border-radius: 12px; padding: 18px 18px 20px; border: 1px solid var(--rule); background: var(--card); display: grid; align-content: start; gap: 8px; }
+  .plan img { height: 96px; width: auto; justify-self: start; }
+  .plan .p { font: 750 26px/1 var(--font); font-variant-numeric: tabular-nums; }
+  .plan .p small { font: 400 14px/1 var(--font); color: var(--ink-soft); }
+  .plan ul { margin: 4px 0 0; padding-left: 18px; font-size: 15px; color: var(--ink-soft); }
+  .plan li + li { margin-top: 4px; }
+
+  /* competitor matrix */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 15px; }
+  th, td { padding: 10px 10px; text-align: center; border-bottom: 1px solid var(--rule); }
+  tr:last-child th, tr:last-child td { border-bottom: 0; }
+  thead th { font-weight: 650; font-size: 14px; vertical-align: bottom; }
+  tbody th { text-align: left; font-weight: 500; padding-left: 16px; }
+  td:nth-child(2), thead th:nth-child(2) { background: rgba(47, 126, 224, 0.12); font-weight: 700; }
+  td.y, .legend .y { color: var(--yes); font-weight: 800; } td.n, .legend .n { color: var(--no); font-weight: 800; } td.d, .legend .d { color: var(--ink-soft); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-soft); margin: 10px 0 0; }
+
+  /* swot and forces */
+  .swot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .swot div { border-radius: 10px; padding: 16px 18px; border: 1px solid var(--rule); background: var(--card); border-top: 4px solid var(--c); }
+  .swot ul { margin: 0; padding-left: 18px; font-size: 15px; color: var(--ink-soft); }
+  .swot li + li { margin-top: 4px; }
+  .forces { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; max-width: 40rem; }
+  .forces li { display: grid; grid-template-columns: minmax(0, 1fr) 150px 6.5rem; gap: 12px; align-items: center; font-size: 15px; }
+  .forces .m { height: 10px; border-radius: 5px; background: var(--rule); overflow: hidden; }
+  .forces .m i { display: block; height: 100%; background: var(--ink); border-radius: 5px; }
+  .forces .lv { font-weight: 650; font-size: 14px; }
+
+  /* roadmap */
+  .road { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--ink); }
+  .road li { padding: 16px 18px 0 0; position: relative; }
+  .road li::before { content: ""; position: absolute; left: 0; top: -7px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
+  .road .w { font: 650 15px/1.2 var(--font); color: var(--accent); }
+  .road p { font-size: 15px; color: var(--ink-soft); margin: 6px 0 0; }
+
+  /* facts */
+  .spec-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .spec-tabs button { font: 500 15px/1 var(--font); padding: 10px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--rule); background: none; color: var(--ink-soft); cursor: pointer; }
+  .spec-tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--stage); }
+  .specs { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); font-size: 16px; }
+  .specs[hidden] { display: none; }
+  .specs dt, .specs dd { padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .specs dt { color: var(--ink-soft); padding-right: 28px; }
+  .specs dd { margin: 0; }
+
+  .credit-note { margin: clamp(64px, 9vw, 120px) 0 0; padding: 24px 0 56px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); max-width: 46rem; }
+
+  @media (max-width: 860px) {
+    .role, .part { grid-template-columns: minmax(0, 1fr); }
+    .part .lead { max-width: 40rem; }
+    .scrolly { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .stage { order: -1; top: calc(var(--hh, 62px) + 8px); z-index: 2; }
+    .steps { padding: 6vh 0 24vh; }
+    .step { margin-bottom: 16vh; }
+    .plans, .road { grid-template-columns: minmax(0, 1fr); }
+    .road { border-top: 0; border-left: 2px solid var(--ink); }
+    .road li { padding: 0 0 20px 22px; }
+    .road li::before { left: -7px; top: 4px; }
+    .hero .t1, .hero .t3 { display: none; }
+    .hero .t2 { right: -8%; width: 62vw; }
+    .hero .av { right: 34%; width: 52vw; bottom: 30% !important; }
+    .hero::after { background: linear-gradient(180deg, rgba(31,31,32,0) 35%, rgba(31,31,32,.9) 78%); }
+  }
+  @media (max-width: 520px) {
+    .buy { width: 100%; }
+    .swot { grid-template-columns: minmax(0, 1fr); }
+    .funnel li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .forces li { grid-template-columns: minmax(0, 1fr) 5.5rem; }
+    .forces .m { display: none; }
+    .specs { grid-template-columns: minmax(0, 1fr); }
+    .specs dt { border-bottom: 0; padding-bottom: 0; }
+    .specs dd { padding-top: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="site" id="site">
+  <div class="bar">
+    <a class="name" href="../../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+    <div class="bar-right">
+      <a class="bar-try" id="bar-try" href="#try" tabindex="-1" aria-hidden="true">Try it</a>
+      <nav class="menu" id="menu" aria-label="Main">
+        <button type="button" data-cat="work" aria-expanded="false">Work</button>
+        <button type="button" data-cat="play" aria-expanded="false">Play</button>
+        <button type="button" data-cat="about" aria-expanded="false">About</button>
+        <button type="button" data-cat="contact" aria-expanded="false">Contact</button>
+      </nav>
+      <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
+    </div>
+  </div>
+  <div class="drop" id="drop"><div class="drop-inner"><div class="drop-list" id="drop-list"></div></div></div>
+</header>
+
+<main>
+  <section class="hero" aria-label="KLEX">
+    <div class="scene" id="scene" aria-hidden="true">
+      <img class="t1" src="img/tower_photo.webp" alt="">
+      <img class="t2" src="img/tower_draw.webp" alt="">
+      <img class="t3" src="img/tower_craft.webp" alt="">
+      <img class="av" src="img/klex_wave.webp" alt="">
+    </div>
+    <div class="wrap hero-text">
+      <p class="kicker">App concept · business plan · prototype</p>
+      <h1>KLEX</h1>
+      <p class="claim">Create, don't scroll.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="role">
+      <div>
+        <h2>My role</h2>
+        <p>KLEX is a start-up concept I developed with Valentin Steiner and Vanessa Riedmüller as a business plan project in the winter semester 2025. In the founding team I hold the technical lead as CTO, covering product, IT and research and development. The illustrations of the app's logic on this page come from that work, and the prototype below makes the concept clickable.</p>
+        <h2 class="h-product">The product</h2>
+        <p>KLEX is a micro-learning app for children aged 6 to 14 that turns passive screen time into short creative training. Every day it offers small challenges in writing, drawing, photography, riddles and inventive problem solving. Friends share their results in closed groups, but only after handing in their own: this Blind Mode removes copying and comparison pressure. Streaks, growing towers and a clay avatar keep children coming back.</p>
+      </div>
+      <dl class="roles">
+        <dt>Product and concept</dt>
+        <dd>Daily challenges across disciplines, Blind Mode for social learning, streaks, towers and avatar as motivation. The didactic concept and game mechanics are fully worked out in the plan.</dd>
+        <dt>Technology</dt>
+        <dd>Framework decision for Flutter after comparing native development, React Native and Unity. Modular architecture, cloud hosting in the EU, privacy by design.</dd>
+        <dt>Business model</dt>
+        <dd>Freemium with three plans, kid-friendly partner ads in the free plan, market sizing for the DACH region and a three-phase roadmap to launch.</dd>
+        <dt>Design</dt>
+        <dd>A clay look that sets the app apart from the flat vector style common in children's apps. Mockups of every main screen and of the logic between them.</dd>
+        <dt>Prototype</dt>
+        <dd>A clickable web version of the concept with working hand-in, Blind Mode, rewards, towers, avatar lab and plan limits.</dd>
+      </dl>
+    </div>
+    <div class="actions" id="main-actions">
+      <a class="buy" href="#try">Try the prototype</a>
+      <a href="#figures">Market in figures</a>
+      <a href="#competition">Competition</a>
+      <a href="#roadmap">Roadmap</a>
+    </div>
+  </div>
+
+  <section class="deck" id="try" aria-labelledby="h-try">
+    <div class="wrap">
+      <h2 id="h-try">Try it</h2>
+      <p>The prototype runs here in the page. Open the Studio, solve a challenge with any tool, and watch a friend's creation unlock. The ⋯ menu switches plans and jumps to the next day.</p>
+      <div class="appframe"><iframe src="klex-app.html" title="KLEX prototype" loading="lazy" allow="camera; microphone"></iframe></div>
+      <div class="deck-foot">
+        <span>Friends, stickers and payments are simulated. Progress stays in this browser.</span>
+        <a href="klex-app.html" target="_blank" rel="noopener">Open full screen</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+
+    <section class="does" aria-labelledby="h-does">
+      <h2 id="h-does">How it works</h2>
+      <p class="does-intro">One loop, repeated daily: a small creative prompt, a solution in any medium, and only then a look at what friends made of the same task.</p>
+      <div class="scrolly">
+        <ol class="steps" id="steps">
+          <li class="step on" data-i="0"><button type="button">Daily challenges</button><p>New challenges every day across writing, drawing, photography, riddles and problem solving. Each one takes 5 to 15 minutes and little or no material.</p></li>
+          <li class="step" data-i="1"><button type="button">Any method</button><p>Paint, photograph, write, record or upload. The challenge gives the spark, the child chooses the way.</p></li>
+          <li class="step" data-i="2"><button type="button">Blind Mode</button><p>Friends' solutions stay locked until your own is handed in. Nobody copies, nobody compares first, and the reveal shows how differently others solved it.</p></li>
+          <li class="step" data-i="3"><button type="button">Stickers, not comments</button><p>Feedback is one of four stickers. No comment threads, no counters, no ranking.</p></li>
+          <li class="step" data-i="4"><button type="button">Rewards</button><p>Streak days and stickers from friends become coins, collected through the gift.</p></li>
+          <li class="step" data-i="5"><button type="button">Towers</button><p>Every hand-in adds a level to the tower of its discipline. Towers only grow: they stay standing when a streak breaks.</p></li>
+          <li class="step" data-i="6"><button type="button">New paths</button><p>More disciplines can be added at any time, each with its own tower.</p></li>
+          <li class="step" data-i="7"><button type="button">KLEX Lab</button><p>Coins style the avatar: body, surface, features and things to hold.</p></li>
+          <li class="step" data-i="8"><button type="button">Three plans</button><p>Free to start with one challenge a day. Creator removes the limits and the ads, Studio+ adds custom challenges for groups.</p></li>
+        </ol>
+        <div class="stage" id="stage">
+          <img class="on" src="img/s_studio.webp" alt="Studio screen with three challenge cards">
+          <img src="img/s_hand.webp" alt="Hand-in screen with a drawing and the clay tool bar" loading="lazy">
+          <img src="img/s_friends.webp" alt="Friends screen with locked and unlocked creations above the community garden" loading="lazy">
+          <img src="img/s_creation.webp" alt="A friend's drawing in a frame with the sticker bar below" loading="lazy">
+          <img src="img/s_earn.webp" alt="Earnings popover with streak bonus and friend rewards" loading="lazy">
+          <img src="img/s_progress.webp" alt="My Path screen with three towers and their levels" loading="lazy">
+          <img src="img/s_paths.webp" alt="Add New Paths screen with pottery, music and writing" loading="lazy">
+          <img src="img/s_lab.webp" alt="KLEX Lab with the avatar and a tray of eyes" loading="lazy">
+          <img src="img/s_plans.webp" alt="Plan screen with Dabbler, Creator and Studio+" loading="lazy">
+        </div>
+      </div>
+    </section>
+
+    <section class="part" id="figures" aria-labelledby="h-fig">
+      <div><h2 id="h-fig">Market in figures</h2><p class="lead">From every child with a smartphone to the subscribers the plan aims for by 2029.</p></div>
+      <div>
+        <ul class="funnel" aria-label="Market funnel">
+          <li><span class="k"><b>Worldwide</b>children 6 to 14 with smartphone access</span><span class="barrow"><span class="b" style="width:78%"></span><span class="v">480 M</span></span></li>
+          <li><span class="k"><b>Europe</b>children 6 to 14</span><span class="barrow"><span class="b" style="width:11.4%"></span><span class="v">70 M</span></span></li>
+          <li><span class="k"><b>DACH region</b>start market</span><span class="barrow"><span class="b" style="width:1.22%"></span><span class="v">7.5 M</span></span></li>
+          <li><span class="k"><b>Paying parents</b>about 5% of DACH</span><span class="barrow"><span class="b" style="width:4px"></span><span class="v">375,000</span></span></li>
+          <li class="goal"><span class="k"><b>Goal for 2029</b>2 to 3% of those</span><span class="barrow"><span class="b" style="width:4px"></span><span class="v">10,000 subscribers</span></span></li>
+        </ul>
+        <div class="tiles">
+          <div class="tile"><div class="n">€18.7 M</div><div class="t">theoretical yearly market in DACH at €49.99 per licence</div></div>
+          <div class="tile"><div class="n">€600,000</div><div class="t">yearly revenue target with 10,000 premium subscribers</div></div>
+          <div class="tile"><div class="n">35 M</div><div class="t">children in the US age group; 0.1% of them would add about €1.75 M a year</div></div>
+          <div class="tile"><div class="n">€500,000</div><div class="t">capital target for the founding phase, from own funds and grants</div></div>
+        </div>
+        <p class="src">Figures from our business plan, winter semester 2025. The bars share one scale; the last two are too small to draw to scale.</p>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-plans">
+      <div><h2 id="h-plans">Business model</h2><p class="lead">Freemium: free for reach and habit, subscriptions for revenue.</p></div>
+      <div>
+        <div class="plans">
+          <div class="plan"><img src="img/klex_wave.webp" alt=""><h3>Dabbler</h3><div class="p">Free</div><ul><li>1 challenge per day</li><li>1 group, up to 3 friends</li><li>Limited avatar</li><li>Small partner ads</li></ul></div>
+          <div class="plan"><img src="img/m_artist.webp" alt=""><h3>Creator</h3><div class="p">€4.99 <small>/ month</small></div><ul><li>Unlimited challenges</li><li>Unlimited groups and friends</li><li>Full avatar customisation</li><li>No ads</li></ul></div>
+          <div class="plan"><img src="img/m_gold.webp" alt=""><h3>Studio+</h3><div class="p">€9.99 <small>/ month</small></div><ul><li>Everything in Creator</li><li>Exclusive avatar skins</li><li>Create challenges for groups</li></ul></div>
+        </div>
+        <p class="src">Yearly plans cost €49.99 and €99.99. Parents in the EdTech segment are willing to pay €5 to €10 a month for a good learning app; KLEX sits inside that range. Ads in the free plan come only from related products such as pens, paints and craft materials.</p>
+      </div>
+    </section>
+
+    <section class="part" id="competition" aria-labelledby="h-comp">
+      <div><h2 id="h-comp">Competition</h2><p class="lead">KLEX sits between school apps, pure entertainment and single-discipline creative tools.</p></div>
+      <div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th scope="col"></th><th scope="col">KLEX</th><th scope="col">Anton</th><th scope="col">DIY.org</th><th scope="col">Zigazoo</th><th scope="col">Toca Boca</th><th scope="col">Sketch a Day</th><th scope="col">Brainsparker</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">For children 6 to 14</th><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td></tr>
+              <tr><th scope="row">Focus on creativity and soft skills</th><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+              <tr><th scope="row">Micro-learning, 5 to 15 min</th><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td></tr>
+              <tr><th scope="row">Multimodal: text, image, audio</th><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td></tr>
+              <tr><th scope="row">Gamification: streaks, avatar</th><td class="y">✓</td><td class="y">✓</td><td class="d">–</td><td class="d">–</td><td class="n">✕</td><td class="d">–</td><td class="n">✕</td></tr>
+              <tr><th scope="row">Social mechanics</th><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="y">✓</td><td class="n">✕</td><td class="y">✓</td><td class="n">✕</td></tr>
+              <tr><th scope="row">Blind Mode, no comparison pressure</th><td class="y">✓</td><td class="n">✕</td><td class="d">–</td><td class="n">✕</td><td class="d">–</td><td class="n">✕</td><td class="d">–</td></tr>
+              <tr><th scope="row">School integration</th><td class="d">–</td><td class="y">✓</td><td class="d">–</td><td class="d">–</td><td class="n">✕</td><td class="n">✕</td><td class="n">✕</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="legend"><span><b class="y">✓</b> yes</span><span><b class="n">✕</b> no</span><span><b class="d">–</b> partly or not applicable</span><span>Our own assessment in the business plan.</span></p>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-swot">
+      <div><h2 id="h-swot">Position</h2><p class="lead">Strengths and risks, and how strong each market force is.</p></div>
+      <div>
+        <div class="swot">
+          <div style="--c:#46a85a"><h3>Strengths</h3><ul><li>Education, gamification and social features in one product</li><li>Blind Mode encourages independent thinking</li><li>Scales through cloud technology</li><li>A safe space with pedagogical value</li></ul></div>
+          <div style="--c:#4f86c6"><h3>Weaknesses</h3><ul><li>Content is costly to produce</li><li>Dependence on the app stores</li><li>No brand awareness yet</li></ul></div>
+          <div style="--c:#d9a52f"><h3>Opportunities</h3><ul><li>Growing EdTech market</li><li>Parents want meaningful media use</li><li>Internationalisation</li></ul></div>
+          <div style="--c:#d2564a"><h3>Threats</h3><ul><li>Easy to copy for large tech companies</li><li>Children may lose interest</li></ul></div>
+        </div>
+        <ul class="forces" aria-label="Five forces">
+          <li><span>Power of suppliers: the app stores</span><span class="m"><i style="width:100%"></i></span><span class="lv">Very high</span></li>
+          <li><span>Rivalry among existing apps</span><span class="m"><i style="width:80%"></i></span><span class="lv">High</span></li>
+          <li><span>Power of buyers: parents</span><span class="m"><i style="width:80%"></i></span><span class="lv">High</span></li>
+          <li><span>Substitutes: colouring books, streaming</span><span class="m"><i style="width:68%"></i></span><span class="lv">Medium to high</span></li>
+          <li><span>New entrants</span><span class="m"><i style="width:55%"></i></span><span class="lv">Medium</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="part" id="roadmap" aria-labelledby="h-road">
+      <div><h2 id="h-road">Roadmap</h2><p class="lead">Validate in the DACH region first, then go international.</p></div>
+      <div>
+        <ol class="road">
+          <li><div class="w">From July 2026</div><h3>Foundation</h3><p>Found the company, apply for pre-seed funding, secure €500,000 in capital.</p></li>
+          <li><div class="w">Sep 2026 to Aug 2027</div><h3>Build and test</h3><p>Develop the app, run a closed beta with the first 150 test users, start talks with ad partners.</p></li>
+          <li><div class="w">From September 2027</div><h3>Launch</h3><p>Release in the DACH app stores. Goal: more than 10,000 paying and at least 300,000 ad-funded users.</p></li>
+          <li><div class="w">From 2028/29</div><h3>Outlook</h3><p>Enter the UK and US markets. Goal: 100,000 paying users and break-even.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-facts">
+      <h2 id="h-facts">Facts</h2>
+      <div>
+        <div class="spec-tabs" role="tablist" aria-label="Fact groups">
+          <button type="button" role="tab" id="st0" aria-selected="true" aria-controls="sp0" tabindex="0">Product</button>
+          <button type="button" role="tab" id="st1" aria-selected="false" aria-controls="sp1" tabindex="-1">Technology</button>
+          <button type="button" role="tab" id="st2" aria-selected="false" aria-controls="sp2" tabindex="-1">Privacy</button>
+          <button type="button" role="tab" id="st3" aria-selected="false" aria-controls="sp3" tabindex="-1">Company</button>
+        </div>
+        <dl class="specs" role="tabpanel" id="sp0" aria-labelledby="st0">
+          <dt>Type</dt><dd>Micro-learning app for creativity, with gamification and social mechanics</dd>
+          <dt>Users</dt><dd>Children aged 6 to 14</dd>
+          <dt>Customers</dt><dd>Parents who look for meaningful screen time</dd>
+          <dt>Session</dt><dd>5 to 15 minutes per challenge</dd>
+          <dt>Disciplines</dt><dd>Writing, drawing, photography and video, riddles and logic, inventive problem solving</dd>
+          <dt>Motivation</dt><dd>Daily streak, towers per discipline, coins and a customisable avatar</dd>
+          <dt>Social</dt><dd>Closed groups of friends and family, Blind Mode, sticker feedback</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp1" aria-labelledby="st1" hidden>
+          <dt>Framework</dt><dd>Flutter, one codebase in Dart for iOS and Android</dd>
+          <dt>Why Flutter</dt><dd>It draws every pixel itself, so the clay buttons and animations look the same on every device</dd>
+          <dt>Compared with native</dt><dd>About 40% less development cost and maintenance, according to the plan</dd>
+          <dt>Compared with React Native</dt><dd>Less effort for a heavily custom interface</dd>
+          <dt>Compared with Unity</dt><dd>Lighter on battery, better for text input and everyday use</dd>
+          <dt>Architecture</dt><dd>Modular, Clean Architecture with MVVM</dd>
+          <dt>Infrastructure</dt><dd>External cloud partners, hosting powered by renewable energy</dd>
+          <dt>Protection</dt><dd>Word and figurative mark for KLEX, code obfuscation</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp2" aria-labelledby="st2" hidden>
+          <dt>Principle</dt><dd>Privacy by design, as little personal data as possible</dd>
+          <dt>Account</dt><dd>Username and password only</dd>
+          <dt>E-mail</dt><dd>Optional, to secure the account</dd>
+          <dt>Processing</dt><dd>On the device where possible instead of in the cloud</dd>
+          <dt>Servers</dt><dd>Located in the EU, GDPR compliant</dd>
+          <dt>Space</dt><dd>Closed and moderated, no algorithmic feed</dd>
+          <dt>Accessibility</dt><dd>Scalable type, high-contrast interface, simple operation</dd>
+        </dl>
+        <dl class="specs" role="tabpanel" id="sp3" aria-labelledby="st3" hidden>
+          <dt>Name</dt><dd>KLEX GmbH, in founding</dd>
+          <dt>Planned founding</dt><dd>July 2026</dd>
+          <dt>Founders</dt><dd>Valentin Steiner (CEO), Simon Winkler (CTO), Vanessa Riedmüller (CDO), equal shares</dd>
+          <dt>Stage</dt><dd>Concept: didactic concept, game mechanics and target group analysis are complete</dd>
+          <dt>Sales</dt><dd>Apple App Store and Google Play, in-app subscriptions</dd>
+          <dt>Launch claim</dt><dd>Create, don't scroll</dd>
+        </dl>
+      </div>
+    </section>
+
+    <p class="credit-note">KLEX is a concept by Valentin Steiner, Vanessa Riedmüller and Simon Winkler. All figures and assessments come from our business plan of the winter semester 2025 and are plans, not results. The prototype is a demonstration: friends, stickers, ads and payments are simulated, and partner brands shown in it are examples, not existing partnerships.</p>
+  </div>
+</main>
+
+<script>
+// the site's header menu (entries as MENU in index.html; keep the two in step): each entry goes to its place on the station
+(function () {
+  var STATION = '../../';
+  var MENU = {
+    work: [
+      { to: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
+      { to: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
+      { to: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
+      { to: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
+      { to: 'new-module', t: 'New: museum & curation', s: 'Work in progress' }
+    ],
+    play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
+    about: [
+      { to: 'hub', t: 'About Simon', s: 'Who builds this station' },
+      { to: 'cv', t: 'CV', s: 'Download as PDF' },
+      { to: 'station', t: 'The station', s: 'Why a research station' }
+    ],
+    contact: [{ to: 'relay', t: 'Get in touch', s: 'Email and links' }]
+  };
+  var site = document.getElementById('site'), drop = document.getElementById('drop'), list = document.getElementById('drop-list'),
+      toggle = document.getElementById('menu-toggle'), menuButtons = document.querySelectorAll('#menu button'), cat = null, timer = 0;
+  function render(c) {
+    var cats = c === 'all' ? ['work', 'play', 'about', 'contact'] : [c];
+    list.innerHTML = '';
+    cats.forEach(function (k) {
+      if (c === 'all') { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
+      MENU[k].forEach(function (it) {
+        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + '#' + it.to;
+        a.innerHTML = '<span class="t">' + it.t + '</span><span class="s">' + it.s + '</span>';
+        list.appendChild(a);
+      });
+    });
+  }
+  function open(c) {
+    clearTimeout(timer);
+    if (cat !== c) render(c);
+    cat = c; drop.classList.add('open');
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', String(b.dataset.cat === c)); });
+    toggle.setAttribute('aria-expanded', String(c === 'all'));
+  }
+  function close() {
+    drop.classList.remove('open'); cat = null;
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  menuButtons.forEach(function (b) {
+    // a mouse opens the menu by hovering; a tap only clicks
+    b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') open(b.dataset.cat); });
+    b.addEventListener('click', function () { if (cat === b.dataset.cat) close(); else open(b.dataset.cat); });
+  });
+  site.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') timer = setTimeout(close, 250); });
+  site.addEventListener('pointerenter', function () { clearTimeout(timer); });
+  toggle.addEventListener('click', function () { if (cat) close(); else open('all'); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && cat) close(); });
+  document.addEventListener('pointerdown', function (e) { if (cat && !site.contains(e.target)) close(); });
+
+  // the name's two lines set to the same width, as on the station
+  function fitName() {
+    var a = document.getElementById('name-1'), b = document.getElementById('name-2');
+    a.style.letterSpacing = ''; b.style.letterSpacing = ''; a.style.marginRight = ''; b.style.marginRight = '';
+    var s = a.offsetWidth < b.offsetWidth ? a : b, l = s === a ? b : a;
+    var extra = (l.offsetWidth - s.offsetWidth) / (s.textContent.length - 1);
+    s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
+  }
+  function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
+  fitName(); measure();
+  if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
+  addEventListener('resize', function () { fitName(); measure(); });
+})();
+</script>
+
+<script>
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // the hero scene settles back as you scroll
+  var hero = document.querySelector('.hero'), scene = document.getElementById('scene');
+  function onScroll() {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if (!reduce && y < h) scene.style.transform = 'scale(' + (1 + Math.min(y / h, 1) * 0.06) + ') translateY(' + (y * 0.1) + 'px)';
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // how it works: show the screen whose step is in the middle of the window
+  var stepEls = document.querySelectorAll('#steps .step'), shots = document.getElementById('stage').children, current = -1;
+  function activate(i) {
+    if (i === current) return; current = i;
+    stepEls.forEach(function (st, j) { st.classList.toggle('on', j === i); });
+    [].forEach.call(shots, function (m, j) { m.classList.toggle('on', j === i); });
+  }
+  if ('IntersectionObserver' in window) {
+    var so = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) activate(+e.target.dataset.i); });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    stepEls.forEach(function (st) { so.observe(st); });
+  }
+  stepEls.forEach(function (st) {
+    st.querySelector('button').addEventListener('click', function () {
+      activate(+st.dataset.i);
+      st.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    });
+  });
+  activate(0);
+
+  // the small Try it in the header strip, once the main one has scrolled away
+  var mainActions = document.getElementById('main-actions'), barTry = document.getElementById('bar-try');
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      var away = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+      barTry.classList.toggle('show', away); barTry.tabIndex = away ? 0 : -1; barTry.setAttribute('aria-hidden', String(!away));
+    }).observe(mainActions);
+  }
+
+  // in-page links scroll inside the page (a published frame may not follow hash links)
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var t = document.getElementById(a.getAttribute('href').slice(1)); if (!t) return;
+      e.preventDefault(); scrollTo({ top: t.getBoundingClientRect().top + scrollY - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 64), behavior: reduce ? 'auto' : 'smooth' });
+    });
+  });
+
+  // fact tabs: click, or arrow keys between tabs
+  var tabs = document.querySelectorAll('.spec-tabs [role=tab]');
+  function pick(t) {
+    tabs.forEach(function (o) { var on = o === t; o.setAttribute('aria-selected', String(on)); o.tabIndex = on ? 0 : -1;
+      document.getElementById(o.getAttribute('aria-controls')).hidden = !on; });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { pick(t); });
+    t.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
+      var n = tabs[(i + d + tabs.length) % tabs.length]; pick(n); n.focus(); e.preventDefault();
+    });
+  });
+})();
+</script>
+</body>
+</html>
