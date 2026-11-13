@@ -19,7 +19,7 @@ On the preview page: https://claude.ai/artifact/DBbr3R7miiUED3joKHY2si (viewer.h
 - Contact: Get in touch → relay station.
 
 ## Content model
-- Tap a building or pick a menu entry: the camera flies there, then the content panel opens: right half on laptops (below the header, menu stays usable), a sheet over the lower 62 % on phones. The place bar and settings icon hide while it is open. The 3D pauses after the panel has slid in and resumes on close.
+- Tap a building or pick a menu entry: the camera flies there, then the content panel opens: right half on laptops (below the header, menu stays usable), a sheet over the lower 62 % on phones. The settings icon hides while it is open; the place bar stays visible over the panel's lower edge (BUG-031), and a click or tap on the model closes the panel (and does nothing else; a drag keeps it open). The 3D pauses after the panel has slid in and resumes on close.
 - After closing, the place name in the bottom bar reopens the panel.
 - Every content item gets an "Open as page" link to a plain full page (not built yet).
 - Small interactive things (printer, fire) stay inside the 3D.
