@@ -2929,7 +2929,16 @@ function renderDrop(cat) {
       dropList.appendChild(b);
     });
   });
+  packDropRight();
 }
+// the items pack from the right, under the menu buttons (same columns as before; the last row starts further right)
+function packDropRight() {
+  const items = dropList.querySelectorAll('.drop-item');
+  items.forEach((a) => { a.style.gridColumnStart = ''; });
+  const cols = getComputedStyle(dropList).gridTemplateColumns.split(' ').length, rest = items.length % cols;
+  if (cols > 1 && rest) items[items.length - rest].style.gridColumnStart = String(cols - rest + 1);
+}
+window.addEventListener('resize', packDropRight);
 function openDrop(cat) {
   clearTimeout(dropTimer);
   if (dropCat !== cat) renderDrop(cat);

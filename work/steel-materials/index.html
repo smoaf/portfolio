@@ -460,7 +460,16 @@
         list.appendChild(a);
       });
     });
+    packRight();
   }
+  // the items pack from the right, under the menu buttons (same columns as before; the last row starts further right)
+  function packRight() {
+    var items = list.querySelectorAll('.drop-item');
+    items.forEach(function (a) { a.style.gridColumnStart = ''; });
+    var cols = getComputedStyle(list).gridTemplateColumns.split(' ').length, rest = items.length % cols;
+    if (cols > 1 && rest) items[items.length - rest].style.gridColumnStart = String(cols - rest + 1);
+  }
+  addEventListener('resize', packRight);
   function open(c) {
     clearTimeout(timer);
     if (cat !== c) render(c);
