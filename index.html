@@ -2885,7 +2885,10 @@ const PAGES = {
                  img: 'work/steel-materials/media/hero-poster.jpg' },
                // FEAT-032: project 3 is the Ohrguss concept page (its own page, same tab; pictures served from the site; the app itself opens live from smoaf.github.io/OHRGUSS in a new tab)
                { title: 'OHRGUSS', line: 'Custom-fit earplugs from a browser.', href: 'work/ohrguss/',
-                 img: 'work/ohrguss/media/card.webp' }] },
+                 img: 'work/ohrguss/media/card.webp' },
+               // FEAT-030: project 4 is the KLEX case study (its own page with the prototype, same tab; picture served from the site)
+               { title: 'KLEX', line: "Create, don't scroll.", href: 'work/klex/',
+                 img: 'work/klex/img/s_home.webp' }] },
   workshop: { kicker: 'Work · Technology & AI', title: 'Technology & AI', line: 'Prototypes, devices and AI work.', lead: 'Placeholder: technical projects, prototypes and work with machine learning.' },
   showroom: { kicker: 'Work · Media & installations', title: 'Media & installations', line: 'Immersive sound, projection and exhibitions.', lead: 'Placeholder: media works, installations and exhibitions.' },
   'new-module': { kicker: 'Work · In progress', title: 'Museum & curation', line: 'The module being built.', lead: 'Placeholder: what is being built next.' },
@@ -2954,7 +2957,7 @@ const panel = document.getElementById('panel');
 function openPanel(id) {
   if (tourNoPanel && tourNoPanel === id) { tourNoPanel = null; return; }   // FEAT-023: on the tour the place's panel stays shut
   const c = PAGES[id]; if (!c) return;
-  const n = c.cards === 0 ? 0 : 3;
+  const n = c.cards === 0 ? 0 : Math.max(3, c.projects ? c.projects.length : 0);   // FEAT-030: as many cards as projects, at least 3
   const cards = Array.from({ length: n }, (_, i) => {
     const pr = c.projects && c.projects[i];
     if (pr) return `<a class="card project" href="${pr.href}"><img class="ph" src="${pr.img}" alt="" loading="lazy" referrerpolicy="no-referrer"><h3>${pr.title}</h3><p>${pr.line}</p></a>`;
