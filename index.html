@@ -2880,7 +2880,7 @@ const MENU = {
 };
 const PAGES = {
   library: { kicker: 'Work · Research', title: 'Research', line: 'Thesis, publications and talks.', lead: 'Placeholder: a short introduction to the research, the thesis on non-human communication and related publications.' },
-  office: { kicker: 'Work · Products', title: 'Products', line: 'Product management and case studies.', lead: 'Placeholder: how products were shaped, with whom, and what came of it.',
+  office: { kicker: 'Work · Products', title: 'Products', line: 'Product management and case studies.', lead: '',   // FEAT-033: the placeholder sentence is gone, nothing in its place
     // FEAT-028: project 1 is the CONNECT 2 case study (its own page, same tab; the hero still stays on the maker's server, an agreed exception)
     projects: [{ title: 'CONNECT 2', line: 'The most user-friendly audio interface.', href: 'work/connect-2/',
                  img: 'https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_2600x2600/public/2024-05/connect-2-hero-shot-desktop-first-frame.jpg' },
@@ -2979,8 +2979,8 @@ function openPanel(id) {
     if (pr) return `<a class="card project" href="${pr.href}"><img class="ph" src="${pr.img}" alt="" loading="lazy" referrerpolicy="no-referrer"><h3>${pr.title}</h3><p>${pr.line}</p></a>`;
     return `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`;
   }).join('');
-  document.getElementById('panel-body').innerHTML = `<div class="kicker">${c.kicker}</div><h2>${c.title}</h2><p class="lead">${c.lead}</p>
-    <p class="note">Placeholder content. Real texts, images and videos follow.</p><div class="cards">${cards}</div>
+  document.getElementById('panel-body').innerHTML = `<div class="kicker">${c.kicker}</div><h2>${c.title}</h2>${c.lead ? `<p class="lead">${c.lead}</p>` : ''}
+    <div class="cards">${cards}</div>
     <div class="panel-actions"><a class="btn" href="#" onclick="return false">Open as page ↗</a></div>`;
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false'); panel.scrollTop = 0; document.body.classList.add('panel-open');
   tour.relayout();
