@@ -490,11 +490,10 @@
   var STATION = '../../';
   var MENU = {
     work: [
-      { to: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
-      { to: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
-      { to: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
-      { to: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
-      { to: 'new-module', t: 'New: museum & curation', s: 'Work in progress' }
+      { to: 'library', t: 'Academic', s: 'KLEX' },
+      { to: 'office', t: 'Corporate', s: 'CONNECT 2, Steel &amp; Materials' },
+      { to: 'workshop', t: 'Technology &amp; Tinkering', s: 'MRS-01, Ohrguss' },
+      { to: 'showroom', t: 'Mediadesign &amp; Installations', s: '' }
     ],
     play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
     about: [
@@ -513,7 +512,7 @@
       if (c === 'all') { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
       MENU[k].forEach(function (it) {
         var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + '#' + it.to;
-        a.innerHTML = '<span class="t">' + it.t + '</span><span class="s">' + it.s + '</span>';
+        a.innerHTML = '<span class="t">' + it.t + '</span>' + (it.s ? '<span class="s">' + it.s + '</span>' : '');
         list.appendChild(a);
       });
     });
