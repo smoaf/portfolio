@@ -220,8 +220,9 @@ export function createFitLoop(W, A) {
     });
     return s;
   }
-  function drive(x, y) {                                     // forward or in reverse, whichever way the base faces
+  function drive(x, y) {                                     // forward or in reverse, whichever way the base faces (y: a number or a function)
     let fx, fy, dist, done = 0, reverse = false;
+    const yTo = y;
     const s = mk(1, (u) => {
       const e = ss(u), cx = fx + (x - fx) * e, cy = fy + (y - fy) * e;
       at(cx, cy, cx > W.DOCK[1].x - 1.4 ? W.DOCK_TOP : 0, arm.base.position);
@@ -229,7 +230,8 @@ export function createFitLoop(W, A) {
       B.track[0] += d * (reverse ? -1 : 1); B.track[1] += d * (reverse ? -1 : 1);
       B.moved = true;
     }, () => {
-      const p = arm.base.position; fx = p.x; fy = -p.z; dist = Math.hypot(x - fx, y - fy); done = 0;
+      const p = arm.base.position; fx = p.x; fy = -p.z; if (typeof yTo === 'function') y = yTo(fx, fy);
+      dist = Math.hypot(x - fx, y - fy); done = 0;
       const ry = arm.base.rotation.y;                        // heading (site): (sin ry, cos ry) in (x, -y)
       reverse = (x - fx) * Math.sin(ry) + (y - fy) * -Math.cos(ry) < 0;
       s.dur = Math.max(0.3, dist / SPEED + 0.8);
@@ -259,11 +261,31 @@ export function createFitLoop(W, A) {
   // ---- the south end of the front lane: the print arm drives home through it
   const aInfo = () => A.info();
   const inSouthAt = (y) => y < SOUTH;
+  // BUG-030: the hose the print arm leaves lying at the lane's south end; the base stops short of it (it never
+  // touches or pushes the hose). CLEAR: from the base's middle, half its length with the tracks' round ends,
+  // the hose's radius and a margin
+  const CLEAR = 1.25;
+  function hoseClear(x, y0, y1) {                            // the base along the lane from y0 to y1 keeps clear of the hose
+    const lo = Math.min(y0, y1), hi = Math.max(y0, y1);
+    for (const p of A.hosePts()) {
+      const px = p.x, py = -p.z, cy = Math.max(lo, Math.min(hi, py));
+      if (Math.hypot(px - x, py - cy) < CLEAR) return false;
+    }
+    return true;
+  }
+  function clearStop(y) {                                    // the stop at y, or as close to it as the hose allows
+    return (fx, fy) => {
+      let s = y;
+      const dir = Math.sign(fy - y);
+      while (dir && (s - fy) * dir < 0 && !hoseClear(LANE_X, fy, s)) s += dir * 0.05;
+      return s;
+    };
+  }
   function goLane(y) {                                       // along the front lane to y (heading -y: forward to the bays, back to the rack)
     const steps = [];
     if (inSouthAt(y)) steps.push(waitFor(() => { const s = aInfo().stage; return s !== 'return'; }));
     steps.push(call(() => { if (inSouthAt(y)) B.south = true; }));
-    steps.push(drive(LANE_X, y));
+    steps.push(drive(LANE_X, inSouthAt(y) ? clearStop(y) : y));
     steps.push(call(() => { B.south = inSouthAt(y); }));
     return steps;
   }
@@ -671,7 +693,6 @@ export function createFitLoop(W, A) {
     advance, afterMove, reset,
     done: () => B.phase === 'done',
     inSouth: () => B.south,
-    keepOut: () => [arm.base.position.x, -arm.base.position.z, 1.0],   // FEAT-025d: also when it drives to a task after its loop
     // FEAT-025d: the arm's tasks (newmodule/armtasks.js)
     hold: (ready) => { B.hold = ready; },
     cancelHold: () => { B.hold = null; },
