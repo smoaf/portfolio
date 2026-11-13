@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>MRS-01 Modular Recording Shell</title>
+<meta name="description" content="Case study in Simon Winkler's portfolio: MRS-01, a small recording booth to 3D print at home, with an organic lattice shell, a foam inlay cut from one flat sheet and a front plate.">
+<link rel="preload" href="../../fonts/archivo-100-900-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* fonts from the site itself, as on the main page (../../fonts/) */
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* the site's colour tokens and glass (index.html): light by day; dark = the site's dark scheme with its night glass */
+  :root {
+    --stage: #d8d3cb; --ink: #1d1b18; --ink-soft: #5e5850; --rule: rgba(29, 27, 24, 0.16); --accent: #b3602d;
+    --glass: rgba(246, 243, 238, 0.58); --glass-strong: rgba(246, 243, 238, 0.86); --glass-line: rgba(255, 255, 255, 0.55);
+    --glass-ink: #1d1b18; --glass-soft: #5e5850; --blur: blur(10px) saturate(1.15);
+    --anthracite: #2a2b2e; --anthracite-2: #35363a; --panel-ink: #e9e6e0; --panel-soft: #a19d96;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(16px, 5vw, 64px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+      --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+      --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+    --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+    --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--stage); color: var(--ink); font: 400 18px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { color: var(--accent); }
+  img, video { display: block; max-width: 100%; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* the site's header (index.html: .site, .bar, .name, .menu, .drop); each entry goes to its place on the station */
+  .site { position: fixed; left: 0; right: 0; top: 0; z-index: 20; color: var(--glass-ink);
+          background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          padding-top: env(safe-area-inset-top, 0px); }
+  .site .name:hover, .site .drop-item:hover { color: inherit; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
+  .name { font: 700 23px/0.9 var(--font); font-stretch: 116%; font-variation-settings: 'wdth' 116; letter-spacing: 0.02em; text-transform: uppercase;
+          color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .name span { display: inline-block; width: max-content; white-space: nowrap; }
+  .site button { background: transparent; border: 0; cursor: pointer; }
+  .menu { display: flex; gap: 6px; }
+  .menu button, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+          padding: 12px 12px; min-height: 44px; position: relative; }
+  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu-toggle { display: none; }
+  .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
+  .drop.open { grid-template-rows: 1fr; }
+  .drop-inner { overflow: hidden; }
+  .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
+  .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-decoration: none; }
+  .drop-item .t { display: block; font: 600 17px/1.2 var(--font); }
+  .drop-item .s { display: block; font: 400 13px/1.4 var(--font); color: var(--glass-soft); margin-top: 3px; }
+  .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
+  .drop-cat { display: none; }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; }
+    .name { font-size: 19px; }
+    .menu { display: none; }
+    .menu-toggle { display: block; padding-right: 0; }
+    .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+    .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
+  }
+
+  .bar-right { display: flex; align-items: center; gap: 18px; }
+
+  /* hero: the shell large on a light ground, the name set over it */
+  .hero { position: relative; height: min(100svh, 940px); min-height: 520px; overflow: hidden; background: #b6b6b6; color: #1d1b18; }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 100% 60%; padding-top: var(--hh, 77px); }
+  .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
+  h1 { margin: 0 0 0 -0.06em; font: 800 clamp(56px, 12vw, 172px)/0.86 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+  .claim { margin: clamp(10px, 1.6vw, 18px) 0 0; max-width: 30rem; font: 400 clamp(19px, 2.2vw, 28px)/1.2 var(--font); }
+  @media (max-width: 720px) { .hero img { object-position: 50% 40%; padding-bottom: 150px; } }
+
+  /* sections: text on one side, the picture on the other */
+  section.block { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .two { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 24px clamp(28px, 5vw, 72px); align-items: start; }
+  .two.flip > :first-child { order: 2; }
+  h2 { margin: 0 0 12px; font: 700 clamp(28px, 3vw, 38px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .kicker { margin: 0 0 8px; font: 500 12px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  p { margin: 0 0 14px; max-width: 36rem; }
+  .pic { margin: 0; background: #b6b6b6; border-radius: 4px; overflow: hidden; }
+  .pic img { width: 100%; height: auto; }
+  .facts { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid var(--rule); max-width: 36rem; }
+  .facts li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 16px; }
+  .facts b { font: 500 14px/1.5 var(--font-data); white-space: nowrap; }
+  @media (max-width: 820px) { .two { grid-template-columns: 1fr; } .two.flip > :first-child { order: 0; } }
+
+  /* the exploded view as the central picture, both bed sizes */
+  .exploded { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .exploded .head { max-width: 44rem; }
+  .tabs { display: flex; gap: 6px; margin: 18px 0 14px; flex-wrap: wrap; }
+  .tabs button { font: 500 13px/1 var(--font-data); letter-spacing: 0.06em; color: var(--ink); background: transparent; border: 1px solid var(--rule);
+                 border-radius: 999px; padding: 12px 16px; min-height: 44px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--ink); color: var(--stage); border-color: var(--ink); }
+  .exploded .pic { max-width: 900px; margin: 0 auto; }
+  .joints { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
+  .joints h3 { margin: 12px 0 4px; font: 600 18px/1.2 var(--font); }
+  .joints p { font-size: 16px; }
+  @media (max-width: 820px) { .joints { grid-template-columns: 1fr; } }
+
+  .open { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; font: 600 16px/1 var(--font); padding: 14px 18px; border: 1px solid var(--ink); border-radius: 999px; text-decoration: none; min-height: 44px; }
+  .status { margin: clamp(56px, 8vw, 104px) 0 0; padding: 18px 20px; border-left: 3px solid var(--accent); background: var(--glass); max-width: 44rem; }
+  .status p { margin: 0; }
+  footer.end { padding: 48px 0 64px; color: var(--ink-soft); font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="site" id="site">
+  <div class="bar">
+    <a class="name" href="../../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+    <div class="bar-right">
+      <nav class="menu" id="menu" aria-label="Main">
+        <button type="button" data-cat="work" aria-expanded="false">Work</button>
+        <button type="button" data-cat="play" aria-expanded="false">Play</button>
+        <button type="button" data-cat="about" aria-expanded="false">About</button>
+        <button type="button" data-cat="contact" aria-expanded="false">Contact</button>
+      </nav>
+      <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
+    </div>
+  </div>
+  <div class="drop" id="drop"><div class="drop-inner"><div class="drop-list" id="drop-list"></div></div></div>
+</header>
+
+<main>
+  <section class="hero" aria-label="MRS-01">
+    <img alt="The MRS-01 shell with its foam inlay and front plate, seen from the front at an angle" src="media/hero.webp">
+    <div class="hero-text"><div class="wrap">
+      <h1>MRS-01</h1>
+      <p class="claim">Modular Recording Shell. A small recording booth you print at home.</p>
+    </div></div>
+  </section>
+
+  <div class="wrap">
+    <section class="block two" aria-labelledby="idea">
+      <div>
+        <p class="kicker">The idea</p>
+        <h2 id="idea">A small recording booth you print at home</h2>
+        <p>An organic printed lattice forms the back shell. One 30&nbsp;mm sheet of soft foam or felt, cut from a single flat piece, sits inside it. A printed front plate holds the foam in place and rests on the lip of the shell. The shell mounts on a standard 3/8" mic stand thread.</p>
+        <ul class="facts">
+          <li><span>Back shell</span><b>800 × 494 × 865 mm</b></li>
+          <li><span>Front plate</span><b>766 × 430 × 795 mm</b></li>
+          <li><span>Inlay, formed</span><b>746 × 446 × 784 mm</b></li>
+          <li><span>Inlay, flat sheet</span><b>1228 × 1144 mm, 30 mm</b></li>
+        </ul>
+      </div>
+      <figure class="pic"><img loading="lazy" alt="The front plate in the shell, seen straight from the front" src="media/front.webp" width="1100" height="1100"></figure>
+    </section>
+
+    <section class="block two flip" aria-labelledby="shell">
+      <div>
+        <p class="kicker">From mockup to shell</p>
+        <h2 id="shell">One connected lattice</h2>
+        <p>The starting point was a mockup. It was refined into one symmetric, connected lattice: a flat seam band at the front for the front plate to sit on, and a solid load area at the bottom that carries the whole weight on the stand.</p>
+        <p>The section shows how the foam sits between the lattice and the front plate.</p>
+      </div>
+      <figure class="pic"><img loading="lazy" alt="Section through the shell, the foam and the front plate" src="media/section.webp" width="1100" height="1100"></figure>
+    </section>
+
+    <section class="block two" aria-labelledby="inlay">
+      <div>
+        <p class="kicker">The inlay</p>
+        <h2 id="inlay">One flat sheet, six darts</h2>
+        <p>The inlay is cut from one flat sheet of 30&nbsp;mm foam or felt. Six darts are glued shut edge to edge, which turns the flat sheet into the curved lining. The last few centimetres flare outward so the edge tucks under the lip all round.</p>
+        <p>A cutting pattern at 1:1 and as tiles for A0 and A4 is in the repository.</p>
+      </div>
+      <!-- review: the forming animation (flat sheet, laser cut, formed, pressed in) goes here; live or as a looping film is still open -->
+      <figure class="pic"><img loading="lazy" alt="The formed inlay in the shell" src="media/inlay-in-shell.webp" width="560" height="480"></figure>
+    </section>
+  </div>
+
+  <section class="exploded" aria-labelledby="print">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">Printing at home</p>
+        <h2 id="print">Split for the printer you have</h2>
+        <p>The back shell and the front plate come split into parts, ready turned into their print orientation. Pick one printer size and one of three connection types.</p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Printer bed">
+        <button type="button" role="tab" aria-selected="true" data-src="media/exploded-350.webp">350 × 320 mm bed · 12 + 10 parts</button>
+        <button type="button" role="tab" aria-selected="false" data-src="media/exploded-256.webp">256 mm bed · 24 + 16 parts</button>
+      </div>
+      <figure class="pic"><img id="exploded-img" alt="Exploded view of the back shell parts, each part in its own colour" src="media/exploded-350.webp" width="1200" height="1200"></figure>
+      <div class="joints">
+        <div><figure class="pic"><img loading="lazy" alt="Two parts joined by a block pin" src="media/joint-block-pins.webp" width="1000" height="800"></figure>
+          <h3>Block pins</h3><p>A rectangular pin on one part, a socket on the other, glued.</p></div>
+        <div><figure class="pic"><img loading="lazy" alt="Two parts with flat faces for a butterfly key" src="media/joint-butterfly-keys.webp" width="1000" height="800"></figure>
+          <h3>Butterfly keys</h3><p>Flat joint faces and a separate printed bow-tie key across each seam.</p></div>
+        <div><figure class="pic"><img loading="lazy" alt="Two parts with a stepped half-lap" src="media/joint-overlap.webp" width="1000" height="800"></figure>
+          <h3>Overlap</h3><p>A stepped half-lap of about 10&nbsp;mm at each joint, glued.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="block two flip" aria-labelledby="mount">
+      <div>
+        <p class="kicker">Stand mount</p>
+        <h2 id="mount">A 3/8" insert from below</h2>
+        <p>A 3/8"-16 heat-set insert, 12.7&nbsp;mm long, is melted in from below until it sits flush with a flat 44&nbsp;mm seat on the underside of the shell. The top of the load area stays solid and closed.</p>
+      </div>
+      <figure class="pic"><img loading="lazy" alt="The underside of the shell with the insert flush in its seat" src="media/stand-mount.webp" width="999" height="740"></figure>
+    </section>
+
+    <section class="block" aria-labelledby="source">
+      <p class="kicker">Open source</p>
+      <h2 id="source">Files, scripts and pattern on GitHub</h2>
+      <p>All print parts, the full model, the inlay pattern and the scripts that build the geometry are in the repository, under the GNU General Public License v3.0.</p>
+      <a class="open" href="https://github.com/smoaf/MRS-01" target="_blank" rel="noopener">github.com/smoaf/MRS-01 ↗</a>
+    </section>
+
+    <div class="status" role="note">
+      <p><b>Status:</b> nothing has been printed or assembled yet. All geometry is checked by computer only.</p>
+    </div>
+
+    <footer class="end">Renders from the MRS-01 repository, GPL-3.0.</footer>
+  </div>
+</main>
+
+<script>
+// the site's header menu (entries as MENU in index.html; keep the two in step): each entry goes to its place on the station
+(function () {
+  var STATION = '../../';
+  var MENU = {
+    work: [
+      { to: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
+      { to: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
+      { to: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
+      { to: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
+      { to: 'new-module', t: 'New: museum & curation', s: 'Work in progress' }
+    ],
+    play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
+    about: [
+      { to: 'hub', t: 'About Simon', s: 'Who builds this station' },
+      { to: 'cv', t: 'CV', s: 'Download as PDF' },
+      { to: 'station', t: 'The station', s: 'Why a research station' }
+    ],
+    contact: [{ to: 'relay', t: 'Get in touch', s: 'Email and links' }]
+  };
+  var site = document.getElementById('site'), drop = document.getElementById('drop'), list = document.getElementById('drop-list'),
+      toggle = document.getElementById('menu-toggle'), menuButtons = document.querySelectorAll('#menu button'), cat = null, timer = 0;
+  function render(c) {
+    var cats = c === 'all' ? ['work', 'play', 'about', 'contact'] : [c];
+    list.innerHTML = '';
+    cats.forEach(function (k) {
+      if (c === 'all') { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
+      MENU[k].forEach(function (it) {
+        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + '#' + it.to;
+        a.innerHTML = '<span class="t">' + it.t + '</span><span class="s">' + it.s + '</span>';
+        list.appendChild(a);
+      });
+    });
+  }
+  function open(c) {
+    clearTimeout(timer);
+    if (cat !== c) render(c);
+    cat = c; drop.classList.add('open');
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', String(b.dataset.cat === c)); });
+    toggle.setAttribute('aria-expanded', String(c === 'all'));
+  }
+  function close() {
+    drop.classList.remove('open'); cat = null;
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  menuButtons.forEach(function (b) {
+    // a mouse opens the menu by hovering; a tap only clicks
+    b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') open(b.dataset.cat); });
+    b.addEventListener('click', function () { if (cat === b.dataset.cat) close(); else open(b.dataset.cat); });
+  });
+  site.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') timer = setTimeout(close, 250); });
+  site.addEventListener('pointerenter', function () { clearTimeout(timer); });
+  toggle.addEventListener('click', function () { if (cat) close(); else open('all'); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && cat) close(); });
+  document.addEventListener('pointerdown', function (e) { if (cat && !site.contains(e.target)) close(); });
+
+  // the name's two lines set to the same width, as on the station
+  function fitName() {
+    var a = document.getElementById('name-1'), b = document.getElementById('name-2');
+    a.style.letterSpacing = ''; b.style.letterSpacing = ''; a.style.marginRight = ''; b.style.marginRight = '';
+    var s = a.offsetWidth < b.offsetWidth ? a : b, l = s === a ? b : a;
+    var extra = (l.offsetWidth - s.offsetWidth) / (s.textContent.length - 1);
+    s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
+  }
+  function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
+  fitName(); measure();
+  if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
+  addEventListener('resize', function () { fitName(); measure(); });
+})();
+</script>
+
+<script>
+// printer bed tabs: swap the exploded view
+(function () {
+  var img = document.getElementById('exploded-img'), tabs = document.querySelectorAll('.tabs button');
+  tabs.forEach(function (b) {
+    b.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t === b)); });
+      img.src = b.dataset.src;
+    });
+  });
+})();
+</script>
+</body>
+</html>
