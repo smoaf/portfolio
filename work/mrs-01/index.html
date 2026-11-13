@@ -73,6 +73,20 @@
   .drop-item .s { display: block; font: 400 13px/1.4 var(--font); color: var(--glass-soft); margin-top: 3px; }
   .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
   .drop-cat { display: none; }
+  /* FEAT-036: "← Back" next to the name, in the pill style of CONNECT 2's header "Get it" */
+  .bar-left { display: flex; align-items: center; gap: 18px; flex: none; }
+  .bar-back { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none; white-space: nowrap;
+              font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; }
+  .site .bar-back:hover { background: var(--accent); color: var(--stage); }
+  .bar-back { justify-content: center; min-width: 34px; flex: none; }
+  /* phones: where the bar would not fit (the page's own header button, Get it, Try it, …, needs its room), Back keeps only its arrow */
+  @media (max-width: 720px) {
+    .bar-left { gap: 10px; } .bar-back { padding: 0 14px; }
+    .site.back-compact .bar { gap: 6px; }
+    .site.back-compact .bar-left { gap: 6px; }
+    .site.back-compact .bar-back { padding: 0 8px; min-width: 30px; }
+    .site.back-compact .bar-back-t { display: none; }
+  }
   @media (max-width: 720px) {
     .bar { padding: 12px 16px; }
     .name { font-size: 19px; }
@@ -146,7 +160,10 @@
 
 <header class="site" id="site">
   <div class="bar">
-    <a class="name" href="../../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+    <div class="bar-left">
+      <a class="name" href="../../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+      <a class="bar-back" id="bar-back" href="../../" aria-label="Back"><span aria-hidden="true">←</span><span class="bar-back-t" aria-hidden="true">&nbsp;Back</span></a>
+    </div>
     <div class="bar-right">
       <nav class="menu" id="menu" aria-label="Main">
         <button type="button" data-cat="work" aria-expanded="false">Work</button>
@@ -331,6 +348,33 @@
   fitName(); measure();
   if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
   addEventListener('resize', function () { fitName(); measure(); });
+
+  // FEAT-036: Back returns to where the visitor came from on the site (the station as it was, or the previous page);
+  // opened by a direct link (nothing on the site to go back to) it goes to the station's overview (its href).
+  // In-page links (#try, …) add history entries; each entry remembers how many this page has added, so Back skips them all.
+  var depth = function () { return history.state && typeof history.state.backDepth === 'number' ? history.state.backDepth : 0; }, cur = depth();
+  try { if (!history.state || typeof history.state.backDepth !== 'number') history.replaceState({ backDepth: 0 }, ''); } catch (err) { /* no history API: Back goes to the overview */ }
+  addEventListener('hashchange', function () {
+    try { if (!history.state || typeof history.state.backDepth !== 'number') history.replaceState({ backDepth: cur + 1 }, ''); } catch (err) { /* see above */ }
+    cur = depth();
+  });
+  function fitBack() {
+    var back = document.getElementById('bar-back'), pill = site.querySelector('.bar-buy, .bar-try'), tight = function () {
+      var bar = site.querySelector('.bar'), edge = bar.getBoundingClientRect().right - parseFloat(getComputedStyle(bar).paddingRight) + 1, right = Infinity, out = false;
+      site.querySelectorAll('.bar-right > *').forEach(function (e) {   // whatever stands on the right of the bar (header button, menu)
+        var r = e.getBoundingClientRect(); if (r.width) { right = Math.min(right, r.left); out = out || r.right > edge; } });
+      return out || back.getBoundingClientRect().right + 12 > right || (pill && lines(pill) > 1); }, lines = function (e) {   // the header button's text on more than one line
+        var r = document.createRange(); r.selectNodeContents(e); var tops = {}; [].forEach.call(r.getClientRects(), function (c) { tops[Math.round(c.top)] = 1; }); return Object.keys(tops).length; };
+    site.classList.remove('back-compact');
+    if (matchMedia('(max-width: 720px)').matches && tight()) site.classList.add('back-compact');
+  }
+  fitBack(); addEventListener('resize', fitBack); if (document.fonts) document.fonts.ready.then(fitBack);
+  document.getElementById('bar-back').addEventListener('click', function (e) {
+    var root = new URL('../../', location.href), from = null;
+    try { from = document.referrer ? new URL(document.referrer) : null; } catch (err) { from = null; }
+    var onSite = from && from.origin === root.origin && from.pathname.indexOf(root.pathname) === 0 && from.pathname !== location.pathname;
+    if (onSite && history.length > depth() + 1) { e.preventDefault(); history.go(-(depth() + 1)); }
+  });
 })();
 
 // printer bed tabs: swap the exploded view
