@@ -577,6 +577,7 @@ export function createPrintLoop(W) {
     q: () => ({ ...P.q }),
     get track() { return P.track; },
     keepOut: (c) => { KEEP_OUT.push(c); },
+    hosePts: () => HOSE.pts,                                 // BUG-030: the second arm keeps its base clear of the hose
     placeCleats: (i, track) => placeCleats(P.cleats[i], track),
     hoseDirty: () => { P.hoseDirty = true; },
     reset,
