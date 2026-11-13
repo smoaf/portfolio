@@ -2863,11 +2863,11 @@ function stepCamp(now) {
 // Placeholder texts until the real content is written (marked as such in the page).
 const MENU = {
   work: [
-    { place: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
-    { place: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
-    { place: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
-    { place: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
-    { place: 'new-module', t: 'New: museum & curation', s: 'Work in progress' },
+    // FEAT-035: four sections; each lists its case studies (Mediadesign & Installations has none yet)
+    { place: 'library', t: 'Academic', s: 'KLEX' },
+    { place: 'office', t: 'Corporate', s: 'CONNECT 2, Steel &amp; Materials' },
+    { place: 'workshop', t: 'Technology &amp; Tinkering', s: 'MRS-01, Ohrguss' },
+    { place: 'showroom', t: 'Mediadesign &amp; Installations', s: '' },
   ],
   play: [
     { place: 'workshop', t: '3D printer', s: 'Print a small model, or your own' },
@@ -2879,25 +2879,27 @@ const MENU = {
   ],
 };
 const PAGES = {
-  library: { kicker: 'Work · Research', title: 'Research', line: 'Thesis, publications and talks.', lead: 'Placeholder: a short introduction to the research, the thesis on non-human communication and related publications.' },
-  office: { kicker: 'Work · Products', title: 'Products', line: 'Product management and case studies.', lead: '',   // FEAT-033: the placeholder sentence is gone, nothing in its place
-    // FEAT-028: project 1 is the CONNECT 2 case study (its own page, same tab; the hero still stays on the maker's server, an agreed exception)
+  // FEAT-035: the Work sections are Academic, Corporate, Technology & Tinkering, Mediadesign & Installations (same places as before);
+  // a section panel shows exactly its own case studies (no placeholder cards), each opening its own page in the same tab
+  library: { kicker: 'Work · Academic', title: 'Academic', line: '', lead: 'Placeholder: a short introduction to the research, the thesis on non-human communication and related publications.',
+    // FEAT-030: the KLEX case study (its own page with the prototype; picture served from the site)
+    projects: [{ title: 'KLEX', line: "Create, don't scroll.", href: 'work/klex/',
+                 img: 'work/klex/img/s_home.webp' }] },
+  office: { kicker: 'Work · Corporate', title: 'Corporate', line: '', lead: '',   // FEAT-033: the placeholder sentence is gone, nothing in its place
+    // FEAT-028: CONNECT 2 (its own page; the hero still stays on the maker's server, an agreed exception)
     projects: [{ title: 'CONNECT 2', line: 'The most user-friendly audio interface.', href: 'work/connect-2/',
                  img: 'https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_2600x2600/public/2024-05/connect-2-hero-shot-desktop-first-frame.jpg' },
-               // FEAT-029: project 2 is the Steel & Materials case study (its own page, same tab; picture and films served from the site)
+               // FEAT-029: Steel & Materials (picture and films served from the site)
                { title: 'STEEL &amp; MATERIALS', line: 'My school of business, industry and manufacturing.', href: 'work/steel-materials/',
-                 img: 'work/steel-materials/media/hero-poster.jpg' },
-               // FEAT-032: project 3 is the Ohrguss concept page (its own page, same tab; pictures served from the site; the app itself opens live from smoaf.github.io/OHRGUSS in a new tab)
+                 img: 'work/steel-materials/media/hero-poster.jpg' }] },
+  workshop: { kicker: 'Work · Technology &amp; Tinkering', title: 'Technology &amp; Tinkering', line: '', lead: 'Placeholder: technical projects, prototypes and work with machine learning.',
+    // FEAT-031: MRS-01 (renders served from the site; only the GitHub link goes out, in a new tab)
+    projects: [{ title: 'MRS-01', line: 'A small recording booth you print at home.', href: 'work/mrs-01/',
+                 img: 'work/mrs-01/media/hero.webp' },
+               // FEAT-032: Ohrguss (pictures served from the site; the app itself opens live from smoaf.github.io/OHRGUSS in a new tab)
                { title: 'OHRGUSS', line: 'Custom-fit earplugs from a browser.', href: 'work/ohrguss/',
-                 img: 'work/ohrguss/media/card.webp' },
-               // FEAT-030: project 4 is the KLEX case study (its own page with the prototype, same tab; picture served from the site)
-               { title: 'KLEX', line: "Create, don't scroll.", href: 'work/klex/',
-                 img: 'work/klex/img/s_home.webp' },
-               // FEAT-031: project 5 is the MRS-01 page (its own page, same tab; renders served from the site; only the GitHub link goes out, in a new tab)
-               { title: 'MRS-01', line: 'A small recording booth you print at home.', href: 'work/mrs-01/',
-                 img: 'work/mrs-01/media/hero.webp' }] },
-  workshop: { kicker: 'Work · Technology & AI', title: 'Technology & AI', line: 'Prototypes, devices and AI work.', lead: 'Placeholder: technical projects, prototypes and work with machine learning.' },
-  showroom: { kicker: 'Work · Media & installations', title: 'Media & installations', line: 'Immersive sound, projection and exhibitions.', lead: 'Placeholder: media works, installations and exhibitions.' },
+                 img: 'work/ohrguss/media/card.webp' }] },
+  showroom: { kicker: 'Work · Mediadesign &amp; Installations', title: 'Mediadesign &amp; Installations', line: '', lead: '', projects: [] },   // no project yet: shown empty
   'new-module': { kicker: 'Work · In progress', title: 'Museum & curation', line: 'The module being built.', lead: 'Placeholder: what is being built next.' },
   hub: { kicker: 'About', title: 'Simon Winkler', line: 'Research, products, technology and media.', lead: 'Placeholder: a short bio, what connects the fields, and what is next.' },
   relay: { kicker: 'Contact', title: 'Get in touch', line: 'Email and links.', lead: 'Placeholder: email address, profiles and where to find more.', cards: 0 },
@@ -2925,7 +2927,7 @@ function renderDrop(cat) {
     const items = c === 'contact' ? [{ place: 'relay', t: 'Get in touch', s: 'Email and links' }] : MENU[c];
     items.forEach((it) => {
       const b = document.createElement('button'); b.className = 'drop-item';
-      b.innerHTML = `<span class="t">${it.t}</span><span class="s">${it.s}</span>`;
+      b.innerHTML = `<span class="t">${it.t}</span>` + (it.s ? `<span class="s">${it.s}</span>` : '');
       b.addEventListener('click', () => { closeDrop(); go(it); });
       // mouse only: a tap's emulated mouse events must not show anything (phones then swallow the click)
       b.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'mouse') return; const p = it.place && PLACES.find((q) => q.id === it.place); if (p && !nav.place) showTip(p); });
@@ -2973,14 +2975,14 @@ const panel = document.getElementById('panel');
 function openPanel(id) {
   if (tourNoPanel && tourNoPanel === id) { tourNoPanel = null; return; }   // FEAT-023: on the tour the place's panel stays shut
   const c = PAGES[id]; if (!c) return;
-  const n = c.cards === 0 ? 0 : Math.max(3, c.projects ? c.projects.length : 0);   // FEAT-030: as many cards as projects, at least 3
+  const n = c.cards === 0 ? 0 : c.projects ? c.projects.length : 3;   // FEAT-035: a Work section shows exactly its projects
   const cards = Array.from({ length: n }, (_, i) => {
     const pr = c.projects && c.projects[i];
     if (pr) return `<a class="card project" href="${pr.href}"><img class="ph" src="${pr.img}" alt="" loading="lazy" referrerpolicy="no-referrer"><h3>${pr.title}</h3><p>${pr.line}</p></a>`;
     return `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`;
   }).join('');
   document.getElementById('panel-body').innerHTML = `<div class="kicker">${c.kicker}</div><h2>${c.title}</h2>${c.lead ? `<p class="lead">${c.lead}</p>` : ''}
-    <div class="cards">${cards}</div>
+    ${n ? `<div class="cards">${cards}</div>` : ''}
     <div class="panel-actions"><a class="btn" href="#" onclick="return false">Open as page ↗</a></div>`;
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false'); panel.scrollTop = 0; document.body.classList.add('panel-open');
   tour.relayout();

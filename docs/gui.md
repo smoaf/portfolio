@@ -13,7 +13,7 @@ On the preview page: https://claude.ai/artifact/DBbr3R7miiUED3joKHY2si (viewer.h
 - Night: the darkest night colour stays the turquoise of the backdrop or brighter (sky zenith as bright as the horizon; night ground light tinted turquoise).
 
 ## Structure
-- Work: Research → library; Products → office; Technology & AI → workshop; Media & installations → showroom; New: museum & curation → new module. Hovering an entry shows the place's name over its building; clicking flies there.
+- Work (FEAT-035): Academic → library (KLEX); Corporate → office (CONNECT 2, Steel & Materials); Technology & Tinkering → workshop (MRS-01, Ohrguss); Mediadesign & Installations → showroom (no project yet, shown empty). Each entry's second line lists its case studies; the section's panel shows exactly those as cards. The new module is no longer in the Work menu (its place and panel are unchanged). Hovering an entry shows the place's name over its building; clicking flies there.
 - Play: 3D printer → workshop (starts a new print). More activities later.
 - About: About Simon → hub; CV (panel, PDF later); The station (panel).
 - Contact: Get in touch → relay station.
