@@ -693,7 +693,6 @@ export function createFitLoop(W, A) {
     advance, afterMove, reset,
     done: () => B.phase === 'done',
     inSouth: () => B.south,
-    keepOut: () => [arm.base.position.x, -arm.base.position.z, 1.0],   // FEAT-025d: also when it drives to a task after its loop
     // FEAT-025d: the arm's tasks (newmodule/armtasks.js)
     hold: (ready) => { B.hold = ready; },
     cancelHold: () => { B.hold = null; },

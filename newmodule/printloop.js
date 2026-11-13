@@ -155,7 +155,7 @@ export function createPrintLoop(W) {
 
   // ---- the hose: a chain lying on the ground, the pump's end fixed, the other end on the arm; when
   // the arm pulls, the chain follows it (the slack stays where it lies), kept out of the equipment
-  const HOSE = { n: 48, pts: [], rest: 0, init: [], segs: 160, rad: 8, r: 0.055 };
+  const HOSE = { n: 48, pts: [], rest: 0, init: [], segs: 160, rad: 8, r: 0.055, slide: 0.02 };   // slide: how far a piece slides per update while the slack is taken in
   const KEEP_OUT = [                                          // site frame circles: x, y, r
     [-6.4, -3.0, 1.0], [-5.85, -3.0, 0.45], [-6.07, -0.67, 0.85], [-5.0, 1.45, 0.75], [-5.5, 3.0, 1.0], [-5.5, 4.8, 1.0],
     [6.78, 1.6, 0.6], [6.78, 2.6, 0.6], [6.78, 3.6, 0.6], [6.78, 4.6, 0.6], [9.0, -2.55, 0.3], [9.0, 0.25, 0.3],
@@ -210,7 +210,6 @@ export function createPrintLoop(W) {
   function portAt(out) { arm.base.updateMatrix(); return out.set(0, 0.7, -0.85).applyMatrix4(arm.base.matrix); }   // root frame
   function pullHose() {
     const p = HOSE.pts, n = p.length, rest = HOSE.rest, g = 0.06;
-    const dyn = W.partner ? W.partner.keepOut() : null;      // FEAT-025c: the second arm's base pushes the hose aside
     portAt(p[n - 1]);
     // from the arm back towards the pump: a piece only moves when it is pulled
     for (let i = n - 2; i >= 2; i--) {
@@ -218,14 +217,32 @@ export function createPrintLoop(W) {
       const len = d.length();
       if (len > rest) { d.multiplyScalar(rest / len); p[i].x = p[i + 1].x + d.x; p[i].z = p[i + 1].z + d.z; }
       p[i].y = g;
-      for (const [cx, cy, r] of KEEP_OUT) {                 // never across the equipment: pushed out sideways
-        const dx = p[i].x - cx, dz = p[i].z + cy, l = Math.hypot(dx, dz);
-        if (l < r) { const s = r / Math.max(l, 1e-3); p[i].x = cx + dx * s; p[i].z = -cy + dz * s; }
+      keepOut(p[i], i);
+    }
+    // BUG-030: the pump takes in the slack. Each piece slides a little towards the straight line between its
+    // neighbours, so the hose the arm left lying behind it slides back the short way from the pump to the arm
+    // (out of the lanes the second arm uses). Slowly and steadily, so it slides and never jumps.
+    let moved = 0;
+    for (let it = 0; it < 2; it++) {
+      for (let i = 2; i < n - 1; i++) {
+        const mx = (p[i - 1].x + p[i + 1].x) / 2 - p[i].x, mz = (p[i - 1].z + p[i + 1].z) / 2 - p[i].z;
+        const l = Math.hypot(mx, mz), k = Math.min(0.5, HOSE.slide / Math.max(l, 1e-6));
+        const ox = p[i].x, oz = p[i].z;
+        p[i].x += mx * k; p[i].z += mz * k;
+        keepOut(p[i], i);
+        moved = Math.max(moved, Math.hypot(p[i].x - ox, p[i].z - oz));
       }
-      if (dyn) {
-        const [cx, cy, r] = dyn, dx = p[i].x - cx, dz = p[i].z + cy, l = Math.hypot(dx, dz);
-        if (l < r) { const s = r / Math.max(l, 1e-3); p[i].x = cx + dx * s; p[i].z = -cy + dz * s; }
-      }
+    }
+    return moved;
+  }
+  function keepOut(q, i) {                                    // never across the equipment (nor under the arm's own base): pushed out sideways
+    for (const [cx, cy, r] of KEEP_OUT) {
+      const dx = q.x - cx, dz = q.z + cy, l = Math.hypot(dx, dz);
+      if (l < r) { const s = r / Math.max(l, 1e-3); q.x = cx + dx * s; q.z = -cy + dz * s; }
+    }
+    if (i < HOSE.n - 3) {
+      const b = arm.base.position, dx = q.x - b.x, dz = q.z - b.z, l = Math.hypot(dx, dz);
+      if (l < 1.0) { const s = (l + Math.min(1.0 - l, 0.015)) / Math.max(l, 1e-3); q.x = b.x + dx * s; q.z = b.z + dz * s; }   // slides out, a little each time
     }
   }
 
@@ -525,7 +542,7 @@ export function createPrintLoop(W) {
     if (T) T.afterMove();
   }
   function afterMove() {
-    if (P.hoseDirty) { pullHose(); drawHose(); P.hoseDirty = false; }
+    if (P.hoseDirty) { P.hoseDirty = pullHose() > 0.001; drawHose(); }   // BUG-030: goes on while the hose still slides
     placeCleats(P.cleats[0], P.track);
     // the glow at the nozzle: a small warm light (night) and a glowing tip
     const glow = P.extruding ? 1 : 0;

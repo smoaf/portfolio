@@ -548,16 +548,89 @@ export function createArmTasks(W, loops) {
     w.push([CORNER_X, STRIP_Y], [K.x, K.y]);
     return w;
   }
+  // BUG-030: the second arm's trips keep its base clear of the material hose (the print arm drags it, the
+  // second arm never touches it). While the print arm is out, the hose lies the short way behind the module and
+  // the usual way is clear; while it is in its dock, the hose runs from the pump under the module to the dock,
+  // and the second arm takes the way round the dock's east side and back along the strip. A trip waits while
+  // neither way is clear (the hose still sliding); the task buttons are off while neither is clear.
+  const BASE_L = 1.06, BASE_W = 0.68, GAP = 0.055 + 0.1;    // the base's half length (round track ends) and half width; the hose's radius and a margin
+  const EAST = [[11.2, -0.8], [11.2, -6.4], [5.0, -6.4], [CORNER_X, STRIP_Y], [K.x, K.y]];
+  function hoseSamples() {                                   // the hose's middle line, a point every 0.15 m or less
+    const pts = loops[0].hosePts(), out = [];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], n = Math.max(1, Math.ceil(a.distanceTo(b) / 0.15));
+      for (let k = 0; k < n; k++) out.push([a.x + (b.x - a.x) * k / n, -(a.z + (b.z - a.z) * k / n)]);
+    }
+    const e = pts[pts.length - 1]; out.push([e.x, -e.z]);
+    return out;
+  }
+  function baseFree(x, y, ry, hs, other) {                   // the base at (x, y) facing ry clear of the hose and of the other arm's base
+    const sx = Math.sin(ry), sy = -Math.cos(ry);
+    for (const [px, py] of hs) {
+      const dx = px - x, dy = py - y, a = dx * sx + dy * sy, c = -dx * sy + dy * sx;
+      if (Math.abs(a) < BASE_L + GAP && Math.abs(c) < BASE_W + GAP) return false;
+    }
+    return Math.hypot(other[0] - x, other[1] - y) > 2.5;
+  }
+  function wayFree(x, y, ry, wps, endRy) {                   // driving the waypoints (turning on the spot at each) and the last turn
+    const hs = hoseSamples(), ob = R[0].arm.base.position, other = [ob.x, -ob.z];
+    const turn = (to) => {
+      while (to - ry > Math.PI) to -= 2 * Math.PI;
+      while (to - ry < -Math.PI) to += 2 * Math.PI;
+      const n = Math.ceil(Math.abs(to - ry) / 0.05);
+      for (let i = 1; i <= n; i++) if (!baseFree(x, y, ry + (to - ry) * i / n, hs, other)) return false;
+      ry = to; return true;
+    };
+    if (!baseFree(x, y, ry, hs, other)) return false;
+    for (const [tx, ty] of wps) {
+      const dx = tx - x, dy = ty - y, L = Math.hypot(dx, dy);
+      if (L < 0.01) continue;
+      if (!turn(heading(dx, dy))) return false;
+      for (let s = 0.1; s < L + 0.1; s += 0.1) { const u = Math.min(1, s / L); if (!baseFree(x + dx * u, y + dy * u, ry, hs, other)) return false; }
+      x = tx; y = ty;
+    }
+    return endRy == null || turn(endRy);
+  }
+  function waysOut(r) {                                      // the usual way, then the way round the east side
+    const { x, y } = r.stop, ways = [route(r)];
+    if (near(x, 5.0)) ways.push([[5.0, -0.8], ...EAST]);
+    else if (near(x, W.DOCK[1].x) && near(y, W.DOCK[1].y)) ways.push([[W.DOCK[1].x, -0.8], ...EAST]);
+    return ways;
+  }
+  function clearOut(r) {
+    const p = r.arm.base.position;
+    return waysOut(r).find((w) => wayFree(p.x, -p.z, r.arm.base.rotation.y, w, heading(0, -1))) || null;
+  }
+  function clearBack(r) {
+    const p = r.arm.base.position;
+    return waysOut(r).map((w) => [...w.slice(0, -1).reverse(), [r.stop.x, r.stop.y]])
+      .find((w) => wayFree(p.x, -p.z, r.arm.base.rotation.y, w, r.stop.ry)) || null;
+  }
+  const canGo = (r) => r.i !== 1 || !!clearOut(r);
+
   function tripOut(r) {
     const steps = [];
     steps.push(waitFor(() => W.road == null || W.road === r.i));
     steps.push(call(() => { r.road = W.road == null; W.road = r.i; }));
+    if (r.i === 1) {
+      steps.push(waitFor(() => !!(r.wps = clearOut(r))));
+      steps.push({ dyn: () => [...r.wps.flatMap(([x, y]) => goTo(r, x, y)), turnTo(r, () => [0, -1])] });
+      return steps;
+    }
     r.wps = route(r);
     r.wps.forEach(([x, y]) => steps.push(...goTo(r, x, y)));
     steps.push(turnTo(r, () => [0, -1]));
     return steps;
   }
   function tripBack(r) {
+    if (r.i === 1) {
+      let way;
+      return [
+        waitFor(() => !!(way = clearBack(r))),
+        { dyn: () => [...way.flatMap(([x, y]) => goTo(r, x, y)), turnTo(r, () => r.stop.ry),
+          call(() => { if (r.road && W.road === r.i) W.road = null; r.road = false; })] },
+      ];
+    }
     const steps = [], back = r.wps.slice(0, -1).reverse();
     back.forEach(([x, y]) => steps.push(...goTo(r, x, y)));
     steps.push(...goTo(r, r.stop.x, r.stop.y));
@@ -766,7 +839,7 @@ export function createArmTasks(W, loops) {
     if (!W.host.armAsk) return;
     W.host.armAsk({
       at: (v) => { r.arm.mount.updateWorldMatrix(true, false); return r.arm.mount.getWorldPosition(v).setY(v.y + 0.55); },
-      tasks: { swap: true, cut: canCut(), foot: canFoot() },
+      tasks: { swap: canGo(r), cut: canGo(r) && canCut(), foot: canGo(r) && canFoot() },   // BUG-030: off while the hose closes both ways
       pick: (id) => { T.ask = -1; runTask(r, id); },
       close: () => { T.ask = -1; if (r.state === 'look') goBack(r); },
     });
