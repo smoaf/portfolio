@@ -102,9 +102,8 @@
   .hero .av { right: 32%; width: min(27vw, 350px); bottom: 6% !important; z-index: 2; }
   .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(31,31,32,.92) 0%, rgba(31,31,32,.55) 38%, rgba(31,31,32,0) 62%), linear-gradient(180deg, rgba(31,31,32,0) 55%, rgba(31,31,32,.6) 100%); pointer-events: none; z-index: 3; }
   .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 4; }
-  h1 { margin: 0 0 0 -0.06em; white-space: nowrap; font: 800 clamp(64px, 14vw, 190px)/0.84 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+  h1 { margin: 0 0 0 -0.085em; white-space: nowrap; font: 300 clamp(54px, 12vw, 168px)/0.84 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
   .claim { margin: clamp(10px, 1.6vw, 18px) 0 0; font: 400 clamp(20px, 2.6vw, 34px)/1.2 var(--font); font-stretch: 104%; font-variation-settings: 'wdth' 104; }
-  .kicker { margin: 0 0 14px; font: 500 13px/1 var(--font); letter-spacing: .16em; text-transform: uppercase; color: rgba(244,241,236,.72); }
 
   .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
   .role h2 { margin: 0 0 10px; font-size: clamp(28px, 3vw, 38px); }
@@ -119,6 +118,7 @@
          background: var(--ink); color: var(--stage); text-decoration: none; font: 650 17px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; transition: background .2s; }
   .buy:hover { background: var(--accent); color: var(--stage); }
   .actions a:not(.buy) { font-size: 16px; }
+  .live-note { flex-basis: 100%; margin: 0; font-size: 14px; color: var(--ink-soft); }
 
   /* the prototype, running live */
   .deck { background: var(--anthracite); color: var(--panel-ink); padding: clamp(28px, 4vw, 56px) 0; }
@@ -274,7 +274,6 @@
       <img class="av" src="img/klex_wave.webp" alt="">
     </div>
     <div class="wrap hero-text">
-      <p class="kicker">App concept · business plan · prototype</p>
       <h1>KLEX</h1>
       <p class="claim">Create, don't scroll.</p>
     </div>
@@ -306,6 +305,7 @@
       <a href="#figures">Market in figures</a>
       <a href="#competition">Competition</a>
       <a href="#roadmap">Roadmap</a>
+      <p class="live-note">App concept · business plan · prototype.</p>
     </div>
   </div>
 
