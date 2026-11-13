@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Steel and Materials Case Study</title>
+<meta name="description" content="Case study in Simon Winkler's portfolio: quality and non-conforming material, materials and testing, manufacturing, and business, systems and people, from eight years at voestalpine.">
+<link rel="preload" href="../../fonts/archivo-100-900-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* fonts from the site itself, as on the main page (../../fonts/) */
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../../fonts/archivo-100-900-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../../fonts/ibm-plex-mono-500-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* the site's colour tokens and glass (index.html): light by day; dark = the site's dark scheme with its night glass */
+  :root {
+    --stage: #d8d3cb; --ink: #1d1b18; --ink-soft: #5e5850; --rule: rgba(29, 27, 24, 0.16); --accent: #b3602d;
+    --glass: rgba(246, 243, 238, 0.58); --glass-strong: rgba(246, 243, 238, 0.86); --glass-line: rgba(255, 255, 255, 0.55);
+    --glass-ink: #1d1b18; --glass-soft: #5e5850; --blur: blur(10px) saturate(1.15);
+    --anthracite: #2a2b2e; --anthracite-2: #35363a; --panel-ink: #e9e6e0; --panel-soft: #a19d96;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(16px, 5vw, 64px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+      --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+      --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+    --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+    --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--stage); color: var(--ink); font: 400 18px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { color: var(--accent); }
+  img, video { display: block; max-width: 100%; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* the site's header (index.html: .site, .bar, .name, .menu, .drop); each entry goes to its place on the station */
+  .site { position: fixed; left: 0; right: 0; top: 0; z-index: 20; color: var(--glass-ink);
+          background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          padding-top: env(safe-area-inset-top, 0px); }
+  .site .name:hover, .site .drop-item:hover { color: inherit; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
+  .name { font: 700 23px/0.9 var(--font); font-stretch: 116%; font-variation-settings: 'wdth' 116; letter-spacing: 0.02em; text-transform: uppercase;
+          color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .name span { display: inline-block; width: max-content; white-space: nowrap; }
+  .site button { background: transparent; border: 0; cursor: pointer; }
+  .menu { display: flex; gap: 6px; }
+  .menu button, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+          padding: 12px 12px; min-height: 44px; position: relative; }
+  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu-toggle { display: none; }
+  .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
+  .drop.open { grid-template-rows: 1fr; }
+  .drop-inner { overflow: hidden; }
+  .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
+  .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-decoration: none; }
+  .drop-item .t { display: block; font: 600 17px/1.2 var(--font); }
+  .drop-item .s { display: block; font: 400 13px/1.4 var(--font); color: var(--glass-soft); margin-top: 3px; }
+  .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
+  .drop-cat { display: none; }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; }
+    .name { font-size: 19px; }
+    .menu { display: none; }
+    .menu-toggle { display: block; padding-right: 0; }
+    .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+    .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
+  }
+
+  .bar-right { display: flex; align-items: center; gap: 18px; }
+
+  /* hero: the coil film from the marked coil on, the name set over it; it settles back as you scroll */
+  .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #15171a; color: #f4f1ec; }
+  .hero video, .hero .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 60%; will-change: transform; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,16,20,0) 40%, rgba(14,16,20,.78) 100%); pointer-events: none; }
+  .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
+  h1 { margin: 0 0 0 -0.06em; font: 300 clamp(40px, 8.4vw, 124px)/0.9 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+  h1 span, h1 b { display: block; white-space: nowrap; }
+  h1 b { font-weight: 800; }
+  .claim { margin: clamp(10px, 1.6vw, 18px) 0 0; max-width: 40rem; font: 400 clamp(20px, 2.6vw, 34px)/1.2 var(--font); font-stretch: 104%; font-variation-settings: 'wdth' 104; }
+
+  /* my role */
+  .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .role h2 { margin: 0 0 10px; font: 700 clamp(28px, 3vw, 38px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .role p { margin: 0 0 12px; max-width: 34rem; }
+  .role h2.h-company { margin-top: clamp(36px, 5vw, 56px); }
+  .roles { margin: 6px 0 0; }
+  .roles dt { font-weight: 650; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .roles dt:first-child { padding-top: 0; border-top: 0; }
+  .roles dd { margin: 4px 0 16px; color: var(--ink-soft); font-size: 16px; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: clamp(32px, 4vw, 48px) 0 0; }
+  .actions a { font-size: 16px; }
+
+  /* non-conforming material: the steps scroll on the left, the picture on the right follows the step in the middle of the screen */
+  .does { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .does h2 { margin: 0 0 12px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .does-intro { margin: 0; max-width: 40rem; }
+  .scrolly { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: clamp(24px, 4vw, 56px); align-items: start; margin-top: clamp(24px, 4vw, 48px); }
+  .steps { list-style: none; margin: 0; padding: 18vh 0 30vh; }
+  .step { padding: 0 0 0 18px; margin: 0 0 22vh; border-left: 2px solid var(--rule); transition: border-color .25s; }
+  .step:last-child { margin-bottom: 0; }
+  .step button { background: none; border: 0; padding: 0; font: 650 clamp(20px, 2vw, 26px)/1.2 var(--font); font-stretch: 106%; font-variation-settings: 'wdth' 106; color: var(--ink-soft); cursor: pointer; text-align: left; transition: color .25s; }
+  .step p { margin: 6px 0 0; font-size: 16px; color: var(--ink-soft); max-width: 26rem; opacity: .55; transition: opacity .25s; }
+  .step.on { border-left-color: var(--ink); }
+  .step.on button { color: var(--ink); }
+  .step.on p { opacity: 1; }
+  .stage { position: sticky; top: calc(50vh - min(28vw, 330px) / 2 + 30px); aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; background: #111; }
+  .stage .m { position: absolute; inset: 0; opacity: 0; transition: opacity .35s; overflow: hidden; }
+  .stage .m.on { opacity: 1; }
+  .stage .m > img, .stage .m > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  /* content parts: heading left, text right, as CONTROL CENTER and Specs on the CONNECT 2 page */
+  .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .part h2 { margin: 0; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .part p { margin: 0 0 14px; max-width: 40rem; }
+  .media { position: relative; margin: 0 0 22px; border-radius: 8px; overflow: hidden; background: #15171a; aspect-ratio: 16 / 9; }
+  .media > img, .media > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .list { margin: 4px 0 18px; padding-left: 20px; max-width: 40rem; }
+  .list li + li { margin-top: 6px; }
+
+  /* from slab to product: the route as lines of stations, the products are the stops you can pick */
+  .route { display: grid; gap: 10px; margin: 6px 0 20px; }
+  .line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; margin: 0; padding: 0; list-style: none; }
+  .line li { display: flex; align-items: center; font-size: 14px; color: var(--ink-soft); }
+  .line li + li::before { content: ""; width: clamp(10px, 1.6vw, 22px); height: 1px; background: var(--ink-soft); margin: 0 6px; opacity: .6; }
+  .line .label { min-width: 4.5rem; font-weight: 650; color: var(--ink); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .line .label + li::before { display: none; }
+  .line .proc { padding: 6px 0; }
+  .line button { font: 500 15px/1 var(--font); padding: 10px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--rule); background: none; color: var(--ink-soft); cursor: pointer; }
+  .line button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--stage); }
+  .line button:hover { border-color: var(--ink); }
+  .sheet[hidden] { display: none; }
+  .sheet .media { aspect-ratio: 3 / 2; margin-bottom: 16px; }
+  .specs { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); font-size: 16px; }
+  .specs dt, .specs dd { padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .specs dt { color: var(--ink-soft); padding-right: 28px; }
+  .specs dd { margin: 0; }
+  .spec-note { margin: 14px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+  /* the group: pinned while you scroll, the divisions slide by; the small views show where you are and jump there */
+  .views { position: relative; height: 300vh; margin-top: clamp(56px, 8vw, 104px); }
+  .views-pin { position: sticky; top: 0; height: 100svh; display: flex; align-items: center; padding-top: var(--hh, 77px); }
+  .views-pin > .wrap { width: 100%; }
+  .views h2 { margin: 0 0 16px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .view-stage { height: calc(100svh - 316px - var(--hh, 64px)); min-height: 220px; background: #15171a; border-radius: 10px; overflow: hidden; }
+  .slides { display: flex; height: 100%; will-change: transform; }
+  .slide { flex: 0 0 auto; height: 100%; transition: opacity .2s; }
+  .slide img { width: 100%; height: 100%; object-fit: cover; }
+  .views-foot { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px clamp(20px, 4vw, 48px); align-items: start; margin: 14px 0 0; }
+  .thumbs { display: flex; align-items: flex-start; gap: 10px; }
+  .thumbs button { width: 72px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink-soft); font: 500 12px/1.3 var(--font); text-align: center; }
+  .thumbs img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 6px; opacity: .55; transition: opacity .2s; }
+  .thumbs span { display: block; margin-top: 5px; }
+  .thumbs button[aria-pressed="true"] { color: var(--ink); }
+  .thumbs button[aria-pressed="true"] img { opacity: 1; box-shadow: 0 0 0 2px var(--ink); }
+  .div-text { margin: 0; font-size: 16px; max-width: 34rem; min-height: 4.8em; }
+  .div-text b { display: block; font-weight: 650; }
+  .div-text span { color: var(--ink-soft); }
+  @media (prefers-reduced-motion: reduce) {
+    .views { height: auto; }
+    .views-pin { position: static; height: auto; padding: 0; }
+    .view-stage { height: min(70vh, 640px); }
+  }
+
+  .credit-note { margin: clamp(64px, 9vw, 120px) 0 0; padding: 24px 0 56px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); max-width: 46rem; }
+
+  @media (max-width: 860px) {
+    .role, .part, .views-foot { grid-template-columns: minmax(0, 1fr); }
+    .view-stage { height: calc(100svh - 406px - var(--hh, 64px)); }
+    .thumbs { gap: 8px; }
+    .thumbs button { width: 60px; }
+    /* phone: the picture sticks under the header, the steps scroll beneath it */
+    .scrolly { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .stage { order: -1; top: calc(var(--hh, 62px) + 8px); z-index: 2; box-shadow: 0 10px 24px -12px rgba(0,0,0,.35); }
+    .steps { padding: 6vh 0 24vh; }
+    .step { margin-bottom: 16vh; }
+    .line .label { min-width: 100%; margin-bottom: 2px; }
+  }
+  @media (max-width: 480px) {
+    .specs { grid-template-columns: minmax(0, 1fr); }
+    .specs dt { border-bottom: 0; padding-bottom: 0; }
+    .specs dd { padding-top: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site" id="site">
+  <div class="bar">
+    <a class="name" href="../../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+    <div class="bar-right">
+      <nav class="menu" id="menu" aria-label="Main">
+        <button type="button" data-cat="work" aria-expanded="false">Work</button>
+        <button type="button" data-cat="play" aria-expanded="false">Play</button>
+        <button type="button" data-cat="about" aria-expanded="false">About</button>
+        <button type="button" data-cat="contact" aria-expanded="false">Contact</button>
+      </nav>
+      <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
+    </div>
+  </div>
+  <div class="drop" id="drop"><div class="drop-inner"><div class="drop-list" id="drop-list"></div></div></div>
+</header>
+
+<main>
+  <section class="hero" aria-label="Steel and materials">
+    <img class="poster" alt="" src="media/hero-poster.jpg">
+    <video id="hero-film" muted playsinline preload="metadata" aria-hidden="true" poster="media/hero-poster.jpg" data-src="media/hero.mp4"></video>
+    <div class="wrap hero-text">
+      <h1><span>STEEL &amp;</span> <b>MATERIALS</b></h1>
+      <p class="claim">My school of business, industry and manufacturing.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="role">
+      <div>
+        <h2>My role at voestalpine</h2>
+        <p>I spent eight years at voestalpine in Linz. Most of that time I worked in the quality department of voestalpine Stahl on non-conforming material: hot rolled, cold rolled and galvanized strip and heavy plate that missed its EN standard or its customer specification. I judged it, decided what it could still be and worked to get it back on an order.</p>
+        <p>Alongside the job I completed my Matura in materials technology in evening school. It covered metals and plastics, how they are made by casting, forming, machining, welding and plastics processing, how they are tested destructively and non-destructively, and what defects are and where they come from.</p>
+        <p>It started with my apprenticeship as an industrial clerk, through purchasing, sales, customer service and quality in three group companies. That is where I learned how a large company works across its departments, its systems and its people.</p>
+        <h2 class="h-company">The company</h2>
+        <p>voestalpine AG is a steel and technology group based in Linz, Austria, with 48,800 employees in about 500 group companies and locations in more than 50 countries. Its four divisions make far more than steel: strip and heavy plate, tool steel and parts for aerospace, railway systems, wire and seamless tubes, and ready to install car body components.</p>
+        <p>I saw much of the group, but worked mostly at voestalpine Stahl GmbH, which makes the hot rolled, cold rolled and coated strip. My apprenticeship also took me to voestalpine Grobblech GmbH for heavy plate and to voestalpine Steel Service Center GmbH, which slits and cuts strip to the sizes customers need.</p>
+      </div>
+      <dl class="roles">
+        <dt>Quality and non-conforming material</dt>
+        <dd>Judged hot rolled, cold rolled, galvanized and heavy plate against EN product standards and customer specifications. Worked with camera surface inspection, inline measurement data and lab test values. Judged and classified flagged defects, released or blocked material, followed up on causes and got material back on an order.</dd>
+        <dt>Materials and testing</dt>
+        <dd>Metals first, plastics and other materials alongside. Properties, defects and their causes. Destructive testing such as tensile, hardness, impact and metallography, and non-destructive testing such as ultrasonic, magnetic particle, dye penetrant and X&#8209;ray.</dd>
+        <dt>Manufacturing</dt>
+        <dd>Casting, forming, machining, welding and plastics processing, and the steel route from blast furnace to coil and plate.</dd>
+        <dt>Business, systems and people</dt>
+        <dd>Coordination between quality, production, the lab, sales, customer service and logistics. Internal logistics between lines, stores and plants. Customer contact on deviations, complaints and agreements.</dd>
+        <dt>Industrial clerk apprenticeship</dt>
+        <dd>Purchasing, sales, customer service and quality at voestalpine Stahl, voestalpine Grobblech and voestalpine Steel Service Center.</dd>
+      </dl>
+    </div>
+    <div class="actions">
+      <a href="https://www.voestalpine.com/group/en/" target="_blank" rel="noopener">voestalpine.com</a>
+    </div>
+
+    <section class="does" aria-labelledby="h-nc">
+      <h2 id="h-nc">Non-conforming material</h2>
+      <p class="does-intro">When material misses its specification, the question is what it can still be. The aim was always to get it back on an order instead of scrapping it.</p>
+      <div class="scrolly">
+        <ol class="steps" id="steps">
+          <li class="step on" data-i="0"><button type="button">Detected</button><p>Camera surface inspection, inline measurement data and lab test values flag what deviates from the EN standard or the customer specification.</p></li>
+          <li class="step" data-i="1"><button type="button">Judged and classified</button><p>Does the flagged defect really matter for this material, this standard and this customer? Classifying it also tuned what the system flags next time.</p></li>
+          <li class="step" data-i="2"><button type="button">Released or blocked</button><p>Material that fits is released. Material that does not is blocked, and its causes followed up.</p></li>
+          <li class="step" data-i="3"><button type="button">Made conform again</button><p>Re-testing, trimming and slitting, reprocessing on a line or sorting out the affected sections.</p></li>
+          <li class="step" data-i="4"><button type="button">Back on an order</button><p>Where it could not meet its original order, it moved to a broader standard, another customer specification or a less specialised use.</p></li>
+        </ol>
+        <div class="stage" id="stage">
+          <div class="m on"><img alt="" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
+          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="12.8" data-end="36.7" data-src="media/coils.mp4#t=12.8"></video></div>
+          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="36.9" data-end="41.5" data-src="media/coils.mp4#t=36.9"></video></div>
+          <div class="m"><img loading="lazy" alt="" src="media/grobblech-18.jpg"></div>
+          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="42" data-src="media/coils.mp4#t=42"></video></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-materials">
+      <h2 id="h-materials">Materials and testing</h2>
+      <div>
+        <div class="media"><video muted playsinline preload="none" aria-label="A materials lab at voestalpine in Linz" poster="media/lab-poster.jpg" data-src="media/lab.mp4"></video></div>
+        <p>A quality decision is only as good as the understanding behind it. My Matura in materials technology gave me that understanding, and the daily work put it to use.</p>
+        <ul class="list">
+          <li>Metals, the bulk of it: how composition and structure set strength, toughness and formability</li>
+          <li>Plastics and other materials alongside</li>
+          <li>Destructive testing: tensile, hardness, impact, metallography</li>
+          <li>Non-destructive testing: ultrasonic, magnetic particle, dye penetrant, X&#8209;ray</li>
+          <li>Defects and where they come from</li>
+        </ul>
+        <p>At work I read and judged lab test values and inline measurement data against EN standards and customer specifications, judged whether material that misses one specification still meets another, and followed up on the causes of defects.</p>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-manufacturing">
+      <h2 id="h-manufacturing">Manufacturing</h2>
+      <div>
+        <div class="media"><video muted playsinline preload="none" aria-label="A part being milled on a machining centre" poster="media/milling-poster.jpg" data-src="media/milling.mp4"></video></div>
+        <p>How something is made decides what can go wrong with it, and what can still be fixed. In evening school I learned the processes, at work I saw them on the lines.</p>
+        <ul class="list">
+          <li>Casting</li>
+          <li>Forming: rolling, deep drawing, bending</li>
+          <li>Machining: turning, milling</li>
+          <li>Welding</li>
+          <li>Plastics processing: injection moulding, extrusion</li>
+        </ul>
+        <p>On the job I worked with material from every stage of the steel route in Linz, brought it back into specification by trimming, slitting and reprocessing on the lines, and knew what each product can be used for, which is what makes a new order possible.</p>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-business">
+      <h2 id="h-business">Business, systems and people</h2>
+      <div>
+        <div class="media"><img loading="lazy" alt="The voestalpine sign on a building at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
+        <p>A steel plant is also a large organisation. Material only moves when departments, systems and people work together, and non-conforming material touches almost all of them.</p>
+        <p>My apprenticeship took me through purchasing, sales, customer service and quality at voestalpine Stahl, voestalpine Grobblech and voestalpine Steel Service Center. I learned how these departments depend on each other, how orders, material and quality data run through the systems of a large company, and how material is processed and moved from the line to the store to the customer.</p>
+        <p>In quality I put that to use. I coordinated non-conforming material between quality, production, the lab, sales, customer service and logistics, moved and tracked material between lines, stores and plants, and was in contact with customers on deviations, complaints and agreements.</p>
+      </div>
+    </section>
+
+    <section class="part" aria-labelledby="h-products">
+      <h2 id="h-products">From slab to product</h2>
+      <div>
+        <p>In Linz, steel comes from the blast furnace and the LD converter, a process invented there, and is cast into slabs. From the slab it takes one of two routes. Pick a product to see how it is made, what it is tested for and where it can go wrong.</p>
+        <div class="route" role="tablist" aria-label="Products">
+          <ol class="line" role="none">
+            <li role="none" class="label">Steel</li>
+            <li role="none" class="proc">Blast furnace</li>
+            <li role="none" class="proc">LD converter</li>
+            <li role="none" class="proc">Continuous casting</li>
+            <li role="none" class="proc">Slab</li>
+          </ol>
+          <ol class="line" role="none">
+            <li role="none" class="label">Strip</li>
+            <li role="none" class="proc">Hot strip mill</li>
+            <li role="none"><button type="button" role="tab" id="pt0" aria-selected="true" aria-controls="ps0" tabindex="0">Hot rolled</button></li>
+            <li role="none" class="proc">Cold rolling, annealing</li>
+            <li role="none"><button type="button" role="tab" id="pt1" aria-selected="false" aria-controls="ps1" tabindex="-1">Cold rolled</button></li>
+            <li role="none" class="proc">Zinc coating</li>
+            <li role="none"><button type="button" role="tab" id="pt2" aria-selected="false" aria-controls="ps2" tabindex="-1">Galvanized</button></li>
+          </ol>
+          <ol class="line" role="none">
+            <li role="none" class="label">Plate</li>
+            <li role="none" class="proc">Plate mill</li>
+            <li role="none"><button type="button" role="tab" id="pt3" aria-selected="false" aria-controls="ps3" tabindex="-1">Heavy plate</button></li>
+          </ol>
+        </div>
+
+        <div class="sheet" role="tabpanel" id="ps0" aria-labelledby="pt0">
+          <div class="media"><video muted playsinline preload="none" aria-hidden="true" data-start="0" data-end="12.6" data-src="media/coils.mp4"></video></div>
+          <dl class="specs">
+            <dt>How it is made</dt><dd>Slabs are reheated and rolled on the hot strip mill into strip, then coiled while hot. Pickling in acid removes the scale.</dd>
+            <dt>Used for</dt><dd>Structural parts, tubes, vehicle chassis, and as the starting material for cold rolling.</dd>
+            <dt>Tested for</dt><dd>Yield and tensile strength, elongation, thickness, width, flatness and surface.</dd>
+            <dt>EN standards</dt><dd>EN 10111, EN 10025-2, EN 10149-2. Tolerances to EN 10051.</dd>
+            <dt>Customer specifications</dt><dd>Tighter limits for mechanical values, tolerances or surface, agreed per customer.</dd>
+            <dt>Typical deviations</dt><dd>Mechanical values out of range, thickness or flatness, scale and other surface defects.</dd>
+          </dl>
+        </div>
+        <div class="sheet" role="tabpanel" id="ps1" aria-labelledby="pt1" hidden>
+          <div class="media"><img loading="lazy" alt="" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
+          <dl class="specs">
+            <dt>How it is made</dt><dd>Pickled hot strip is rolled thinner at room temperature, which hardens it. Annealing restores formability, and a skin pass sets surface and flatness.</dd>
+            <dt>Used for</dt><dd>Car body parts, household appliances, furniture and deep drawn parts.</dd>
+            <dt>Tested for</dt><dd>Yield and tensile strength, elongation, r and n values for formability, surface quality, roughness and flatness.</dd>
+            <dt>EN standards</dt><dd>EN 10130 for the DC grades, EN 10268 for higher strength. Tolerances to EN 10131.</dd>
+            <dt>Customer specifications</dt><dd>Forming values, surface class and roughness agreed per customer, often for visible car body parts.</dd>
+            <dt>Typical deviations</dt><dd>Forming values out of range, surface defects, flatness.</dd>
+          </dl>
+        </div>
+        <div class="sheet" role="tabpanel" id="ps2" aria-labelledby="pt2" hidden>
+          <div class="media"><video muted playsinline preload="none" aria-hidden="true" data-start="36.9" data-end="41.5" data-src="media/coils.mp4#t=36.9"></video></div>
+          <dl class="specs">
+            <dt>How it is made</dt><dd>Cold rolled strip is annealed and run through a bath of molten zinc on the hot dip galvanizing line, or zinc coated electrolytically.</dd>
+            <dt>Used for</dt><dd>Car bodies, construction and appliances.</dd>
+            <dt>Tested for</dt><dd>Coating mass, coating adhesion, the mechanical values of the base steel and surface quality.</dd>
+            <dt>EN standards</dt><dd>EN 10346 for hot dip coating, for example DX51D+Z275. EN 10152 for electrolytic coating. Tolerances to EN 10143.</dd>
+            <dt>Customer specifications</dt><dd>Coating mass, surface quality and base steel values agreed per customer.</dd>
+            <dt>Typical deviations</dt><dd>Coating mass, zinc surface defects, mechanical values of the base steel.</dd>
+          </dl>
+        </div>
+        <div class="sheet" role="tabpanel" id="ps3" aria-labelledby="pt3" hidden>
+          <div class="media"><img loading="lazy" alt="" src="media/grobblech-18.jpg"></div>
+          <dl class="specs">
+            <dt>How it is made</dt><dd>Slabs are rolled on the plate mill into thick plates, often thermomechanically rolled or heat treated, then cut, levelled and tested.</dd>
+            <dt>Used for</dt><dd>Pipelines, wind towers, shipbuilding, bridges and construction machinery.</dd>
+            <dt>Tested for</dt><dd>Yield and tensile strength, toughness in the Charpy impact test, internal defects by ultrasonic testing, thickness and flatness.</dd>
+            <dt>EN standards</dt><dd>EN 10025, EN 10028 for pressure vessels. Tolerances to EN 10029, ultrasonic testing to EN 10160.</dd>
+            <dt>Customer specifications</dt><dd>Toughness at set temperatures, ultrasonic class and tolerances agreed per project.</dd>
+            <dt>Typical deviations</dt><dd>Strength or toughness values, internal defects, flatness, surface.</dd>
+          </dl>
+        </div>
+        <p class="spec-note">Standards, specifications and uses are typical examples for each product group, not specific orders.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="views" id="views" aria-labelledby="h-group">
+    <div class="views-pin">
+      <div class="wrap">
+        <h2 id="h-group">The group</h2>
+        <div class="view-stage" id="view-stage" aria-label="The four divisions of voestalpine">
+          <div class="slides" id="slides">
+            <div class="slide"><img src="media/grobblech-18.jpg" alt="Stacks of heavy plate in a hall"></div>
+            <div class="slide"><img src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg" alt="A metal part being measured with a calliper" loading="lazy"></div>
+            <div class="slide"><img src="media/va-med-rail-technology-2016.jpg" alt="Rails on the cooling bed of a rolling mill" loading="lazy"></div>
+            <div class="slide"><img src="media/automotive-components-linz-c-voestalpine.jpg" alt="Robots handling car body parts" loading="lazy"></div>
+          </div>
+        </div>
+        <div class="views-foot">
+          <div class="thumbs" id="thumbs" aria-label="Divisions">
+            <button type="button" aria-pressed="true" data-name="Steel Division, where I worked" data-text="High quality steel strip, heavy plate and cast products for energy. For automotive, housing, machinery and energy."><img src="media/grobblech-18.jpg" alt="" loading="lazy"><span>Steel</span></button>
+            <button type="button" aria-pressed="false" data-name="High Performance Metals Division" data-text="Tool and high speed steels, special alloys, additive manufactured parts, heat and surface treatment. For aerospace, energy, automotive suppliers and mechanical engineering."><img src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg" alt="" loading="lazy"><span>High Perf. Metals</span></button>
+            <button type="button" aria-pressed="false" data-name="Metal Engineering Division" data-text="Railway systems, quality wire, welding consumables and seamless tubes. For rail infrastructure, energy, automotive and construction."><img src="media/va-med-rail-technology-2016.jpg" alt="" loading="lazy"><span>Metal Engineering</span></button>
+            <button type="button" aria-pressed="false" data-name="Metal Forming Division" data-text="Sections, tubes, precision strip and ready to install components such as car body parts. For automotive, storage technology, road safety and construction."><img src="media/automotive-components-linz-c-voestalpine.jpg" alt="" loading="lazy"><span>Metal Forming</span></button>
+          </div>
+          <p class="div-text" id="div-text" aria-live="polite"><b>Steel Division, where I worked</b><span>High quality steel strip, heavy plate and cast products for energy. For automotive, housing, machinery and energy.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <p class="credit-note">Copyright: voestalpine AG, Source: voestalpine.com. All photos and films from <a href="https://www.voestalpine.com/group/en/media/multimedia/" target="_blank" rel="noopener">voestalpine.com</a>. Company figures and divisions from voestalpine.com and the group's reports. Standards and test values describe the product groups in general. This page describes my own work as part of the team and is not an official voestalpine page.</p>
+  </div>
+</main>
+
+<script>
+// the site's header menu (entries as MENU in index.html; keep the two in step): each entry goes to its place on the station
+(function () {
+  var STATION = '../../';
+  var MENU = {
+    work: [
+      { to: 'library', t: 'Research', s: 'Thesis, publications, science communication' },
+      { to: 'office', t: 'Products', s: 'Product work, case studies, collaborations' },
+      { to: 'workshop', t: 'Technology & AI', s: 'Prototypes, devices, machine learning' },
+      { to: 'showroom', t: 'Media & installations', s: 'Immersive sound, projection, exhibitions' },
+      { to: 'new-module', t: 'New: museum & curation', s: 'Work in progress' }
+    ],
+    play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
+    about: [
+      { to: 'hub', t: 'About Simon', s: 'Who builds this station' },
+      { to: 'cv', t: 'CV', s: 'Download as PDF' },
+      { to: 'station', t: 'The station', s: 'Why a research station' }
+    ],
+    contact: [{ to: 'relay', t: 'Get in touch', s: 'Email and links' }]
+  };
+  var site = document.getElementById('site'), drop = document.getElementById('drop'), list = document.getElementById('drop-list'),
+      toggle = document.getElementById('menu-toggle'), menuButtons = document.querySelectorAll('#menu button'), cat = null, timer = 0;
+  function render(c) {
+    var cats = c === 'all' ? ['work', 'play', 'about', 'contact'] : [c];
+    list.innerHTML = '';
+    cats.forEach(function (k) {
+      if (c === 'all') { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
+      MENU[k].forEach(function (it) {
+        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + '#' + it.to;
+        a.innerHTML = '<span class="t">' + it.t + '</span><span class="s">' + it.s + '</span>';
+        list.appendChild(a);
+      });
+    });
+  }
+  function open(c) {
+    clearTimeout(timer);
+    if (cat !== c) render(c);
+    cat = c; drop.classList.add('open');
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', String(b.dataset.cat === c)); });
+    toggle.setAttribute('aria-expanded', String(c === 'all'));
+  }
+  function close() {
+    drop.classList.remove('open'); cat = null;
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  menuButtons.forEach(function (b) {
+    // a mouse opens the menu by hovering; a tap only clicks
+    b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') open(b.dataset.cat); });
+    b.addEventListener('click', function () { if (cat === b.dataset.cat) close(); else open(b.dataset.cat); });
+  });
+  site.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') timer = setTimeout(close, 250); });
+  site.addEventListener('pointerenter', function () { clearTimeout(timer); });
+  toggle.addEventListener('click', function () { if (cat) close(); else open('all'); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && cat) close(); });
+  document.addEventListener('pointerdown', function (e) { if (cat && !site.contains(e.target)) close(); });
+
+  // the name's two lines set to the same width, as on the station
+  function fitName() {
+    var a = document.getElementById('name-1'), b = document.getElementById('name-2');
+    a.style.letterSpacing = ''; b.style.letterSpacing = ''; a.style.marginRight = ''; b.style.marginRight = '';
+    var s = a.offsetWidth < b.offsetWidth ? a : b, l = s === a ? b : a;
+    var extra = (l.offsetWidth - s.offsetWidth) / (s.textContent.length - 1);
+    s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
+  }
+  function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
+  fitName(); measure();
+  if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
+  addEventListener('resize', function () { fitName(); measure(); });
+})();
+
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // films load only when they come into view, and pause when they leave it.
+  // Each film loops its own segment, from data-start to data-end or to the end of the file.
+  function load(v) { if (v.dataset.src && !v.src) { v.src = v.dataset.src; } }
+  function hidden(v) {
+    var m = v.closest('.stage .m'); if (m && !m.classList.contains('on')) return true;
+    var s = v.closest('.sheet'); return !!(s && s.hidden);
+  }
+  function play(v) { load(v); if (!reduce) v.play().catch(function () {}); }
+  var films = document.querySelectorAll('video[data-src]');
+  films.forEach(function (v) {
+    var s = +(v.dataset.start || 0), e = v.dataset.end ? +v.dataset.end : 0;
+    if (e) v.addEventListener('timeupdate', function () { if (v.currentTime >= e) v.currentTime = s; });
+    v.addEventListener('ended', function () { v.currentTime = s; v.play().catch(function () {}); });
+  });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting && !hidden(e.target)) play(e.target);
+        else if (!e.isIntersecting) e.target.pause();
+      });
+    }, { threshold: 0.25 });
+    films.forEach(function (v) { io.observe(v); });
+  }
+  if (reduce) document.getElementById('hero-film').remove();
+
+  // the hero settles back as you scroll
+  var hero = document.querySelector('.hero'), heroMedia = hero.querySelectorAll('video, .poster');
+  function onScroll() {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if (!reduce && y < h) { var k = 1 + Math.min(y / h, 1) * 0.08; heroMedia.forEach(function (m) { m.style.transform = 'scale(' + k + ') translateY(' + (y * 0.12) + 'px)'; }); }
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  onScroll();
+
+  // non-conforming material: show the picture whose step is in the middle of the screen
+  var stepEls = document.querySelectorAll('#steps .step'), stage = document.getElementById('stage').children, current = -1;
+  function activate(i) {
+    if (i === current) return; current = i;
+    stepEls.forEach(function (st, j) { st.classList.toggle('on', j === i); });
+    [].forEach.call(stage, function (m, j) {
+      m.classList.toggle('on', j === i);
+      var v = m.querySelector('video');
+      if (v) { if (j === i) play(v); else v.pause(); }
+    });
+  }
+  if ('IntersectionObserver' in window) {
+    var so = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) activate(+e.target.dataset.i); });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    stepEls.forEach(function (st) { so.observe(st); });
+  }
+  stepEls.forEach(function (st) {
+    st.querySelector('button').addEventListener('click', function () {
+      activate(+st.dataset.i);
+      st.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    });
+  });
+  activate(0);
+
+  // from slab to product: a product on the route opens its sheet; arrow keys move between products
+  var ptabs = document.querySelectorAll('.route [role=tab]');
+  function pickProduct(t) {
+    ptabs.forEach(function (o) {
+      var on = o === t, panel = document.getElementById(o.getAttribute('aria-controls'));
+      o.setAttribute('aria-selected', String(on)); o.tabIndex = on ? 0 : -1; panel.hidden = !on;
+      var v = panel.querySelector('video');
+      if (v) { if (on) play(v); else v.pause(); }
+    });
+  }
+  ptabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { pickProduct(t); });
+    t.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
+      var n = ptabs[(i + d + ptabs.length) % ptabs.length]; pickProduct(n); n.focus(); e.preventDefault();
+    });
+  });
+
+  // the group: scrolling down slides through the divisions; a small view jumps the page to it
+  var viewsSec = document.getElementById('views'), slides = document.getElementById('slides'),
+      thumbs = document.querySelectorAll('#thumbs button'), nViews = thumbs.length,
+      slideEls = slides.children, stageEl = document.getElementById('view-stage'),
+      divText = document.getElementById('div-text'), shown = 0;
+  function describe(i) {
+    if (i === shown) return; shown = i;
+    var b = thumbs[i];
+    divText.innerHTML = '';
+    var n = document.createElement('b'); n.textContent = b.dataset.name;
+    var t = document.createElement('span'); t.textContent = b.dataset.text;
+    divText.appendChild(n); divText.appendChild(t);
+  }
+  // each photo keeps its 3:2 shape, so they sit next to each other on the dark stage; the neighbours stay faint
+  function placeSlides(pos) {
+    var W = stageEl.clientWidth, w = Math.min(W, stageEl.clientHeight * 1.5);
+    [].forEach.call(slideEls, function (el, i) { el.style.width = w + 'px'; el.style.opacity = String(1 - Math.min(1, Math.abs(i - pos)) * 0.75); });
+    slides.style.transform = 'translateX(' + ((W - w) / 2 - pos * w) + 'px)';
+  }
+  function mark(cur) {
+    thumbs.forEach(function (b, i) { b.setAttribute('aria-pressed', String(i === cur)); });
+    describe(cur);
+  }
+  var reducedPos = 0;
+  function viewsScroll() {
+    if (reduce) { placeSlides(reducedPos); return; }
+    var r = viewsSec.getBoundingClientRect(), span = viewsSec.offsetHeight - innerHeight;
+    var pos = Math.max(0, Math.min(1, -r.top / span)) * (nViews - 1);
+    placeSlides(pos);
+    mark(Math.round(pos));
+  }
+  thumbs.forEach(function (b, i) {
+    b.addEventListener('click', function () {
+      if (reduce) { reducedPos = i; placeSlides(i); mark(i); return; }
+      var top = viewsSec.getBoundingClientRect().top + scrollY, span = viewsSec.offsetHeight - innerHeight;
+      scrollTo({ top: top + span * i / (nViews - 1), behavior: 'smooth' });
+    });
+  });
+  addEventListener('scroll', viewsScroll, { passive: true });
+  addEventListener('resize', viewsScroll);
+  viewsScroll();
+})();
+</script>
+</body>
+</html>
