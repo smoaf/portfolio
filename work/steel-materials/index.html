@@ -105,6 +105,7 @@
   /* hero: the coil film from the marked coil on, the name set over it; it settles back as you scroll */
   .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #15171a; color: #f4f1ec; }
   .hero video, .hero .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 60%; will-change: transform; }
+  #hero-film { opacity: 0; } #hero-film.on { opacity: 1; }   /* shown only once it plays from its start point; the still lies under it until then */
   .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,16,20,0) 40%, rgba(14,16,20,.78) 100%); pointer-events: none; }
   .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
   h1 { margin: 0 0 0 -0.06em; font: 300 clamp(40px, 8.4vw, 124px)/0.9 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
@@ -243,7 +244,7 @@
 <main>
   <section class="hero" aria-label="Steel and materials">
     <img class="poster" alt="" src="media/hero-poster.jpg">
-    <video id="hero-film" muted playsinline preload="metadata" aria-hidden="true" poster="media/hero-poster.jpg" data-src="media/hero.mp4"></video>
+    <video id="hero-film" muted playsinline preload="metadata" aria-hidden="true" poster="media/hero-poster.jpg" data-start="5" data-src="media/hero.mp4#t=5"></video>
     <div class="wrap hero-text">
       <h1><span>STEEL &amp;</span> <b>MATERIALS</b></h1>
       <p class="claim">My school of business, industry and manufacturing.</p>
@@ -579,7 +580,13 @@
     }, { threshold: 0.25 });
     films.forEach(function (v) { io.observe(v); });
   }
-  if (reduce) document.getElementById('hero-film').remove();
+  // the hero film starts 5 s into the file (data-start); it stays hidden over the still until it plays from there
+  var heroFilm = document.getElementById('hero-film'), heroStart = +heroFilm.dataset.start;
+  heroFilm.addEventListener('loadedmetadata', function () { if (heroFilm.currentTime < heroStart) heroFilm.currentTime = heroStart; });
+  heroFilm.addEventListener('timeupdate', function () {
+    if (!heroFilm.seeking && heroFilm.currentTime >= heroStart && !heroFilm.paused) heroFilm.classList.add('on');
+  });
+  if (reduce) heroFilm.remove();
 
   // the hero settles back as you scroll
   var hero = document.querySelector('.hero'), heroMedia = hero.querySelectorAll('video, .poster');
