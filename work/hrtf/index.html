@@ -104,7 +104,7 @@
 
   /* hero: a figure from the thesis, the title set over it; it settles back as you scroll */
   .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #1a1714; color: #f4f1ec; }
-  .hero .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; transform-origin: 50% 60%; will-change: transform; }
+  .hero .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; transform-origin: 50% 60%; will-change: transform; }
   .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,17,14,0) 40%, rgba(20,17,14,.74) 100%); pointer-events: none; }
   .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
   h1 { margin: 0 0 0 -0.06em; font: 300 clamp(44px, 9vw, 132px)/0.9 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
@@ -134,7 +134,7 @@
   /* figures from the thesis, large on a light ground, without captions */
   .fig { margin: clamp(40px, 6vw, 72px) 0 0; border-radius: 10px; overflow: hidden; background: #e4e0d9; }
   .fig img { width: 100%; height: auto; }
-  .fig.ear img { aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 55%; }
+  .fig.seat img { aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 62%; }
   .fig.meshes { background: #e9e9e9; }
 
   .end { margin: clamp(64px, 9vw, 120px) 0 0; padding: 24px 0 56px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); max-width: 46rem; }
@@ -174,7 +174,7 @@
 
 <main>
   <section class="hero" aria-label="How ears hear space">
-    <img class="poster" alt="A listener seated in a measurement room, surrounded by an arc of loudspeakers" src="media/hero.webp">
+    <img class="poster" alt="A small in-ear microphone placed in the ear canal, its cable running down" src="media/hero.webp">
     <div class="wrap hero-text">
       <h1>HOW EARS <b>HEAR SPACE</b></h1>
       <p class="claim">Measured, calculated or tuned by ear: the ways to get the filters that place sound around your head.</p>
@@ -223,7 +223,7 @@
       </div>
     </section>
 
-    <figure class="fig ear"><img src="media/ear-mic.webp" alt="A small in-ear microphone placed in the ear canal, its cable running down" loading="lazy"></figure>
+    <figure class="fig seat"><img src="media/seat.webp" alt="A listener seated in a measurement room, surrounded by an arc of loudspeakers"></figure>
 
     <section class="part" aria-labelledby="h-ways">
       <h2 id="h-ways">Four ways to get one</h2>
@@ -241,7 +241,7 @@
       </div>
     </section>
 
-    <figure class="fig meshes"><img src="media/meshes.webp" alt="Two grey 3D models of heads from the side, made by photogrammetry" loading="lazy"></figure>
+    <figure class="fig meshes"><img src="media/meshes.webp" alt="Two grey 3D models of heads from the side, made by photogrammetry"></figure>
 
     <section class="part" aria-labelledby="h-setup">
       <h2 id="h-setup">The test setup</h2>
