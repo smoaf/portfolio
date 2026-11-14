@@ -2865,11 +2865,11 @@ function stepCamp(now) {
 // Placeholder texts until the real content is written (marked as such in the page).
 const MENU = {
   work: [
-    // FEAT-035: four sections; each lists its case studies (Mediadesign & Installations has none yet)
-    { place: 'library', t: 'Academic', s: 'KLEX' },
-    { place: 'office', t: 'Corporate', s: 'CONNECT 2, Steel &amp; Materials' },
-    { place: 'workshop', t: 'Technology &amp; Tinkering', s: 'MRS-01, Ohrguss' },
-    { place: 'showroom', t: 'Mediadesign &amp; Installations', s: '' },
+    // FEAT-035: four sections; each lists its case studies. FEAT-038: generic subtitles; KLEX under Mediadesign & Installations, Academic has none yet
+    { place: 'library', t: 'Academic', s: 'Research and study' },
+    { place: 'office', t: 'Corporate', s: 'Work in industry' },
+    { place: 'workshop', t: 'Technology &amp; Tinkering', s: 'Builds and experiments' },
+    { place: 'showroom', t: 'Mediadesign &amp; Installations', s: 'Media, sound and space' },
   ],
   play: [
     { place: 'workshop', t: '3D printer', s: 'Print a small model, or your own' },
@@ -2881,10 +2881,7 @@ const MENU = {
 const PAGES = {
   // FEAT-035: the Work sections are Academic, Corporate, Technology & Tinkering, Mediadesign & Installations (same places as before);
   // a section panel shows exactly its own case studies (no placeholder cards), each opening its own page in the same tab
-  library: { kicker: 'Work · Academic', title: 'Academic', line: '', lead: 'Placeholder: a short introduction to the research, the thesis on non-human communication and related publications.',
-    // FEAT-030: the KLEX case study (its own page with the prototype; picture served from the site)
-    projects: [{ title: 'KLEX', line: "Create, don't scroll.", href: 'work/klex/',
-                 img: 'work/klex/img/s_home.webp' }] },
+  library: { kicker: 'Work · Academic', title: 'Academic', line: '', lead: '', projects: [] },   // FEAT-038: KLEX moved to Mediadesign; no project yet: shown empty
   office: { kicker: 'Work · Corporate', title: 'Corporate', line: '', lead: '',   // FEAT-033: the placeholder sentence is gone, nothing in its place
     // FEAT-028: CONNECT 2 (its own page; the hero still stays on the maker's server, an agreed exception)
     projects: [{ title: 'CONNECT 2', line: 'The most user-friendly audio interface.', href: 'work/connect-2/',
@@ -2899,7 +2896,10 @@ const PAGES = {
                // FEAT-032: Ohrguss (pictures served from the site; the app itself opens live from smoaf.github.io/OHRGUSS in a new tab)
                { title: 'OHRGUSS', line: 'Custom-fit earplugs from a browser.', href: 'work/ohrguss/',
                  img: 'work/ohrguss/media/card.webp' }] },
-  showroom: { kicker: 'Work · Mediadesign &amp; Installations', title: 'Mediadesign &amp; Installations', line: '', lead: '', projects: [] },   // no project yet: shown empty
+  showroom: { kicker: 'Work · Mediadesign &amp; Installations', title: 'Mediadesign &amp; Installations', line: '', lead: '',
+    // FEAT-030: the KLEX case study (its own page with the prototype; picture served from the site); FEAT-038: listed here, not under Academic
+    projects: [{ title: 'KLEX', line: "Create, don't scroll.", href: 'work/klex/',
+                 img: 'work/klex/img/s_home.webp' }] },
   'new-module': { kicker: 'Work · In progress', title: 'Museum & curation', line: 'The module being built.', lead: 'Placeholder: what is being built next.' },
   hub: { kicker: 'About', title: 'Simon Winkler', line: 'Research, products, technology and media.', lead: 'Placeholder: a short bio, what connects the fields, and what is next.' },
   relay: { kicker: 'Contact', title: 'Get in touch', line: 'Email and links.', lead: 'Placeholder: email address, profiles and where to find more.', cards: 0 },
