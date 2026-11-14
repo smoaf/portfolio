@@ -60,9 +60,13 @@
   .name span { display: inline-block; width: max-content; white-space: nowrap; }
   .site button { background: transparent; border: 0; cursor: pointer; }
   .menu { display: flex; gap: 6px; }
-  .menu button, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+  .menu button, .menu a, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
           padding: 12px 12px; min-height: 44px; position: relative; }
   .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  /* FEAT-034: About and Contact are links to their own pages (underlined on their own page) */
+  .menu a { display: inline-flex; align-items: center; text-decoration: none; }
+  .site .menu a:hover { color: inherit; }
+  .menu a[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
   .menu-toggle { display: none; }
   .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
   .drop.open { grid-template-rows: 1fr; }
@@ -267,8 +271,8 @@
       <nav class="menu" id="menu" aria-label="Main">
         <button type="button" data-cat="work" aria-expanded="false">Work</button>
         <button type="button" data-cat="play" aria-expanded="false">Play</button>
-        <button type="button" data-cat="about" aria-expanded="false">About</button>
-        <button type="button" data-cat="contact" aria-expanded="false">Contact</button>
+        <a href="../../about/" data-page="about">About</a>
+        <a href="../../contact/" data-page="contact">Contact</a>
       </nav>
       <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
     </div>
@@ -513,12 +517,9 @@
       { to: 'showroom', t: 'Mediadesign &amp; Installations', s: '' }
     ],
     play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
-    about: [
-      { to: 'hub', t: 'About Simon', s: 'Who builds this station' },
-      { to: 'cv', t: 'CV', s: 'Download as PDF' },
-      { to: 'station', t: 'The station', s: 'Why a research station' }
-    ],
-    contact: [{ to: 'relay', t: 'Get in touch', s: 'Email and links' }]
+    // FEAT-034: About and Contact open their own pages; in the phone menu each is one link
+    about: [{ href: 'about/', t: 'About' }],
+    contact: [{ href: 'contact/', t: 'Contact' }]
   };
   var site = document.getElementById('site'), drop = document.getElementById('drop'), list = document.getElementById('drop-list'),
       toggle = document.getElementById('menu-toggle'), menuButtons = document.querySelectorAll('#menu button'), cat = null, timer = 0;
@@ -526,9 +527,9 @@
     var cats = c === 'all' ? ['work', 'play', 'about', 'contact'] : [c];
     list.innerHTML = '';
     cats.forEach(function (k) {
-      if (c === 'all') { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
+      if (c === 'all' && !MENU[k][0].href) { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
       MENU[k].forEach(function (it) {
-        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + '#' + it.to;
+        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + (it.href || '#' + it.to);
         a.innerHTML = '<span class="t">' + it.t + '</span>' + (it.s ? '<span class="s">' + it.s + '</span>' : '');
         list.appendChild(a);
       });
@@ -560,6 +561,8 @@
     b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') open(b.dataset.cat); });
     b.addEventListener('click', function () { if (cat === b.dataset.cat) close(); else open(b.dataset.cat); });
   });
+  // FEAT-034: hovering About or Contact (links, no drop-down) closes an open drop-down
+  document.querySelectorAll('#menu a').forEach(function (a) { a.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse' && cat) close(); }); });
   site.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') timer = setTimeout(close, 250); });
   site.addEventListener('pointerenter', function () { clearTimeout(timer); });
   toggle.addEventListener('click', function () { if (cat) close(); else open('all'); });

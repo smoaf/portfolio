@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Contact · Simon Winkler</title>
+<meta name="description" content="Contact, a page in Simon Winkler's portfolio.">
+<link rel="preload" href="../fonts/archivo-100-900-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* fonts from the site itself, as on the main page (../fonts/) */
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../fonts/archivo-100-900-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+    src: url(../fonts/archivo-100-900-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../fonts/ibm-plex-mono-500-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+    src: url(../fonts/ibm-plex-mono-500-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* the site's colour tokens and glass (index.html): light by day; dark = the site's dark scheme with its night glass */
+  :root {
+    --stage: #d8d3cb; --ink: #1d1b18; --ink-soft: #5e5850; --rule: rgba(29, 27, 24, 0.16); --accent: #b3602d;
+    --glass: rgba(246, 243, 238, 0.58); --glass-strong: rgba(246, 243, 238, 0.86); --glass-line: rgba(255, 255, 255, 0.55);
+    --glass-ink: #1d1b18; --glass-soft: #5e5850; --blur: blur(10px) saturate(1.15);
+    --anthracite: #2a2b2e; --anthracite-2: #35363a; --panel-ink: #e9e6e0; --panel-soft: #a19d96;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(16px, 5vw, 64px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+      --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+      --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --stage: #2b2925; --ink: #efebe4; --ink-soft: #b2aba0; --rule: rgba(239, 235, 228, 0.18); --accent: #e09a62;
+    --glass: rgba(22, 24, 28, 0.5); --glass-strong: rgba(22, 24, 28, 0.84); --glass-line: rgba(255, 255, 255, 0.12); --glass-ink: #f1ede6; --glass-soft: #b8b1a6;
+    --anthracite: #201e1b; --anthracite-2: #33302b; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--stage); color: var(--ink); font: 400 18px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { color: var(--accent); }
+  img, video { display: block; max-width: 100%; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* the site's header (index.html: .site, .bar, .name, .menu, .drop); each entry goes to its place on the station */
+  .site { position: fixed; left: 0; right: 0; top: 0; z-index: 20; color: var(--glass-ink);
+          background: var(--glass); border-bottom: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+          padding-top: env(safe-area-inset-top, 0px); }
+  .site .name:hover, .site .drop-item:hover { color: inherit; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 40px; min-height: 48px; }
+  .name { font: 700 23px/0.9 var(--font); font-stretch: 116%; font-variation-settings: 'wdth' 116; letter-spacing: 0.02em; text-transform: uppercase;
+          color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .name span { display: inline-block; width: max-content; white-space: nowrap; }
+  .site button { background: transparent; border: 0; cursor: pointer; }
+  .menu { display: flex; gap: 6px; }
+  .menu button, .menu a, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+          padding: 12px 12px; min-height: 44px; position: relative; }
+  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  /* FEAT-034: About and Contact are links to their own pages (underlined on their own page) */
+  .menu a { display: inline-flex; align-items: center; text-decoration: none; }
+  .site .menu a:hover { color: inherit; }
+  .menu a[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu-toggle { display: none; }
+  .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
+  .drop.open { grid-template-rows: 1fr; }
+  .drop-inner { overflow: hidden; }
+  .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
+  .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-decoration: none; }
+  .drop-item .t { display: block; font: 600 17px/1.2 var(--font); }
+  .drop-item .s { display: block; font: 400 13px/1.4 var(--font); color: var(--glass-soft); margin-top: 3px; }
+  .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
+  .drop-cat { display: none; }
+  /* FEAT-036: "← Back" next to the name, in the pill style of CONNECT 2's header "Get it" */
+  .bar-left { display: flex; align-items: center; gap: 18px; flex: none; }
+  .bar-back { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none; white-space: nowrap;
+              font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; }
+  .site .bar-back:hover { background: var(--accent); color: var(--stage); }
+  .bar-back { justify-content: center; min-width: 34px; flex: none; }
+  /* phones: where the bar would not fit (the page's own header button, Get it, Try it, …, needs its room), Back keeps only its arrow */
+  @media (max-width: 720px) {
+    .bar-left { gap: 10px; } .bar-back { padding: 0 14px; }
+    .site.back-compact .bar { gap: 6px; }
+    .site.back-compact .bar-left { gap: 6px; }
+    .site.back-compact .bar-back { padding: 0 8px; min-width: 30px; }
+    .site.back-compact .bar-back-t { display: none; }
+  }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; }
+    .name { font-size: 19px; }
+    .menu { display: none; }
+    .menu-toggle { display: block; padding-right: 0; }
+    .drop-list { grid-template-columns: 1fr; padding: 0 16px 18px; gap: 0; max-height: calc(100vh - var(--hh, 70px) - 10px); overflow-y: auto; }
+    .drop-cat { display: block; font: 500 11px/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--glass-soft); padding: 16px 0 6px; }
+  }
+
+  .bar-right { display: flex; align-items: center; gap: 18px; }
+
+  /* FEAT-034: an own page in CONNECT 2's format (wrap, spacing, title); only the title for now, the text follows later */
+  .page { min-height: 100svh; padding: calc(var(--hh, 77px) + clamp(56px, 8vw, 104px)) 0 clamp(64px, 9vw, 120px); }
+  h1 { margin: 0 0 0 -0.085em; white-space: nowrap; font: 300 clamp(54px, 12vw, 168px)/0.84 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site" id="site">
+  <div class="bar">
+    <div class="bar-left">
+      <a class="name" href="../" aria-label="Simon Winkler, back to the station"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
+      <a class="bar-back" id="bar-back" href="../" aria-label="Back"><span aria-hidden="true">←</span><span class="bar-back-t" aria-hidden="true">&nbsp;Back</span></a>
+    </div>
+    <div class="bar-right">
+      <nav class="menu" id="menu" aria-label="Main">
+        <button type="button" data-cat="work" aria-expanded="false">Work</button>
+        <button type="button" data-cat="play" aria-expanded="false">Play</button>
+        <a href="../about/" data-page="about">About</a>
+        <a href="../contact/" data-page="contact" aria-current="page">Contact</a>
+      </nav>
+      <button type="button" class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
+    </div>
+  </div>
+  <div class="drop" id="drop"><div class="drop-inner"><div class="drop-list" id="drop-list"></div></div></div>
+</header>
+
+<main class="page">
+  <div class="wrap">
+    <h1>Contact</h1>
+  </div>
+</main>
+
+<script>
+// the site's header menu (entries as MENU in index.html; keep the two in step): each entry goes to its place on the station
+(function () {
+  var STATION = '../';
+  var MENU = {
+    work: [
+      { to: 'library', t: 'Academic', s: 'KLEX' },
+      { to: 'office', t: 'Corporate', s: 'CONNECT 2, Steel &amp; Materials' },
+      { to: 'workshop', t: 'Technology &amp; Tinkering', s: 'MRS-01, Ohrguss' },
+      { to: 'showroom', t: 'Mediadesign &amp; Installations', s: '' }
+    ],
+    play: [{ to: 'workshop', t: '3D printer', s: 'Print a small model, or your own' }],
+    // FEAT-034: About and Contact open their own pages; in the phone menu each is one link
+    about: [{ href: 'about/', t: 'About' }],
+    contact: [{ href: 'contact/', t: 'Contact' }]
+  };
+  var site = document.getElementById('site'), drop = document.getElementById('drop'), list = document.getElementById('drop-list'),
+      toggle = document.getElementById('menu-toggle'), menuButtons = document.querySelectorAll('#menu button'), cat = null, timer = 0;
+  function render(c) {
+    var cats = c === 'all' ? ['work', 'play', 'about', 'contact'] : [c];
+    list.innerHTML = '';
+    cats.forEach(function (k) {
+      if (c === 'all' && !MENU[k][0].href) { var h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = k; list.appendChild(h); }
+      MENU[k].forEach(function (it) {
+        var a = document.createElement('a'); a.className = 'drop-item'; a.href = STATION + (it.href || '#' + it.to);
+        a.innerHTML = '<span class="t">' + it.t + '</span>' + (it.s ? '<span class="s">' + it.s + '</span>' : '');
+        list.appendChild(a);
+      });
+    });
+    packRight();
+  }
+  // the items pack from the right, under the menu buttons (same columns as before; the last row starts further right)
+  function packRight() {
+    var items = list.querySelectorAll('.drop-item');
+    items.forEach(function (a) { a.style.gridColumnStart = ''; });
+    var cols = getComputedStyle(list).gridTemplateColumns.split(' ').length, rest = items.length % cols;
+    if (cols > 1 && rest) items[items.length - rest].style.gridColumnStart = String(cols - rest + 1);
+  }
+  addEventListener('resize', packRight);
+  function open(c) {
+    clearTimeout(timer);
+    if (cat !== c) render(c);
+    cat = c; drop.classList.add('open');
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', String(b.dataset.cat === c)); });
+    toggle.setAttribute('aria-expanded', String(c === 'all'));
+  }
+  function close() {
+    drop.classList.remove('open'); cat = null;
+    menuButtons.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  menuButtons.forEach(function (b) {
+    // a mouse opens the menu by hovering; a tap only clicks
+    b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') open(b.dataset.cat); });
+    b.addEventListener('click', function () { if (cat === b.dataset.cat) close(); else open(b.dataset.cat); });
+  });
+  // FEAT-034: hovering About or Contact (links, no drop-down) closes an open drop-down
+  document.querySelectorAll('#menu a').forEach(function (a) { a.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse' && cat) close(); }); });
+  site.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') timer = setTimeout(close, 250); });
+  site.addEventListener('pointerenter', function () { clearTimeout(timer); });
+  toggle.addEventListener('click', function () { if (cat) close(); else open('all'); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && cat) close(); });
+  document.addEventListener('pointerdown', function (e) { if (cat && !site.contains(e.target)) close(); });
+
+  // the name's two lines set to the same width, as on the station
+  function fitName() {
+    var a = document.getElementById('name-1'), b = document.getElementById('name-2');
+    a.style.letterSpacing = ''; b.style.letterSpacing = ''; a.style.marginRight = ''; b.style.marginRight = '';
+    var s = a.offsetWidth < b.offsetWidth ? a : b, l = s === a ? b : a;
+    var extra = (l.offsetWidth - s.offsetWidth) / (s.textContent.length - 1);
+    s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
+  }
+  function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
+  fitName(); measure();
+  if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
+  addEventListener('resize', function () { fitName(); measure(); });
+
+  // FEAT-036: Back returns to where the visitor came from on the site (the station as it was, or the previous page);
+  // opened by a direct link (nothing on the site to go back to) it goes to the station's overview (its href).
+  // In-page links (#try, …) add history entries; each entry remembers how many this page has added, so Back skips them all.
+  var depth = function () { return history.state && typeof history.state.backDepth === 'number' ? history.state.backDepth : 0; }, cur = depth();
+  try { if (!history.state || typeof history.state.backDepth !== 'number') history.replaceState({ backDepth: 0 }, ''); } catch (err) { /* no history API: Back goes to the overview */ }
+  addEventListener('hashchange', function () {
+    try { if (!history.state || typeof history.state.backDepth !== 'number') history.replaceState({ backDepth: cur + 1 }, ''); } catch (err) { /* see above */ }
+    cur = depth();
+  });
+  function fitBack() {
+    var back = document.getElementById('bar-back'), pill = site.querySelector('.bar-buy, .bar-try'), tight = function () {
+      var bar = site.querySelector('.bar'), edge = bar.getBoundingClientRect().right - parseFloat(getComputedStyle(bar).paddingRight) + 1, right = Infinity, out = false;
+      site.querySelectorAll('.bar-right > *').forEach(function (e) {   // whatever stands on the right of the bar (header button, menu)
+        var r = e.getBoundingClientRect(); if (r.width) { right = Math.min(right, r.left); out = out || r.right > edge; } });
+      return out || back.getBoundingClientRect().right + 12 > right || (pill && lines(pill) > 1); }, lines = function (e) {   // the header button's text on more than one line
+        var r = document.createRange(); r.selectNodeContents(e); var tops = {}; [].forEach.call(r.getClientRects(), function (c) { tops[Math.round(c.top)] = 1; }); return Object.keys(tops).length; };
+    site.classList.remove('back-compact');
+    if (matchMedia('(max-width: 720px)').matches && tight()) site.classList.add('back-compact');
+  }
+  fitBack(); addEventListener('resize', fitBack); if (document.fonts) document.fonts.ready.then(fitBack);
+  document.getElementById('bar-back').addEventListener('click', function (e) {
+    var root = new URL('../', location.href), from = null;
+    try { from = document.referrer ? new URL(document.referrer) : null; } catch (err) { from = null; }
+    var onSite = from && from.origin === root.origin && from.pathname.indexOf(root.pathname) === 0 && from.pathname !== location.pathname;
+    if (onSite && history.length > depth() + 1) { e.preventDefault(); history.go(-(depth() + 1)); }
+  });
+})();
+</script>
+</body>
+</html>

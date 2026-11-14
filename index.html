@@ -91,15 +91,17 @@
           color: inherit; text-decoration: none; display: inline-flex; flex-direction: column; align-items: flex-start; }
   .name span { display: inline-block; width: max-content; white-space: nowrap; }
   .menu { display: flex; gap: 6px; }
-  .menu button, .menu-toggle { font: 400 12px/1 var(--font-display); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
+  .menu button, .menu a, .menu-toggle { font: 400 12px/1 var(--font-display); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
           padding: 12px 12px; min-height: 44px; position: relative; }
   .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
+  .menu a { display: inline-flex; align-items: center; text-decoration: none; }   /* FEAT-034: About and Contact are links to their own pages */
   .menu-toggle { display: none; }
   .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
   .drop.open { grid-template-rows: 1fr; }
   .drop-inner { overflow: hidden; }
   .drop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 28px; padding: 6px 40px 26px; }
   .drop-item { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; text-align: left; padding: 12px 0 10px; border-top: 1px solid var(--glass-line); color: inherit; text-transform: none; letter-spacing: 0; font: inherit; }
+  a.drop-item { text-decoration: none; }
   .drop-item .t { display: block; font: 600 17px/1.2 var(--font-display); }
   .drop-item .s { display: block; font: 400 13px/1.4 var(--font-display); color: var(--glass-soft); margin-top: 3px; }
   .drop-item:hover .t, .drop-item:focus-visible .t { text-decoration: underline; text-underline-offset: 3px; }
@@ -420,8 +422,8 @@
     <nav class="menu" id="menu" aria-label="Main">
       <button data-cat="work" aria-expanded="false">Work</button>
       <button data-cat="play" aria-expanded="false">Play</button>
-      <button data-cat="about" aria-expanded="false">About</button>
-      <button data-cat="contact" aria-expanded="false">Contact</button>
+      <a href="about/" data-page="about">About</a>
+      <a href="contact/" data-page="contact">Contact</a>
     </nav>
     <button class="menu-toggle" id="menu-toggle" aria-expanded="false">Menu</button>
   </div>
@@ -2872,11 +2874,9 @@ const MENU = {
   play: [
     { place: 'workshop', t: '3D printer', s: 'Print a small model, or your own' },
   ],
-  about: [
-    { place: 'hub', t: 'About Simon', s: 'Who builds this station' },
-    { content: 'cv', t: 'CV', s: 'Download as PDF' },
-    { content: 'station', t: 'The station', s: 'Why a research station' },
-  ],
+  // FEAT-034: About and Contact open their own pages (about/, contact/); in the phone menu each is one link
+  about: [{ href: 'about/', t: 'About' }],
+  contact: [{ href: 'contact/', t: 'Contact' }],
 };
 const PAGES = {
   // FEAT-035: the Work sections are Academic, Corporate, Technology & Tinkering, Mediadesign & Installations (same places as before);
@@ -2923,9 +2923,13 @@ function renderDrop(cat) {
   const cats = cat === 'all' ? ['work', 'play', 'about', 'contact'] : [cat];
   dropList.innerHTML = '';
   cats.forEach((c) => {
-    if (cat === 'all') { const h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = c; dropList.appendChild(h); }
-    const items = c === 'contact' ? [{ place: 'relay', t: 'Get in touch', s: 'Email and links' }] : MENU[c];
+    const items = MENU[c], page = items[0].href;
+    if (cat === 'all' && !page) { const h = document.createElement('div'); h.className = 'drop-cat'; h.textContent = c; dropList.appendChild(h); }
     items.forEach((it) => {
+      if (it.href) {   // FEAT-034: a link to its own page
+        const a = document.createElement('a'); a.className = 'drop-item'; a.href = it.href;
+        a.innerHTML = `<span class="t">${it.t}</span>`; dropList.appendChild(a); return;
+      }
       const b = document.createElement('button'); b.className = 'drop-item';
       b.innerHTML = `<span class="t">${it.t}</span>` + (it.s ? `<span class="s">${it.s}</span>` : '');
       b.addEventListener('click', () => { closeDrop(); go(it); });
@@ -2957,6 +2961,8 @@ function closeDrop() {
   document.querySelectorAll('#menu button').forEach((b) => b.setAttribute('aria-expanded', 'false'));
   document.getElementById('menu-toggle').setAttribute('aria-expanded', 'false');
 }
+// FEAT-034: hovering About or Contact (links, no drop-down) closes an open drop-down
+document.querySelectorAll('#menu a').forEach((a) => a.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && dropCat) closeDrop(); }));
 document.querySelectorAll('#menu button').forEach((b) => {
   // a mouse opens the menu by hovering; a tap only clicks (its emulated hover would open it and the click close it again)
   b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') openDrop(b.dataset.cat); });
