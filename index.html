@@ -138,6 +138,8 @@
   .card p { font: 400 14px/1.45 var(--font-display); margin: 0; color: var(--glass-soft); }
   a.card { display: block; color: inherit; text-decoration: none; }
   a.card img.ph { display: block; width: 100%; object-fit: cover; background: none; }
+  /* FEAT-040: a placeholder page's tile: the same card, its picture area plain neutral glass */
+  a.card.plain .ph { background: var(--glass); border: 1px solid var(--glass-line); }
   a.card:hover h3, a.card:focus-visible h3 { text-decoration: underline; text-underline-offset: 3px; }
   .panel-close { position: absolute; right: 24px; top: 14px; }
   .panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -2884,25 +2886,34 @@ const PAGES = {
   library: { kicker: 'Work · Academic', title: 'Academic', line: '', lead: '',   // FEAT-038: KLEX moved to Mediadesign
     // FEAT-039: the HRTF bachelor thesis (its own page; figures from the thesis, served from the site)
     projects: [{ title: 'How ears hear space', line: 'Measured, calculated or tuned by ear: the ways to get the filters that place sound around your head.', href: 'work/hrtf/',
-                 img: 'work/hrtf/media/hero.webp' }] },
+                 img: 'work/hrtf/media/hero.webp' },
+               // FEAT-040: placeholder pages (name only; their content follows on later cards)
+               { title: 'Elephant Calls &amp; AI', href: 'work/elephant-calls-ai/' },
+               { title: 'Non-Human Communication', href: 'work/non-human-communication/' }] },
   office: { kicker: 'Work · Corporate', title: 'Corporate', line: '', lead: '',   // FEAT-033: the placeholder sentence is gone, nothing in its place
     // FEAT-028: CONNECT 2 (its own page; the hero still stays on the maker's server, an agreed exception)
     projects: [{ title: 'CONNECT 2', line: 'The most user-friendly audio interface.', href: 'work/connect-2/',
                  img: 'https://d2pucgucjvdva3.cloudfront.net/sites/default/files/styles/max_2600x2600/public/2024-05/connect-2-hero-shot-desktop-first-frame.jpg' },
                // FEAT-029: Steel & Materials (picture and films served from the site)
                { title: 'STEEL &amp; MATERIALS', line: 'My school of business, industry and manufacturing.', href: 'work/steel-materials/',
-                 img: 'work/steel-materials/media/hero-poster.jpg' }] },
+                 img: 'work/steel-materials/media/hero-poster.jpg' },
+               { title: 'Signal Recording &amp; Processing', href: 'work/signal-recording-processing/' }] },   // FEAT-040: placeholder
   workshop: { kicker: 'Work · Technology &amp; Tinkering', title: 'Technology &amp; Tinkering', line: '', lead: 'Placeholder: technical projects, prototypes and work with machine learning.',
     // FEAT-031: MRS-01 (renders served from the site; only the GitHub link goes out, in a new tab)
     projects: [{ title: 'MRS-01', line: 'A small recording booth you print at home.', href: 'work/mrs-01/',
                  img: 'work/mrs-01/media/hero.webp' },
                // FEAT-032: Ohrguss (pictures served from the site; the app itself opens live from smoaf.github.io/OHRGUSS in a new tab)
                { title: 'OHRGUSS', line: 'Custom-fit earplugs from a browser.', href: 'work/ohrguss/',
-                 img: 'work/ohrguss/media/card.webp' }] },
+                 img: 'work/ohrguss/media/card.webp' },
+               { title: 'Tape Delay', href: 'work/tape-delay/' }] },   // FEAT-040: placeholder
   showroom: { kicker: 'Work · Mediadesign &amp; Installations', title: 'Mediadesign &amp; Installations', line: '', lead: '',
     // FEAT-030: the KLEX case study (its own page with the prototype; picture served from the site); FEAT-038: listed here, not under Academic
     projects: [{ title: 'KLEX', line: "Create, don't scroll.", href: 'work/klex/',
-                 img: 'work/klex/img/s_home.webp' }] },
+                 img: 'work/klex/img/s_home.webp' },
+               // FEAT-040: placeholder pages (name only)
+               { title: '360° Screen', href: 'work/360-screen/' },
+               { title: 'Photography', href: 'work/photography/' },
+               { title: 'Experimental Audio &amp; Video', href: 'work/experimental-audio-video/' }] },
   'new-module': { kicker: 'Work · In progress', title: 'Museum & curation', line: 'The module being built.', lead: 'Placeholder: what is being built next.' },
   hub: { kicker: 'About', title: 'Simon Winkler', line: 'Research, products, technology and media.', lead: 'Placeholder: a short bio, what connects the fields, and what is next.' },
   relay: { kicker: 'Contact', title: 'Get in touch', line: 'Email and links.', lead: 'Placeholder: email address, profiles and where to find more.', cards: 0 },
@@ -2987,6 +2998,7 @@ function openPanel(id) {
   const n = c.cards === 0 ? 0 : c.projects ? c.projects.length : 3;   // FEAT-035: a Work section shows exactly its projects
   const cards = Array.from({ length: n }, (_, i) => {
     const pr = c.projects && c.projects[i];
+    if (pr && !pr.img) return `<a class="card project plain" href="${pr.href}"><div class="ph"></div><h3>${pr.title}</h3></a>`;   // FEAT-040: a placeholder page's tile, name only
     if (pr) return `<a class="card project" href="${pr.href}"><img class="ph" src="${pr.img}" alt="" loading="lazy" referrerpolicy="no-referrer"><h3>${pr.title}</h3><p>${pr.line}</p></a>`;
     return `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`;
   }).join('');
