@@ -105,7 +105,8 @@
   /* FEAT-040: a project page set up as a placeholder: the case study hero (same size) without picture or film, only the title over it */
   .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: color-mix(in srgb, var(--ink) 7%, var(--stage)); color: var(--ink); }
   .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); }
-  h1 { margin: 0 0 0 -0.06em; font: 300 clamp(44px, 9vw, 132px)/0.9 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; overflow-wrap: break-word; }
+  /* as the other case study titles; on narrow phones and wide screens a little smaller, so the longest word (Communication) keeps to one line */
+  h1 { margin: 0 0 0 -0.06em; font: 300 min(clamp(44px, 9vw, 132px), 10.5vw, 122px)/0.9 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
