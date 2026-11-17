@@ -198,6 +198,22 @@
     .view-stage { height: min(70vh, 640px); }
   }
 
+  /* footage: grouped, films cut into their scenes; each tile plays its own segment when in view */
+  .footage { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .footage h2 { margin: 0 0 clamp(14px, 2vw, 22px); font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: clamp(120px, 13vw, 200px); grid-auto-flow: dense; gap: clamp(8px, 1.2vw, 14px); }
+  .tile { position: relative; overflow: hidden; border-radius: 10px; background: #15171a; grid-column: span 2; }
+  .tile.big { grid-column: span 4; grid-row: span 2; }
+  .tile.third { grid-row: span 2; }
+  .tile > img, .tile > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
+  .tile:hover > img, .tile:hover > video { transform: scale(1.03); }
+  @media (max-width: 720px) {
+    .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 30vw; }
+    .tile, .tile.third { grid-column: span 1; grid-row: span 1; }
+    .tile.big { grid-column: span 2; grid-row: span 2; }
+    .tile.pw { grid-column: span 2; grid-row: span 2; }
+  }
+
   .credit-note { margin: clamp(64px, 9vw, 120px) 0 0; padding: 24px 0 56px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); max-width: 46rem; }
 
   @media (max-width: 860px) {
@@ -282,54 +298,39 @@
       </div>
     </div>
 
-    <section class="does" aria-labelledby="h-nc">
-      <h2 id="h-nc">Where I worked</h2>
-      <div class="scrolly">
-        <ol class="steps" id="steps">
-          <li class="step on" data-i="0"><button type="button">voestalpine in Linz</button><p>My workplace for eight years.</p></li>
-          <li class="step" data-i="1"><button type="button">Strip from the lines</button><p>Hot rolled, cold rolled and galvanized strip that missed its specification was my daily work.</p></li>
-          <li class="step" data-i="2"><button type="button">Assessing coils</button><p>I assessed each case, decided whether to release or block it and found a way back onto an order.</p></li>
-          <li class="step" data-i="3"><button type="button">Heavy plate</button><p>At voestalpine Grobblech I also worked on heavy plate.</p></li>
-          <li class="step" data-i="4"><button type="button">Moving material</button><p>Material moved between lines, warehouses and plants, coordinated with sales, logistics and the customer.</p></li>
-          <li class="step" data-i="5"><button type="button">The lab</button><p>I read and judged lab test values against standards and customer specifications.</p></li>
-        </ol>
-        <div class="stage" id="stage">
-          <div class="m on"><img alt="The voestalpine sign on a building at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
-          <div class="m"><img loading="lazy" alt="A galvanizing line at voestalpine in Linz" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
-          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="12.8" data-end="36.7" data-src="media/coils.mp4#t=12.8"></video></div>
-          <div class="m"><img loading="lazy" alt="Stacks of heavy plate in a hall at voestalpine Grobblech" src="media/grobblech-18.jpg"></div>
-          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="42" data-src="media/coils.mp4#t=42"></video></div>
-          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-src="media/lab.mp4" poster="media/lab-poster.jpg"></video></div>
-        </div>
+    <section class="footage" aria-labelledby="h-footage-1">
+      <h2 id="h-footage-1">Strip and plate</h2>
+      <div class="bento">
+        <div class="tile big"><video muted playsinline preload="none" aria-label="A marked coil of steel strip" data-start="12.8" data-end="36.7" data-src="media/coils.mp4#t=12.8"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="A store of steel strip coils" data-start="0.1" data-end="12.6" data-src="media/coils.mp4#t=0.1"></video></div>
+        <div class="tile sm"><img loading="lazy" alt="A strip processing line" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="Rows of coils" data-start="36.9" data-end="41.5" data-src="media/coils.mp4#t=36.9"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="A coil warehouse hall" data-start="42" data-src="media/coils.mp4#t=42"></video></div>
+        <div class="tile sm pw"><img loading="lazy" alt="Stacks of heavy plate in a hall" src="media/grobblech-18.jpg"></div>
       </div>
     </section>
 
-  </div>
-
-  <section class="views" id="views" aria-labelledby="h-group">
-    <div class="views-pin">
-      <div class="wrap">
-        <h2 id="h-group">What I learned at HTL Andorf</h2>
-        <div class="view-stage" id="view-stage" aria-label="What I learned">
-          <div class="slides" id="slides">
-            <div class="slide"><video muted playsinline preload="none" aria-label="A tensile test specimen being machined" poster="media/milling-poster.jpg" data-src="media/milling.mp4"></video></div>
-            <div class="slide"><img src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg" alt="A metal part being measured with a calliper" loading="lazy"></div>
-            <div class="slide"><img src="media/va-med-rail-technology-2016.jpg" alt="Rails on the cooling bed of a rolling mill" loading="lazy"></div>
-            <div class="slide"><img src="media/automotive-components-linz-c-voestalpine.jpg" alt="Robots handling car body parts" loading="lazy"></div>
-          </div>
-        </div>
-        <div class="views-foot">
-          <div class="thumbs" id="thumbs" aria-label="Subjects">
-            <button type="button" aria-pressed="true" data-name="Destructive testing" data-text="Machining a tensile test specimen. I learned tensile, hardness and impact testing and metallography."><img src="media/milling-poster.jpg" alt="" loading="lazy"><span>Testing</span></button>
-            <button type="button" aria-pressed="false" data-name="Machining and measuring" data-text="Turning, milling and checking the finished part."><img src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg" alt="" loading="lazy"><span>Machining</span></button>
-            <button type="button" aria-pressed="false" data-name="Rolling" data-text="How rolling forms steel, from slab to strip, plate and rail."><img src="media/va-med-rail-technology-2016.jpg" alt="" loading="lazy"><span>Rolling</span></button>
-            <button type="button" aria-pressed="false" data-name="Forming" data-text="Deep drawing and bending, the processes behind car body parts made from cold rolled and galvanized strip."><img src="media/automotive-components-linz-c-voestalpine.jpg" alt="" loading="lazy"><span>Forming</span></button>
-          </div>
-          <p class="div-text" id="div-text" aria-live="polite"><b>Destructive testing</b><span>Machining a tensile test specimen. I learned tensile, hardness and impact testing and metallography.</span></p>
-        </div>
+    <section class="footage" aria-labelledby="h-footage-2">
+      <h2 id="h-footage-2">Lab and testing</h2>
+      <div class="bento">
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="At the machine" data-start="0" data-end="6.8" data-src="media/milling.mp4#t=0"></video></div>
+        <div class="tile big"><video muted playsinline preload="none" aria-label="A tensile test specimen being machined" data-start="7" data-end="13.5" data-src="media/milling.mp4#t=7"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="Close-up of the specimen being machined" data-start="13.7" data-src="media/milling.mp4#t=13.7"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="A materials lab" data-start="0" data-end="11" data-src="media/lab.mp4#t=0"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="Working at a lab desk" data-start="11.2" data-src="media/lab.mp4#t=11.2"></video></div>
+        <div class="tile sm pw"><img loading="lazy" alt="A metal part being measured with a calliper" src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg"></div>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <section class="footage" aria-labelledby="h-footage-3">
+      <h2 id="h-footage-3">Across the group</h2>
+      <div class="bento">
+        <div class="tile third pw"><img loading="lazy" alt="The voestalpine sign at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
+        <div class="tile third"><img loading="lazy" alt="Rails on the cooling bed of a rolling mill" src="media/va-med-rail-technology-2016.jpg"></div>
+        <div class="tile third"><img loading="lazy" alt="Robots handling car body parts" src="media/automotive-components-linz-c-voestalpine.jpg"></div>
+      </div>
+    </section>
+  </div>
 
   <div class="wrap">
     <p class="credit-note">Photos and films: voestalpine AG, who provide them for public use on <a href="https://www.voestalpine.com/group/en/media/multimedia/" target="_blank" rel="noopener">voestalpine.com</a>. This is a personal portfolio page, not an official voestalpine page.</p>
@@ -455,7 +456,11 @@
   var films = document.querySelectorAll('video[data-src]');
   films.forEach(function (v) {
     var s = +(v.dataset.start || 0), e = v.dataset.end ? +v.dataset.end : 0;
-    if (e) v.addEventListener('timeupdate', function () { if (v.currentTime >= e) v.currentTime = s; });
+    v.addEventListener('loadedmetadata', function () { if (v.currentTime < s) v.currentTime = s; });
+    v.addEventListener('timeupdate', function () {
+      if (v.seeking) return;
+      if ((e && v.currentTime >= e) || v.currentTime < s - 0.5) v.currentTime = s;
+    });
     v.addEventListener('ended', function () { v.currentTime = s; v.play().catch(function () {}); });
   });
   if ('IntersectionObserver' in window) {
@@ -485,90 +490,6 @@
   addEventListener('resize', onScroll);
   onScroll();
 
-  // non-conforming material: show the picture whose step is in the middle of the screen
-  var stepEls = document.querySelectorAll('#steps .step'), stage = document.getElementById('stage').children, current = -1;
-  function activate(i) {
-    if (i === current) return; current = i;
-    stepEls.forEach(function (st, j) { st.classList.toggle('on', j === i); });
-    [].forEach.call(stage, function (m, j) {
-      m.classList.toggle('on', j === i);
-      var v = m.querySelector('video');
-      if (v) { if (j === i) play(v); else v.pause(); }
-    });
-  }
-  if ('IntersectionObserver' in window) {
-    var so = new IntersectionObserver(function (es) {
-      es.forEach(function (e) { if (e.isIntersecting) activate(+e.target.dataset.i); });
-    }, { rootMargin: '-45% 0px -50% 0px' });
-    stepEls.forEach(function (st) { so.observe(st); });
-  }
-  stepEls.forEach(function (st) {
-    st.querySelector('button').addEventListener('click', function () {
-      activate(+st.dataset.i);
-      st.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
-    });
-  });
-  activate(0);
-
-  // from slab to product: a product on the route opens its sheet; arrow keys move between products
-  var ptabs = document.querySelectorAll('.route [role=tab]');
-  function pickProduct(t) {
-    ptabs.forEach(function (o) {
-      var on = o === t, panel = document.getElementById(o.getAttribute('aria-controls'));
-      o.setAttribute('aria-selected', String(on)); o.tabIndex = on ? 0 : -1; panel.hidden = !on;
-      var v = panel.querySelector('video');
-      if (v) { if (on) play(v); else v.pause(); }
-    });
-  }
-  ptabs.forEach(function (t, i) {
-    t.addEventListener('click', function () { pickProduct(t); });
-    t.addEventListener('keydown', function (e) {
-      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
-      var n = ptabs[(i + d + ptabs.length) % ptabs.length]; pickProduct(n); n.focus(); e.preventDefault();
-    });
-  });
-
-  // the group: scrolling down slides through the divisions; a small view jumps the page to it
-  var viewsSec = document.getElementById('views'), slides = document.getElementById('slides'),
-      thumbs = document.querySelectorAll('#thumbs button'), nViews = thumbs.length,
-      slideEls = slides.children, stageEl = document.getElementById('view-stage'),
-      divText = document.getElementById('div-text'), shown = 0;
-  function describe(i) {
-    if (i === shown) return; shown = i;
-    var b = thumbs[i];
-    divText.innerHTML = '';
-    var n = document.createElement('b'); n.textContent = b.dataset.name;
-    var t = document.createElement('span'); t.textContent = b.dataset.text;
-    divText.appendChild(n); divText.appendChild(t);
-  }
-  // each photo keeps its 3:2 shape, so they sit next to each other on the dark stage; the neighbours stay faint
-  function placeSlides(pos) {
-    var W = stageEl.clientWidth, w = Math.min(W, stageEl.clientHeight * 1.5);
-    [].forEach.call(slideEls, function (el, i) { el.style.width = w + 'px'; el.style.opacity = String(1 - Math.min(1, Math.abs(i - pos)) * 0.75); });
-    slides.style.transform = 'translateX(' + ((W - w) / 2 - pos * w) + 'px)';
-  }
-  function mark(cur) {
-    thumbs.forEach(function (b, i) { b.setAttribute('aria-pressed', String(i === cur)); });
-    describe(cur);
-  }
-  var reducedPos = 0;
-  function viewsScroll() {
-    if (reduce) { placeSlides(reducedPos); return; }
-    var r = viewsSec.getBoundingClientRect(), span = viewsSec.offsetHeight - innerHeight;
-    var pos = Math.max(0, Math.min(1, -r.top / span)) * (nViews - 1);
-    placeSlides(pos);
-    mark(Math.round(pos));
-  }
-  thumbs.forEach(function (b, i) {
-    b.addEventListener('click', function () {
-      if (reduce) { reducedPos = i; placeSlides(i); mark(i); return; }
-      var top = viewsSec.getBoundingClientRect().top + scrollY, span = viewsSec.offsetHeight - innerHeight;
-      scrollTo({ top: top + span * i / (nViews - 1), behavior: 'smooth' });
-    });
-  });
-  addEventListener('scroll', viewsScroll, { passive: true });
-  addEventListener('resize', viewsScroll);
-  viewsScroll();
 })();
 </script>
 </body>

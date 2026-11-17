@@ -6,17 +6,19 @@ Written 17 Nov 2026 from the session with Smo. This file is the reference for ev
 ## Status
 
 - Live (`main`): the first draft of the chapters (PR #103). Smo does not want it. It deleted agreed content, used almost none of the existing footage and dropped the page's components.
-- Local branch `fix/steel-materials-restore` (not pushed): the page as it was before that draft, then rebuilt below "The company" after Smo's later decision (see "Current build" below). It goes live only on Smo's go.
+- Branch `fix/steel-materials-restore`: the page as it was before that draft, with the footage groups below "The company" (see "Current build"). Pushed on Smo's go.
 
 ## Current build (Smo, later on 17 Nov 2026)
 
-Smo: "let us just utilize the images that we have and put them in relation to me, this is too much text." This replaces section 3 for now.
+Smo: "I want the page as it was before. After the company sections I want all the footage that we have for it grouped where it makes sense. Cutouts of the movies for different scenes. Almost no text, just structure and good look and feel." This replaces section 3 for now.
 
 - Until "The company": unchanged.
-- "Where I worked": the existing sticky picture with six steps, one line each. voestalpine in Linz (sign photo), Strip from the lines (galvanizing line photo), Assessing coils (chalk-marked coil film), Heavy plate (plate hall photo), Moving material (warehouse film), The lab (lab film).
-- "What I learned at HTL Andorf": the existing pinned slider with four slides. Destructive testing (tensile test specimen film), Machining and measuring (calliper photo), Rolling (rails photo), Forming (car body parts photo).
-- Removed: the three text sections and "From slab to product" with its EN tabs.
-- No generated pictures in this build.
+- After it, three groups, each a grid of pictures and film scenes, no captions:
+  - Strip and plate: the marked coil, the coil store, the strip line photo, rows of coils, the warehouse hall, the heavy plate hall.
+  - Lab and testing: three scenes of machining a tensile test specimen, two scenes of the lab, the calliper photo.
+  - Across the group: the Linz sign, the rails, the car body parts.
+- Each film tile plays its own scene in a loop.
+- Removed: the steps, the three text sections, "From slab to product" and "The group" slider.
 - Credit line: Photos and films: voestalpine AG, who provide them for public use on voestalpine.com. This is a personal portfolio page, not an official voestalpine page.
 
 ## 1. Smo's instructions
