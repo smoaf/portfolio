@@ -117,7 +117,8 @@
   .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
   .role h2 { margin: 0 0 10px; font: 700 clamp(28px, 3vw, 38px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
   .role p { margin: 0 0 12px; max-width: 34rem; }
-  .role h2.h-company { margin-top: clamp(36px, 5vw, 56px); }
+  .role.company { padding-top: clamp(48px, 6vw, 80px); align-items: start; row-gap: 0; }
+  .role.company .actions { padding-top: 8px; }
   .roles { margin: 6px 0 0; }
   .roles dt { font-weight: 650; padding-top: 16px; border-top: 1px solid var(--rule); }
   .roles dt:first-child { padding-top: 0; border-top: 0; }
@@ -257,23 +258,27 @@
         <h2>My role at voestalpine</h2>
         <p>I spent eight years at voestalpine in Linz. During my first years I completed an apprenticeship as an industrial clerk, a full commercial training across three group companies. I learned how the departments of a large industrial group work together, from bookkeeping to sales, and how orders, material and data flow through its systems.</p>
         <p>For most of my time there I worked in the quality department of voestalpine Stahl on non-conforming material: steel that failed to meet its standard or customer specification. I assessed it, decided what it could still be used for and worked to get it back onto an order. I was also a member of working groups aimed at optimising the entire non-conforming material process.</p>
-        <p>Alongside my job I completed the evening programme in materials technology at HTL Andorf, a higher technical college, graduating with the Matura and technical diploma. I studied how steel and plastics are made and processed, from casting onwards; steel grades and how their microstructure forms; testing methods; and the problems that can arise in welding and in service.</p>
-        <h2 class="h-company">The company</h2>
-        <p>voestalpine AG is a steel and technology group headquartered in Linz, Austria, with around 500 group companies and locations in more than 50 countries. I worked mainly at voestalpine Stahl GmbH, which produces hot rolled, cold rolled and coated strip. I also worked at voestalpine Grobblech GmbH on heavy plate, at times for pipelines, and at voestalpine Steel Service Center GmbH, which slits and cuts strip to customer dimensions.</p>
+        <p>Alongside my job I completed the evening programme in materials technology at HTL Andorf, a higher technical college, graduating with the Matura. I studied how steel and plastics are made and processed, starting with casting, how steel grades and their microstructure form, the testing methods, and the problems that can arise in welding and in service.</p>
       </div>
       <dl class="roles">
         <dt>Quality and non-conforming material</dt>
         <dd>EN product standards and customer specifications, surface inspection, lab and inline measurement data, release and blocking, process optimisation.</dd>
         <dt>Commercial training and coordination</dt>
-        <dd>Bookkeeping, cost accounting, payroll and HR, marketing, purchasing, sales, customer service, logistics and quality. Day to day: coordination between quality, production, the lab, sales, customer service and logistics; material movements between lines, warehouses and plants; customer contact on deviations, complaints and concessions.</dd>
+        <dd>Bookkeeping, cost accounting, payroll and HR, marketing, purchasing, sales, customer service, logistics and quality. Day to day: coordination between quality, production, the lab, sales, customer service and logistics. Material movements between lines, warehouses and plants. Customer contact on deviations, complaints and concessions.</dd>
         <dt>Materials and testing</dt>
         <dd>Mainly metals, also plastics and other materials. Properties, defects and their causes. Destructive testing: tensile, hardness, impact, metallography. Non-destructive testing: ultrasonic, magnetic particle, dye penetrant, X&#8209;ray.</dd>
         <dt>Manufacturing</dt>
-        <dd>Casting, forming, machining, welding and plastics processing; the steel route from blast furnace to coil and plate.</dd>
+        <dd>Casting, forming, machining, welding and plastics processing. The steel route from blast furnace to coil and plate.</dd>
       </dl>
     </div>
-    <div class="actions">
-      <a href="https://www.voestalpine.com/group/en/" target="_blank" rel="noopener">voestalpine.com</a>
+    <div class="role company">
+      <h2 class="h-company">The company</h2>
+      <div>
+        <p>voestalpine AG is a steel and technology group headquartered in Linz, Austria, with around 500 group companies and locations in more than 50 countries. I worked mainly at voestalpine Stahl GmbH, which produces hot rolled, cold rolled and coated strip. I also worked at voestalpine Grobblech GmbH, which produces heavy plate for wind towers, shipbuilding and bridges, and at voestalpine Steel Service Center GmbH, which slits and cuts strip to customer dimensions.</p>
+        <div class="actions">
+          <a href="https://www.voestalpine.com/group/en/" target="_blank" rel="noopener">voestalpine.com</a>
+        </div>
+      </div>
     </div>
 
     <section class="does" aria-labelledby="h-nc">
