@@ -872,3 +872,9 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 - Removed: the non-conforming material steps, the three text sections, "From slab to product" with its EN tabs and "The group" slider, with their scripts. New credit line.
 - `docs/steel-materials-plan.md`: Smo's instructions, the final content and the plan for this page.
 - Tested headless (Chromium, served with range requests like GitHub Pages), desktop 1440×900 and phone (Pixel 7), light and dark: every film tile plays inside its own scene, no horizontal scroll, no outside requests, no console errors. The page until "The company" is identical to the restored state.
+
+## 17 Nov 2026: Signal Recording & Processing, studio footage, branch `feat/signal-recording-footage`
+- `work/signal-recording-processing/index.html`: the FEAT-040 placeholder hero becomes the case study hero of `work/hrtf/` with Smo's desk photo (full-bleed, dark gradient below, the small scroll zoom; the FEAT-040 title size stays). Below it one captionless footage grid in the bento of `work/steel-materials/` (no heading, no text, since Smo supplied none): the room overview (large), the piano keys (tall), the tube channel strip and the door side of the room (half width each, new `.tile.half`). On phones every tile is full width, the keys three rows tall.
+- `work/signal-recording-processing/media/`: web copies of the five photos (WebP, quality 80; hero 2000 px wide, the others 1000–1600 px). The door-side room photo is cropped on the right so the blue-lit shelf is not visible (Smo). Brand names and logos on the gear are left as photographed, on Smo's decision for these photos.
+- Not changed: the page's tile in the Corporate panel (still name only), the station.
+- Tested headless (Chromium), desktop 1440×900 and phone (Pixel 7), light and dark: all five pictures load, no horizontal scroll, no outside requests, no console errors.

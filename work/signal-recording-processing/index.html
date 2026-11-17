@@ -102,11 +102,29 @@
 
   .bar-right { display: flex; align-items: center; gap: 18px; }
 
-  /* FEAT-040: a project page set up as a placeholder: the case study hero (same size) without picture or film, only the title over it */
-  .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: color-mix(in srgb, var(--ink) 7%, var(--stage)); color: var(--ink); }
-  .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); }
-  /* as the other case study titles; on narrow phones and wide screens a little smaller, so the longest word (Communication) keeps to one line */
+  /* the case study hero (work/hrtf/): the desk photo full-bleed, dark gradient below, the title over it */
+  .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #1a1714; color: #f4f1ec; }
+  .hero .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; transform-origin: 50% 60%; will-change: transform; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,17,14,0) 40%, rgba(20,17,14,.74) 100%); pointer-events: none; }
+  .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
+  /* FEAT-040 title size: on narrow phones and wide screens a little smaller than the other case study titles */
   h1 { margin: 0 0 0 -0.06em; font: 300 min(clamp(44px, 9vw, 132px), 10.5vw, 122px)/0.9 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
+
+  /* footage: the studio photos in the bento grid of work/steel-materials/, no captions */
+  .footage { padding: clamp(40px, 6vw, 72px) 0 clamp(56px, 8vw, 104px); }
+  .bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: clamp(120px, 13vw, 200px); grid-auto-flow: dense; gap: clamp(8px, 1.2vw, 14px); }
+  .tile { position: relative; overflow: hidden; border-radius: 10px; background: #15171a; grid-column: span 2; }
+  .tile.big { grid-column: span 4; grid-row: span 2; }
+  .tile.third { grid-row: span 2; }
+  .tile.half { grid-column: span 3; grid-row: span 2; }
+  .tile > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
+  .tile:hover > img { transform: scale(1.03); }
+  @media (max-width: 720px) {
+    .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 30vw; }
+    .tile { grid-column: span 1; grid-row: span 1; }
+    .tile.big, .tile.half { grid-column: span 2; grid-row: span 2; }
+    .tile.third { grid-column: span 2; grid-row: span 3; }
+  }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
@@ -135,10 +153,22 @@
 
 <main>
   <section class="hero" aria-label="Signal Recording &amp; Processing">
+    <img class="poster" alt="A studio desk with two screens, a pair of monitor speakers and a microphone on an arm, in front of a wall of dark wooden slats" src="media/desk.webp">
     <div class="wrap hero-text">
       <h1>Signal Recording &amp; Processing</h1>
     </div>
   </section>
+
+  <div class="wrap">
+    <section class="footage" aria-label="Studio">
+      <div class="bento">
+        <div class="tile big"><img loading="lazy" alt="The studio room: the desk before the slatted wall, a rack of outboard gear, an armchair and a stage piano by the window" src="media/room.webp"></div>
+        <div class="tile third"><img loading="lazy" alt="The keys of a stage piano seen along the keyboard, sharp in the distance and blurred up close" src="media/keys.webp" style="object-position: 50% 40%"></div>
+        <div class="tile half"><img loading="lazy" alt="A tube channel strip in the rack, its meter lit amber" src="media/preamp.webp"></div>
+        <div class="tile half"><img loading="lazy" alt="The other side of the room: a record player on an old cabinet, a glazed double door and a stack of old television sets" src="media/room-door.webp"></div>
+      </div>
+    </section>
+  </div>
 </main>
 
 <script>
@@ -244,6 +274,20 @@
     var onSite = from && from.origin === root.origin && from.pathname.indexOf(root.pathname) === 0 && from.pathname !== location.pathname;
     if (onSite && history.length > depth() + 1) { e.preventDefault(); history.go(-(depth() + 1)); }
   });
+})();
+</script>
+<script>
+// the hero photo zooms and drifts a little while scrolling past it (as on work/hrtf/), not with reduced motion
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hero = document.querySelector('.hero'), heroMedia = hero.querySelectorAll('.poster');
+  function onScroll() {
+    var y = window.scrollY, h = hero.offsetHeight;
+    if (!reduce && y < h) { var k = 1 + Math.min(y / h, 1) * 0.08; heroMedia.forEach(function (m) { m.style.transform = 'scale(' + k + ') translateY(' + (y * 0.12) + 'px)'; }); }
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  onScroll();
 })();
 </script>
 </body>
