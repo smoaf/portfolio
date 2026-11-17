@@ -13,10 +13,12 @@ Written 17 Nov 2026 from the session with Smo. This file is the reference for ev
 Smo: "I want the page as it was before. After the company sections I want all the footage that we have for it grouped where it makes sense. Cutouts of the movies for different scenes. Almost no text, just structure and good look and feel." This replaces section 3 for now.
 
 - Until "The company": unchanged.
-- After it, three groups, each a grid of pictures and film scenes, no captions:
-  - Strip and plate: the marked coil, the coil store, the strip line photo, rows of coils, the warehouse hall, the heavy plate hall.
-  - Lab and testing: three scenes of machining a tensile test specimen, two scenes of the lab, the calliper photo.
-  - Across the group: the Linz sign, the rails, the car body parts.
+- After it, four groups along the steel route, one tile per subject, nothing twice, no captions:
+  - The site: the electric arc furnace building in Linz (Smo's film, the orbit scene, large), the Linz sign.
+  - Strip and plate: the coil store (film, large), the strip line, the heavy plate hall.
+  - Testing: the tensile test specimen being machined (film, the scene behind the window, large), the calliper photo.
+  - Products: the car body part (Smo's photo, large), the car body robots, the rails.
+- Smo: nothing below repeats the hero film (the marked coil, rows of coils, the warehouse hall). The lab scenes are out ("office images, irrelevant").
 - Each film tile plays its own scene in a loop.
 - Removed: the steps, the three text sections, "From slab to product" and "The group" slider.
 - Credit line: Photos and films: voestalpine AG, who provide them for public use on voestalpine.com. This is a personal portfolio page, not an official voestalpine page.
