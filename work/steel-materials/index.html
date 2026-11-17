@@ -204,12 +204,12 @@
   .bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: clamp(120px, 13vw, 200px); grid-auto-flow: dense; gap: clamp(8px, 1.2vw, 14px); }
   .tile { position: relative; overflow: hidden; border-radius: 10px; background: #15171a; grid-column: span 2; }
   .tile.big { grid-column: span 4; grid-row: span 2; }
-  .tile.third { grid-row: span 2; }
+  .tile.half { grid-column: span 3; grid-row: span 2; }
   .tile > img, .tile > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
   .tile:hover > img, .tile:hover > video { transform: scale(1.03); }
   @media (max-width: 720px) {
     .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 30vw; }
-    .tile, .tile.third { grid-column: span 1; grid-row: span 1; }
+    .tile, .tile.half { grid-column: span 1; grid-row: span 1; }
     .tile.big { grid-column: span 2; grid-row: span 2; }
     .tile.pw { grid-column: span 2; grid-row: span 2; }
   }
@@ -298,36 +298,41 @@
       </div>
     </div>
 
+    <section class="footage" aria-labelledby="h-footage-0">
+      <h2 id="h-footage-0">Steelmaking</h2>
+      <div class="bento">
+        <div class="tile big"><video muted playsinline preload="none" aria-label="Aerial view of the electric arc furnace building in Linz" data-start="20.7" data-src="media/eaf-linz.mp4#t=20.7"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="Aerial view of the Linz steelworks" data-start="0.1" data-end="10.1" data-src="media/eaf-linz.mp4#t=0.1"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="The electric arc furnace building from the air" data-start="10.3" data-end="20.5" data-src="media/eaf-linz.mp4#t=10.3"></video></div>
+      </div>
+    </section>
+
     <section class="footage" aria-labelledby="h-footage-1">
       <h2 id="h-footage-1">Strip and plate</h2>
       <div class="bento">
-        <div class="tile big"><video muted playsinline preload="none" aria-label="A marked coil of steel strip" data-start="12.8" data-end="36.7" data-src="media/coils.mp4#t=12.8"></video></div>
-        <div class="tile sm"><video muted playsinline preload="none" aria-label="A store of steel strip coils" data-start="0.1" data-end="12.6" data-src="media/coils.mp4#t=0.1"></video></div>
+        <div class="tile big"><video muted playsinline preload="none" aria-label="A store of steel strip coils" data-start="0.1" data-end="12.6" data-src="media/coils.mp4#t=0.1"></video></div>
         <div class="tile sm"><img loading="lazy" alt="A strip processing line" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
-        <div class="tile sm"><video muted playsinline preload="none" aria-label="Rows of coils" data-start="36.9" data-end="41.5" data-src="media/coils.mp4#t=36.9"></video></div>
-        <div class="tile sm"><video muted playsinline preload="none" aria-label="A coil warehouse hall" data-start="42" data-src="media/coils.mp4#t=42"></video></div>
-        <div class="tile sm pw"><img loading="lazy" alt="Stacks of heavy plate in a hall" src="media/grobblech-18.jpg"></div>
+        <div class="tile sm"><img loading="lazy" alt="Stacks of heavy plate in a hall" src="media/grobblech-18.jpg"></div>
       </div>
     </section>
 
     <section class="footage" aria-labelledby="h-footage-2">
-      <h2 id="h-footage-2">Lab and testing</h2>
+      <h2 id="h-footage-2">Testing</h2>
       <div class="bento">
-        <div class="tile sm"><video muted playsinline preload="none" aria-label="At the machine" data-start="0" data-end="6.8" data-src="media/milling.mp4#t=0"></video></div>
-        <div class="tile big"><video muted playsinline preload="none" aria-label="A tensile test specimen being machined" data-start="7" data-end="13.5" data-src="media/milling.mp4#t=7"></video></div>
-        <div class="tile sm"><video muted playsinline preload="none" aria-label="Close-up of the specimen being machined" data-start="13.7" data-src="media/milling.mp4#t=13.7"></video></div>
-        <div class="tile sm"><video muted playsinline preload="none" aria-label="A materials lab" data-start="0" data-end="11" data-src="media/lab.mp4#t=0"></video></div>
-        <div class="tile sm"><video muted playsinline preload="none" aria-label="Working at a lab desk" data-start="11.2" data-src="media/lab.mp4#t=11.2"></video></div>
-        <div class="tile sm pw"><img loading="lazy" alt="A metal part being measured with a calliper" src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg"></div>
+        <div class="tile half"><video muted playsinline preload="none" aria-label="A tensile test specimen being machined" data-start="7" data-end="13.5" data-src="media/milling.mp4#t=7"></video></div>
+        <div class="tile half"><video muted playsinline preload="none" aria-label="Close-up of the specimen being machined" data-start="13.7" data-src="media/milling.mp4#t=13.7"></video></div>
+        <div class="tile half"><video muted playsinline preload="none" aria-label="At the machine" data-start="0" data-end="6.8" data-src="media/milling.mp4#t=0"></video></div>
+        <div class="tile half"><img loading="lazy" alt="A metal part being measured with a calliper" src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg"></div>
       </div>
     </section>
 
     <section class="footage" aria-labelledby="h-footage-3">
       <h2 id="h-footage-3">Across the group</h2>
       <div class="bento">
-        <div class="tile third pw"><img loading="lazy" alt="The voestalpine sign at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
-        <div class="tile third"><img loading="lazy" alt="Rails on the cooling bed of a rolling mill" src="media/va-med-rail-technology-2016.jpg"></div>
-        <div class="tile third"><img loading="lazy" alt="Robots handling car body parts" src="media/automotive-components-linz-c-voestalpine.jpg"></div>
+        <div class="tile half"><img loading="lazy" alt="The voestalpine sign at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
+        <div class="tile half"><img loading="lazy" alt="A formed steel car body part" src="media/car-body-part.jpg"></div>
+        <div class="tile half"><img loading="lazy" alt="Rails on the cooling bed of a rolling mill" src="media/va-med-rail-technology-2016.jpg"></div>
+        <div class="tile half"><img loading="lazy" alt="Robots handling car body parts" src="media/automotive-components-linz-c-voestalpine.jpg"></div>
       </div>
     </section>
   </div>
