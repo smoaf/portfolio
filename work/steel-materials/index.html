@@ -181,7 +181,7 @@
   .view-stage { height: calc(100svh - 380px); min-height: 220px; background: #15171a; border-radius: 10px; overflow: hidden; }
   .slides { display: flex; height: 100%; will-change: transform; }
   .slide { flex: 0 0 auto; height: 100%; transition: opacity .2s; }
-  .slide img { width: 100%; height: 100%; object-fit: cover; }
+  .slide img, .slide video { width: 100%; height: 100%; object-fit: cover; }
   .views-foot { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px clamp(20px, 4vw, 48px); align-items: start; margin: 14px 0 0; }
   .thumbs { display: flex; align-items: flex-start; gap: 10px; }
   .thumbs button { width: 72px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink-soft); font: 500 12px/1.3 var(--font); text-align: center; }
@@ -283,172 +283,56 @@
     </div>
 
     <section class="does" aria-labelledby="h-nc">
-      <h2 id="h-nc">Non-conforming material</h2>
-      <p class="does-intro">When material misses its specification, the question is what it can still be. The aim was always to get it back on an order instead of scrapping it.</p>
+      <h2 id="h-nc">Where I worked</h2>
       <div class="scrolly">
         <ol class="steps" id="steps">
-          <li class="step on" data-i="0"><button type="button">Detected</button><p>Camera surface inspection, inline measurement data and lab test values flag what deviates from the EN standard or the customer specification.</p></li>
-          <li class="step" data-i="1"><button type="button">Judged and classified</button><p>Does the flagged defect really matter for this material, this standard and this customer? Classifying it also tuned what the system flags next time.</p></li>
-          <li class="step" data-i="2"><button type="button">Released or blocked</button><p>Material that fits is released. Material that does not is blocked, and its causes followed up.</p></li>
-          <li class="step" data-i="3"><button type="button">Made conform again</button><p>Re-testing, trimming and slitting, reprocessing on a line or sorting out the affected sections.</p></li>
-          <li class="step" data-i="4"><button type="button">Back on an order</button><p>Where it could not meet its original order, it moved to a broader standard, another customer specification or a less specialised use.</p></li>
+          <li class="step on" data-i="0"><button type="button">voestalpine in Linz</button><p>My workplace for eight years.</p></li>
+          <li class="step" data-i="1"><button type="button">Strip from the lines</button><p>Hot rolled, cold rolled and galvanized strip that missed its specification was my daily work.</p></li>
+          <li class="step" data-i="2"><button type="button">Assessing coils</button><p>I assessed each case, decided whether to release or block it and found a way back onto an order.</p></li>
+          <li class="step" data-i="3"><button type="button">Heavy plate</button><p>At voestalpine Grobblech I also worked on heavy plate.</p></li>
+          <li class="step" data-i="4"><button type="button">Moving material</button><p>Material moved between lines, warehouses and plants, coordinated with sales, logistics and the customer.</p></li>
+          <li class="step" data-i="5"><button type="button">The lab</button><p>I read and judged lab test values against standards and customer specifications.</p></li>
         </ol>
         <div class="stage" id="stage">
-          <div class="m on"><img alt="" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
+          <div class="m on"><img alt="The voestalpine sign on a building at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
+          <div class="m"><img loading="lazy" alt="A galvanizing line at voestalpine in Linz" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
           <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="12.8" data-end="36.7" data-src="media/coils.mp4#t=12.8"></video></div>
-          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="36.9" data-end="41.5" data-src="media/coils.mp4#t=36.9"></video></div>
-          <div class="m"><img loading="lazy" alt="" src="media/grobblech-18.jpg"></div>
+          <div class="m"><img loading="lazy" alt="Stacks of heavy plate in a hall at voestalpine Grobblech" src="media/grobblech-18.jpg"></div>
           <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-start="42" data-src="media/coils.mp4#t=42"></video></div>
+          <div class="m"><video muted playsinline preload="none" aria-hidden="true" data-src="media/lab.mp4" poster="media/lab-poster.jpg"></video></div>
         </div>
       </div>
     </section>
 
-    <section class="part" aria-labelledby="h-materials">
-      <h2 id="h-materials">Materials and testing</h2>
-      <div>
-        <div class="media"><video muted playsinline preload="none" aria-label="A materials lab at voestalpine in Linz" poster="media/lab-poster.jpg" data-src="media/lab.mp4"></video></div>
-        <p>A quality decision is only as good as the understanding behind it. My Matura in materials technology gave me that understanding, and the daily work put it to use.</p>
-        <ul class="list">
-          <li>Metals, the bulk of it: how composition and structure set strength, toughness and formability</li>
-          <li>Plastics and other materials alongside</li>
-          <li>Destructive testing: tensile, hardness, impact, metallography</li>
-          <li>Non-destructive testing: ultrasonic, magnetic particle, dye penetrant, X&#8209;ray</li>
-          <li>Defects and where they come from</li>
-        </ul>
-        <p>At work I read and judged lab test values and inline measurement data against EN standards and customer specifications, judged whether material that misses one specification still meets another, and followed up on the causes of defects.</p>
-      </div>
-    </section>
-
-    <section class="part" aria-labelledby="h-manufacturing">
-      <h2 id="h-manufacturing">Manufacturing</h2>
-      <div>
-        <div class="media"><video muted playsinline preload="none" aria-label="A part being milled on a machining centre" poster="media/milling-poster.jpg" data-src="media/milling.mp4"></video></div>
-        <p>How something is made decides what can go wrong with it, and what can still be fixed. In evening school I learned the processes, at work I saw them on the lines.</p>
-        <ul class="list">
-          <li>Casting</li>
-          <li>Forming: rolling, deep drawing, bending</li>
-          <li>Machining: turning, milling</li>
-          <li>Welding</li>
-          <li>Plastics processing: injection moulding, extrusion</li>
-        </ul>
-        <p>On the job I worked with material from every stage of the steel route in Linz, brought it back into specification by trimming, slitting and reprocessing on the lines, and knew what each product can be used for, which is what makes a new order possible.</p>
-      </div>
-    </section>
-
-    <section class="part" aria-labelledby="h-business">
-      <h2 id="h-business">Business, systems and people</h2>
-      <div>
-        <div class="media"><img loading="lazy" alt="The voestalpine sign on a building at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
-        <p>A steel plant is also a large organisation. Material only moves when departments, systems and people work together, and non-conforming material touches almost all of them.</p>
-        <p>My apprenticeship took me through purchasing, sales, customer service and quality at voestalpine Stahl, voestalpine Grobblech and voestalpine Steel Service Center. I learned how these departments depend on each other, how orders, material and quality data run through the systems of a large company, and how material is processed and moved from the line to the store to the customer.</p>
-        <p>In quality I put that to use. I coordinated non-conforming material between quality, production, the lab, sales, customer service and logistics, moved and tracked material between lines, stores and plants, and was in contact with customers on deviations, complaints and agreements.</p>
-      </div>
-    </section>
-
-    <section class="part" aria-labelledby="h-products">
-      <h2 id="h-products">From slab to product</h2>
-      <div>
-        <p>In Linz, steel comes from the blast furnace and the LD converter, a process invented there, and is cast into slabs. From the slab it takes one of two routes. Pick a product to see how it is made, what it is tested for and where it can go wrong.</p>
-        <div class="route" role="tablist" aria-label="Products">
-          <ol class="line" role="none">
-            <li role="none" class="label">Steel</li>
-            <li role="none" class="proc">Blast furnace</li>
-            <li role="none" class="proc">LD converter</li>
-            <li role="none" class="proc">Continuous casting</li>
-            <li role="none" class="proc">Slab</li>
-          </ol>
-          <ol class="line" role="none">
-            <li role="none" class="label">Strip</li>
-            <li role="none" class="proc">Hot strip mill</li>
-            <li role="none"><button type="button" role="tab" id="pt0" aria-selected="true" aria-controls="ps0" tabindex="0">Hot rolled</button></li>
-            <li role="none" class="proc">Cold rolling, annealing</li>
-            <li role="none"><button type="button" role="tab" id="pt1" aria-selected="false" aria-controls="ps1" tabindex="-1">Cold rolled</button></li>
-            <li role="none" class="proc">Zinc coating</li>
-            <li role="none"><button type="button" role="tab" id="pt2" aria-selected="false" aria-controls="ps2" tabindex="-1">Galvanized</button></li>
-          </ol>
-          <ol class="line" role="none">
-            <li role="none" class="label">Plate</li>
-            <li role="none" class="proc">Plate mill</li>
-            <li role="none"><button type="button" role="tab" id="pt3" aria-selected="false" aria-controls="ps3" tabindex="-1">Heavy plate</button></li>
-          </ol>
-        </div>
-
-        <div class="sheet" role="tabpanel" id="ps0" aria-labelledby="pt0">
-          <div class="media"><video muted playsinline preload="none" aria-hidden="true" data-start="0" data-end="12.6" data-src="media/coils.mp4"></video></div>
-          <dl class="specs">
-            <dt>How it is made</dt><dd>Slabs are reheated and rolled on the hot strip mill into strip, then coiled while hot. Pickling in acid removes the scale.</dd>
-            <dt>Used for</dt><dd>Structural parts, tubes, vehicle chassis, and as the starting material for cold rolling.</dd>
-            <dt>Tested for</dt><dd>Yield and tensile strength, elongation, thickness, width, flatness and surface.</dd>
-            <dt>EN standards</dt><dd>EN 10111, EN 10025-2, EN 10149-2. Tolerances to EN 10051.</dd>
-            <dt>Customer specifications</dt><dd>Tighter limits for mechanical values, tolerances or surface, agreed per customer.</dd>
-            <dt>Typical deviations</dt><dd>Mechanical values out of range, thickness or flatness, scale and other surface defects.</dd>
-          </dl>
-        </div>
-        <div class="sheet" role="tabpanel" id="ps1" aria-labelledby="pt1" hidden>
-          <div class="media"><img loading="lazy" alt="" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
-          <dl class="specs">
-            <dt>How it is made</dt><dd>Pickled hot strip is rolled thinner at room temperature, which hardens it. Annealing restores formability, and a skin pass sets surface and flatness.</dd>
-            <dt>Used for</dt><dd>Car body parts, household appliances, furniture and deep drawn parts.</dd>
-            <dt>Tested for</dt><dd>Yield and tensile strength, elongation, r and n values for formability, surface quality, roughness and flatness.</dd>
-            <dt>EN standards</dt><dd>EN 10130 for the DC grades, EN 10268 for higher strength. Tolerances to EN 10131.</dd>
-            <dt>Customer specifications</dt><dd>Forming values, surface class and roughness agreed per customer, often for visible car body parts.</dd>
-            <dt>Typical deviations</dt><dd>Forming values out of range, surface defects, flatness.</dd>
-          </dl>
-        </div>
-        <div class="sheet" role="tabpanel" id="ps2" aria-labelledby="pt2" hidden>
-          <div class="media"><video muted playsinline preload="none" aria-hidden="true" data-start="36.9" data-end="41.5" data-src="media/coils.mp4#t=36.9"></video></div>
-          <dl class="specs">
-            <dt>How it is made</dt><dd>Cold rolled strip is annealed and run through a bath of molten zinc on the hot dip galvanizing line, or zinc coated electrolytically.</dd>
-            <dt>Used for</dt><dd>Car bodies, construction and appliances.</dd>
-            <dt>Tested for</dt><dd>Coating mass, coating adhesion, the mechanical values of the base steel and surface quality.</dd>
-            <dt>EN standards</dt><dd>EN 10346 for hot dip coating, for example DX51D+Z275. EN 10152 for electrolytic coating. Tolerances to EN 10143.</dd>
-            <dt>Customer specifications</dt><dd>Coating mass, surface quality and base steel values agreed per customer.</dd>
-            <dt>Typical deviations</dt><dd>Coating mass, zinc surface defects, mechanical values of the base steel.</dd>
-          </dl>
-        </div>
-        <div class="sheet" role="tabpanel" id="ps3" aria-labelledby="pt3" hidden>
-          <div class="media"><img loading="lazy" alt="" src="media/grobblech-18.jpg"></div>
-          <dl class="specs">
-            <dt>How it is made</dt><dd>Slabs are rolled on the plate mill into thick plates, often thermomechanically rolled or heat treated, then cut, levelled and tested.</dd>
-            <dt>Used for</dt><dd>Pipelines, wind towers, shipbuilding, bridges and construction machinery.</dd>
-            <dt>Tested for</dt><dd>Yield and tensile strength, toughness in the Charpy impact test, internal defects by ultrasonic testing, thickness and flatness.</dd>
-            <dt>EN standards</dt><dd>EN 10025, EN 10028 for pressure vessels. Tolerances to EN 10029, ultrasonic testing to EN 10160.</dd>
-            <dt>Customer specifications</dt><dd>Toughness at set temperatures, ultrasonic class and tolerances agreed per project.</dd>
-            <dt>Typical deviations</dt><dd>Strength or toughness values, internal defects, flatness, surface.</dd>
-          </dl>
-        </div>
-        <p class="spec-note">Standards, specifications and uses are typical examples for each product group, not specific orders.</p>
-      </div>
-    </section>
   </div>
 
   <section class="views" id="views" aria-labelledby="h-group">
     <div class="views-pin">
       <div class="wrap">
-        <h2 id="h-group">The group</h2>
-        <div class="view-stage" id="view-stage" aria-label="The four divisions of voestalpine">
+        <h2 id="h-group">What I learned at HTL Andorf</h2>
+        <div class="view-stage" id="view-stage" aria-label="What I learned">
           <div class="slides" id="slides">
-            <div class="slide"><img src="media/grobblech-18.jpg" alt="Stacks of heavy plate in a hall"></div>
+            <div class="slide"><video muted playsinline preload="none" aria-label="A tensile test specimen being machined" poster="media/milling-poster.jpg" data-src="media/milling.mp4"></video></div>
             <div class="slide"><img src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg" alt="A metal part being measured with a calliper" loading="lazy"></div>
             <div class="slide"><img src="media/va-med-rail-technology-2016.jpg" alt="Rails on the cooling bed of a rolling mill" loading="lazy"></div>
             <div class="slide"><img src="media/automotive-components-linz-c-voestalpine.jpg" alt="Robots handling car body parts" loading="lazy"></div>
           </div>
         </div>
         <div class="views-foot">
-          <div class="thumbs" id="thumbs" aria-label="Divisions">
-            <button type="button" aria-pressed="true" data-name="Steel Division, where I worked" data-text="High quality steel strip, heavy plate and cast products for energy. For automotive, housing, machinery and energy."><img src="media/grobblech-18.jpg" alt="" loading="lazy"><span>Steel</span></button>
-            <button type="button" aria-pressed="false" data-name="High Performance Metals Division" data-text="Tool and high speed steels, special alloys, additive manufactured parts, heat and surface treatment. For aerospace, energy, automotive suppliers and mechanical engineering."><img src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg" alt="" loading="lazy"><span>High Perf. Metals</span></button>
-            <button type="button" aria-pressed="false" data-name="Metal Engineering Division" data-text="Railway systems, quality wire, welding consumables and seamless tubes. For rail infrastructure, energy, automotive and construction."><img src="media/va-med-rail-technology-2016.jpg" alt="" loading="lazy"><span>Metal Engineering</span></button>
-            <button type="button" aria-pressed="false" data-name="Metal Forming Division" data-text="Sections, tubes, precision strip and ready to install components such as car body parts. For automotive, storage technology, road safety and construction."><img src="media/automotive-components-linz-c-voestalpine.jpg" alt="" loading="lazy"><span>Metal Forming</span></button>
+          <div class="thumbs" id="thumbs" aria-label="Subjects">
+            <button type="button" aria-pressed="true" data-name="Destructive testing" data-text="Machining a tensile test specimen. I learned tensile, hardness and impact testing and metallography."><img src="media/milling-poster.jpg" alt="" loading="lazy"><span>Testing</span></button>
+            <button type="button" aria-pressed="false" data-name="Machining and measuring" data-text="Turning, milling and checking the finished part."><img src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg" alt="" loading="lazy"><span>Machining</span></button>
+            <button type="button" aria-pressed="false" data-name="Rolling" data-text="How rolling forms steel, from slab to strip, plate and rail."><img src="media/va-med-rail-technology-2016.jpg" alt="" loading="lazy"><span>Rolling</span></button>
+            <button type="button" aria-pressed="false" data-name="Forming" data-text="Deep drawing and bending, the processes behind car body parts made from cold rolled and galvanized strip."><img src="media/automotive-components-linz-c-voestalpine.jpg" alt="" loading="lazy"><span>Forming</span></button>
           </div>
-          <p class="div-text" id="div-text" aria-live="polite"><b>Steel Division, where I worked</b><span>High quality steel strip, heavy plate and cast products for energy. For automotive, housing, machinery and energy.</span></p>
+          <p class="div-text" id="div-text" aria-live="polite"><b>Destructive testing</b><span>Machining a tensile test specimen. I learned tensile, hardness and impact testing and metallography.</span></p>
         </div>
       </div>
     </div>
   </section>
 
   <div class="wrap">
-    <p class="credit-note">Copyright: voestalpine AG, Source: voestalpine.com. All photos and films from <a href="https://www.voestalpine.com/group/en/media/multimedia/" target="_blank" rel="noopener">voestalpine.com</a>. Company figures and divisions from voestalpine.com and the group's reports. Standards and test values describe the product groups in general. This page describes my own work as part of the team and is not an official voestalpine page.</p>
+    <p class="credit-note">Photos and films: voestalpine AG, who provide them for public use on <a href="https://www.voestalpine.com/group/en/media/multimedia/" target="_blank" rel="noopener">voestalpine.com</a>. This is a personal portfolio page, not an official voestalpine page.</p>
   </div>
 </main>
 
