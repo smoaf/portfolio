@@ -117,7 +117,8 @@
   .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
   .role h2 { margin: 0 0 10px; font: 700 clamp(28px, 3vw, 38px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
   .role p { margin: 0 0 12px; max-width: 34rem; }
-  .role.company { padding-top: clamp(48px, 6vw, 80px); align-items: start; row-gap: 0; }
+  .role.company { display: block; padding-top: clamp(48px, 6vw, 80px); }
+  .role.company p { max-width: none; }
   .role.company .actions { padding-top: 8px; }
   .roles { margin: 6px 0 0; }
   .roles dt { font-weight: 650; padding-top: 16px; border-top: 1px solid var(--rule); }
