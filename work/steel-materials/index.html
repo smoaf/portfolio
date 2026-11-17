@@ -120,44 +120,118 @@
   .role.company { display: block; padding-top: clamp(48px, 6vw, 80px); }
   .role.company p { max-width: none; }
   .role.company .actions { padding-top: 8px; }
-  .role .sign { aspect-ratio: 4 / 5; margin: 6px 0 0; }
+  .roles { margin: 6px 0 0; }
+  .roles dt { font-weight: 650; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .roles dt:first-child { padding-top: 0; border-top: 0; }
+  .roles dd { margin: 4px 0 16px; color: var(--ink-soft); font-size: 16px; }
   .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: clamp(32px, 4vw, 48px) 0 0; }
   .actions a { font-size: 16px; }
 
-  /* chapters: text, then pictures; the media boxes keep the footage look */
-  .chapter { padding: clamp(56px, 8vw, 104px) 0 0; }
-  .chapter h2 { margin: 0 0 12px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
-  .chapter p { margin: 0 0 12px; max-width: 46rem; }
-  .media { position: relative; margin: 0; border-radius: 8px; overflow: hidden; background: #15171a; aspect-ratio: 4 / 3; }
+  /* non-conforming material: the steps scroll on the left, the picture on the right follows the step in the middle of the screen */
+  .does { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .does h2 { margin: 0 0 12px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .does-intro { margin: 0; max-width: 40rem; }
+  .scrolly { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: clamp(24px, 4vw, 56px); align-items: start; margin-top: clamp(24px, 4vw, 48px); }
+  .steps { list-style: none; margin: 0; padding: 18vh 0 30vh; }
+  .step { padding: 0 0 0 18px; margin: 0 0 22vh; border-left: 2px solid var(--rule); transition: border-color .25s; }
+  .step:last-child { margin-bottom: 0; }
+  .step button { background: none; border: 0; padding: 0; font: 650 clamp(20px, 2vw, 26px)/1.2 var(--font); font-stretch: 106%; font-variation-settings: 'wdth' 106; color: var(--ink-soft); cursor: pointer; text-align: left; transition: color .25s; }
+  .step p { margin: 6px 0 0; font-size: 16px; color: var(--ink-soft); max-width: 26rem; opacity: .55; transition: opacity .25s; }
+  .step.on { border-left-color: var(--ink); }
+  .step.on button { color: var(--ink); }
+  .step.on p { opacity: 1; }
+  .stage { position: sticky; top: calc(50vh - min(28vw, 330px) / 2 + 30px); aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; background: #111; }
+  .stage .m { position: absolute; inset: 0; opacity: 0; transition: opacity .35s; overflow: hidden; }
+  .stage .m.on { opacity: 1; }
+  .stage .m > img, .stage .m > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  /* content parts: heading left, text right, as CONTROL CENTER and Specs on the CONNECT 2 page */
+  .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  .part h2 { margin: 0; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .part p { margin: 0 0 14px; max-width: 40rem; }
+  .media { position: relative; margin: 0 0 22px; border-radius: 8px; overflow: hidden; background: #15171a; aspect-ratio: 16 / 9; }
   .media > img, .media > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  figure { margin: 0; }
-  figcaption { margin-top: 8px; font-size: 14px; color: var(--ink-soft); }
-  .trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 2vw, 24px); margin-top: clamp(20px, 3vw, 32px); }
-  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); align-items: center; }
-  .pair p { max-width: 34rem; }
-  .flow { aspect-ratio: 960 / 580; }
-  .flow svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .flow .lane { stroke: rgba(233, 230, 224, 0.14); stroke-width: 1; }
-  .flow .lane-t { fill: #a19d96; font: 500 17px var(--font-data); letter-spacing: 0.04em; }
-  .flow .step-t { fill: #e9e6e0; font: 600 18px var(--font); }
-  .flow .link { stroke: rgba(233, 230, 224, 0.45); stroke-width: 1.5; stroke-dasharray: 4 5; }
-  .flow .path { stroke: #e09a62; stroke-width: 4; stroke-linecap: round; }
-  .flow .node { fill: #e09a62; stroke: #15171a; stroke-width: 3; }
-  .flow .dot { fill: #e9e6e0; }
-  .strengths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px clamp(20px, 4vw, 56px); margin-top: clamp(16px, 2vw, 24px); }
-  .strengths > div { border-top: 1px solid var(--rule); padding-top: 16px; }
-  .strengths h3 { margin: 0 0 6px; font: 650 clamp(19px, 1.8vw, 22px)/1.2 var(--font); }
-  .strengths p { margin: 0; color: var(--ink-soft); }
+  .list { margin: 4px 0 18px; padding-left: 20px; max-width: 40rem; }
+  .list li + li { margin-top: 6px; }
+
+  /* from slab to product: the route as lines of stations, the products are the stops you can pick */
+  .route { display: grid; gap: 10px; margin: 6px 0 20px; }
+  .line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; margin: 0; padding: 0; list-style: none; }
+  .line li { display: flex; align-items: center; font-size: 14px; color: var(--ink-soft); }
+  .line li + li::before { content: ""; width: clamp(10px, 1.6vw, 22px); height: 1px; background: var(--ink-soft); margin: 0 6px; opacity: .6; }
+  .line .label { min-width: 4.5rem; font-weight: 650; color: var(--ink); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .line .label + li::before { display: none; }
+  .line .proc { padding: 6px 0; }
+  .line button { font: 500 15px/1 var(--font); padding: 10px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--rule); background: none; color: var(--ink-soft); cursor: pointer; }
+  .line button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--stage); }
+  .line button:hover { border-color: var(--ink); }
+  .sheet[hidden] { display: none; }
+  .sheet .media { aspect-ratio: 3 / 2; margin-bottom: 16px; }
+  .specs { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); font-size: 16px; }
+  .specs dt, .specs dd { padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .specs dt { color: var(--ink-soft); padding-right: 28px; }
+  .specs dd { margin: 0; }
+  .spec-note { margin: 14px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+  /* the group: pinned while you scroll, the divisions slide by; the small views show where you are and jump there */
+  .views { position: relative; height: 300vh; margin-top: clamp(56px, 8vw, 104px); }
+  .views-pin { position: sticky; top: 0; height: 100svh; display: flex; align-items: center; padding-top: var(--hh, 77px); }
+  .views-pin > .wrap { width: 100%; }
+  .views h2 { margin: 0 0 16px; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .view-stage { height: calc(100svh - 380px); min-height: 220px; background: #15171a; border-radius: 10px; overflow: hidden; }
+  .slides { display: flex; height: 100%; will-change: transform; }
+  .slide { flex: 0 0 auto; height: 100%; transition: opacity .2s; }
+  .slide img, .slide video { width: 100%; height: 100%; object-fit: cover; }
+  .views-foot { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px clamp(20px, 4vw, 48px); align-items: start; margin: 14px 0 0; }
+  .thumbs { display: flex; align-items: flex-start; gap: 10px; }
+  .thumbs button { width: 72px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink-soft); font: 500 12px/1.3 var(--font); text-align: center; }
+  .thumbs img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 6px; opacity: .55; transition: opacity .2s; }
+  .thumbs span { display: block; margin-top: 5px; }
+  .thumbs button[aria-pressed="true"] { color: var(--ink); }
+  .thumbs button[aria-pressed="true"] img { opacity: 1; box-shadow: 0 0 0 2px var(--ink); }
+  .div-text { margin: 0; font-size: 16px; max-width: 34rem; min-height: 4.8em; }
+  .div-text b { display: block; font-weight: 650; }
+  .div-text span { color: var(--ink-soft); }
+  @media (prefers-reduced-motion: reduce) {
+    .views { height: auto; }
+    .views-pin { position: static; height: auto; padding: 0; }
+    .view-stage { height: min(70vh, 640px); }
+  }
+
+  /* footage: grouped, films cut into their scenes; each tile plays its own segment when in view */
+  .footage { padding: clamp(56px, 8vw, 104px) 0 0; }
+  .footage h2 { margin: 0 0 clamp(14px, 2vw, 22px); font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: clamp(120px, 13vw, 200px); grid-auto-flow: dense; gap: clamp(8px, 1.2vw, 14px); }
+  .tile { position: relative; overflow: hidden; border-radius: 10px; background: #15171a; grid-column: span 2; }
+  .tile.big { grid-column: span 4; grid-row: span 2; }
+  .tile.third { grid-row: span 2; }
+  .tile > img, .tile > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
+  .tile:hover > img, .tile:hover > video { transform: scale(1.03); }
+  @media (max-width: 720px) {
+    .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 30vw; }
+    .tile, .tile.third { grid-column: span 1; grid-row: span 1; }
+    .tile.big { grid-column: span 2; grid-row: span 2; }
+    .tile.pw { grid-column: span 2; grid-row: span 2; }
+  }
 
   .credit-note { margin: clamp(64px, 9vw, 120px) 0 0; padding: 24px 0 56px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); max-width: 46rem; }
 
   @media (max-width: 860px) {
-    .role, .pair, .trio, .strengths { grid-template-columns: minmax(0, 1fr); }
-    .role .sign { aspect-ratio: 3 / 2; }
+    .role, .part, .views-foot { grid-template-columns: minmax(0, 1fr); }
+    .view-stage { height: calc(100svh - 470px); }
+    .thumbs { gap: 8px; }
+    .thumbs button { width: 60px; }
+    /* phone: the picture sticks under the header, the steps scroll beneath it */
+    .scrolly { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .stage { order: -1; top: calc(var(--hh, 62px) + 8px); z-index: 2; box-shadow: 0 10px 24px -12px rgba(0,0,0,.35); }
+    .steps { padding: 6vh 0 24vh; }
+    .step { margin-bottom: 16vh; }
+    .line .label { min-width: 100%; margin-bottom: 2px; }
   }
-  @media (max-width: 600px) {
-    .flow .lane-t { font-size: 24px; }
-    .flow .step-t { font-size: 24px; }
+  @media (max-width: 480px) {
+    .specs { grid-template-columns: minmax(0, 1fr); }
+    .specs dt { border-bottom: 0; padding-bottom: 0; }
+    .specs dd { padding-top: 2px; }
   }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
@@ -203,7 +277,16 @@
         <p>For most of my time there I worked in the quality department of voestalpine Stahl on non-conforming material: steel that failed to meet its standard or customer specification. I assessed it, decided what it could still be used for and worked to get it back onto an order. I was also a member of working groups aimed at optimising the entire non-conforming material process.</p>
         <p>Alongside my job I completed the evening programme in materials technology at HTL Andorf, a higher technical college, graduating with the Matura. I studied how steel and plastics are made and processed, starting with casting, how steel grades and their microstructure form, the testing methods, and the problems that can arise in welding and in service.</p>
       </div>
-      <div class="media sign"><img loading="lazy" alt="The voestalpine sign on a building at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
+      <dl class="roles">
+        <dt>Quality and non-conforming material</dt>
+        <dd>EN product standards and customer specifications, surface inspection, lab and inline measurement data, release and blocking, process optimisation.</dd>
+        <dt>Commercial training and coordination</dt>
+        <dd>Bookkeeping, cost accounting, payroll and HR, marketing, purchasing, sales, customer service, logistics and quality. Day to day: coordination between quality, production, the lab, sales, customer service and logistics. Material movements between lines, warehouses and plants. Customer contact on deviations, complaints and concessions.</dd>
+        <dt>Materials and testing</dt>
+        <dd>Mainly metals, also plastics and other materials. Properties, defects and their causes. Destructive testing: tensile, hardness, impact, metallography. Non-destructive testing: ultrasonic, magnetic particle, dye penetrant, X&#8209;ray.</dd>
+        <dt>Manufacturing</dt>
+        <dd>Casting, forming, machining, welding and plastics processing. The steel route from blast furnace to coil and plate.</dd>
+      </dl>
     </div>
     <div class="role company">
       <h2 class="h-company">The company</h2>
@@ -215,94 +298,42 @@
       </div>
     </div>
 
-    <section class="chapter" aria-labelledby="h-deciding">
-      <h2 id="h-deciding">Deciding on material, and understanding it</h2>
-      <p>By day I worked in the quality department of voestalpine Stahl on non-conforming material. I assessed it, decided whether to release or block it and found a way back onto an order instead of scrap, bringing production, the lab, sales, logistics and, where needed, the customer to one decision. In the evenings I studied materials technology at HTL Andorf: how steel and plastics are made, how microstructure forms, why materials fail in welding and in service, and how they are tested. I prepared and examined metallographic sections, learned destructive and non-destructive testing, and applied it directly in my daily decisions.</p>
-      <div class="trio">
-        <figure>
-          <div class="media"><video muted playsinline preload="none" aria-label="Coils of steel strip in a store at voestalpine in Linz" poster="media/hero-poster.jpg" data-start="0" data-end="12.6" data-src="media/coils.mp4"></video></div>
-          <figcaption>Steel strip coils in Linz</figcaption>
-        </figure>
-        <figure>
-          <div class="media"><img loading="lazy" alt="Illustration of an etched steel section: light ferrite grains and dark pearlite" src="media/micrograph-ferrite-pearlite.jpg"></div>
-          <figcaption>Ferrite and pearlite in an etched section (illustration)</figcaption>
-        </figure>
-        <figure>
-          <div class="media"><video muted playsinline preload="none" aria-label="A tensile test specimen being machined in the lab" poster="media/milling-poster.jpg" data-src="media/milling.mp4"></video></div>
-          <figcaption>Machining a tensile test specimen</figcaption>
-        </figure>
+    <section class="footage" aria-labelledby="h-footage-1">
+      <h2 id="h-footage-1">Strip and plate</h2>
+      <div class="bento">
+        <div class="tile big"><video muted playsinline preload="none" aria-label="A marked coil of steel strip" data-start="12.8" data-end="36.7" data-src="media/coils.mp4#t=12.8"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="A store of steel strip coils" data-start="0.1" data-end="12.6" data-src="media/coils.mp4#t=0.1"></video></div>
+        <div class="tile sm"><img loading="lazy" alt="A strip processing line" src="media/hot-dip-galvanizing-line-voestalpine.jpg"></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="Rows of coils" data-start="36.9" data-end="41.5" data-src="media/coils.mp4#t=36.9"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="A coil warehouse hall" data-start="42" data-src="media/coils.mp4#t=42"></video></div>
+        <div class="tile sm pw"><img loading="lazy" alt="Stacks of heavy plate in a hall" src="media/grobblech-18.jpg"></div>
       </div>
     </section>
 
-    <section class="chapter pair" aria-labelledby="h-improving">
-      <div>
-        <h2 id="h-improving">Improving the process</h2>
-        <p>Beyond single cases, I was a member of working groups aimed at optimising the entire non-conforming material process. There I brought in both views, the commercial and the technical, to improve how the whole workflow runs.</p>
+    <section class="footage" aria-labelledby="h-footage-2">
+      <h2 id="h-footage-2">Lab and testing</h2>
+      <div class="bento">
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="At the machine" data-start="0" data-end="6.8" data-src="media/milling.mp4#t=0"></video></div>
+        <div class="tile big"><video muted playsinline preload="none" aria-label="A tensile test specimen being machined" data-start="7" data-end="13.5" data-src="media/milling.mp4#t=7"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="Close-up of the specimen being machined" data-start="13.7" data-src="media/milling.mp4#t=13.7"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="A materials lab" data-start="0" data-end="11" data-src="media/lab.mp4#t=0"></video></div>
+        <div class="tile sm"><video muted playsinline preload="none" aria-label="Working at a lab desk" data-start="11.2" data-src="media/lab.mp4#t=11.2"></video></div>
+        <div class="tile sm pw"><img loading="lazy" alt="A metal part being measured with a calliper" src="media/2016-09-13-eroeffnung-amc-duesseldorf.jpg"></div>
       </div>
-      <figure>
-        <div class="media flow">
-          <svg viewBox="0 0 960 580" role="img" aria-labelledby="flow-t"><title id="flow-t">The non-conforming material workflow: five steps from detected to back on an order, and the departments involved in each</title>
-            <line class="lane" x1="150" y1="150" x2="940" y2="150"/><text class="lane-t" x="24" y="155">Quality</text>
-            <line class="lane" x1="150" y1="225" x2="940" y2="225"/><text class="lane-t" x="24" y="230">Production</text>
-            <line class="lane" x1="150" y1="300" x2="940" y2="300"/><text class="lane-t" x="24" y="305">Lab</text>
-            <line class="lane" x1="150" y1="375" x2="940" y2="375"/><text class="lane-t" x="24" y="380">Sales</text>
-            <line class="lane" x1="150" y1="450" x2="940" y2="450"/><text class="lane-t" x="24" y="455">Logistics</text>
-            <line class="lane" x1="150" y1="525" x2="940" y2="525"/><text class="lane-t" x="24" y="530">Customer</text>
-            <text class="step-t" x="250" y="62" text-anchor="middle">Detected</text>
-            <line class="link" x1="250" y1="150" x2="250" y2="225"/>
-            <line class="link" x1="250" y1="150" x2="250" y2="300"/>
-            <text class="step-t" x="410" y="62" text-anchor="middle">Assessed</text>
-            <line class="link" x1="410" y1="150" x2="410" y2="300"/>
-            <text class="step-t" x="570" y="62" text-anchor="middle">Released</text>
-            <text class="step-t" x="570" y="84" text-anchor="middle">or blocked</text>
-            <line class="link" x1="570" y1="150" x2="570" y2="375"/>
-            <line class="link" x1="570" y1="150" x2="570" y2="450"/>
-            <text class="step-t" x="730" y="62" text-anchor="middle">Made conform</text>
-            <text class="step-t" x="730" y="84" text-anchor="middle">again</text>
-            <line class="link" x1="730" y1="150" x2="730" y2="225"/>
-            <line class="link" x1="730" y1="150" x2="730" y2="300"/>
-            <text class="step-t" x="890" y="62" text-anchor="middle">Back on</text>
-            <text class="step-t" x="890" y="84" text-anchor="middle">an order</text>
-            <line class="link" x1="890" y1="150" x2="890" y2="375"/>
-            <line class="link" x1="890" y1="150" x2="890" y2="450"/>
-            <line class="link" x1="890" y1="150" x2="890" y2="525"/>
-            <line class="path" x1="250" y1="150" x2="410" y2="150"/>
-            <line class="path" x1="410" y1="150" x2="570" y2="150"/>
-            <line class="path" x1="570" y1="150" x2="730" y2="150"/>
-            <line class="path" x1="730" y1="150" x2="890" y2="150"/>
-            <circle class="dot" cx="250" cy="225" r="7"/>
-            <circle class="dot" cx="250" cy="300" r="7"/>
-            <circle class="node" cx="250" cy="150" r="11"/>
-            <circle class="dot" cx="410" cy="300" r="7"/>
-            <circle class="node" cx="410" cy="150" r="11"/>
-            <circle class="dot" cx="570" cy="375" r="7"/>
-            <circle class="dot" cx="570" cy="450" r="7"/>
-            <circle class="node" cx="570" cy="150" r="11"/>
-            <circle class="dot" cx="730" cy="225" r="7"/>
-            <circle class="dot" cx="730" cy="300" r="7"/>
-            <circle class="node" cx="730" cy="150" r="11"/>
-            <circle class="dot" cx="890" cy="375" r="7"/>
-            <circle class="dot" cx="890" cy="450" r="7"/>
-            <circle class="dot" cx="890" cy="525" r="7"/>
-            <circle class="node" cx="890" cy="150" r="11"/>
-            </svg>
-        </div>
-        <figcaption>The workflow across departments (illustration)</figcaption>
-      </figure>
     </section>
 
-    <section class="chapter" aria-labelledby="h-makes">
-      <h2 id="h-makes">What this makes me</h2>
-      <div class="strengths">
-        <div><h3>Translator</h3><p>I turn technical deviations into business decisions and explain them to engineers, sales and customers alike.</p></div>
-        <div><h3>Decision maker</h3><p>I judge with data and standards and take responsibility for the outcome.</p></div>
-        <div><h3>Process improver</h3><p>I see a workflow across departments and help make it work better.</p></div>
+    <section class="footage" aria-labelledby="h-footage-3">
+      <h2 id="h-footage-3">Across the group</h2>
+      <div class="bento">
+        <div class="tile third pw"><img loading="lazy" alt="The voestalpine sign at the Linz site" src="media/ladyvenom-voestalpine-208.jpg"></div>
+        <div class="tile third"><img loading="lazy" alt="Rails on the cooling bed of a rolling mill" src="media/va-med-rail-technology-2016.jpg"></div>
+        <div class="tile third"><img loading="lazy" alt="Robots handling car body parts" src="media/automotive-components-linz-c-voestalpine.jpg"></div>
       </div>
     </section>
   </div>
 
   <div class="wrap">
-    <p class="credit-note">Photos and films: voestalpine AG, who provide them for public use on <a href="https://www.voestalpine.com/group/en/media/multimedia/" target="_blank" rel="noopener">voestalpine.com</a>. The micrograph and the workflow are illustrations. This is a personal portfolio page, not an official voestalpine page.</p>
+    <p class="credit-note">Photos and films: voestalpine AG, who provide them for public use on <a href="https://www.voestalpine.com/group/en/media/multimedia/" target="_blank" rel="noopener">voestalpine.com</a>. This is a personal portfolio page, not an official voestalpine page.</p>
   </div>
 </main>
 
@@ -418,13 +449,18 @@
   // Each film loops its own segment, from data-start to data-end or to the end of the file.
   function load(v) { if (v.dataset.src && !v.src) { v.src = v.dataset.src; } }
   function hidden(v) {
-    return false;
+    var m = v.closest('.stage .m'); if (m && !m.classList.contains('on')) return true;
+    var s = v.closest('.sheet'); return !!(s && s.hidden);
   }
   function play(v) { load(v); if (!reduce) v.play().catch(function () {}); }
   var films = document.querySelectorAll('video[data-src]');
   films.forEach(function (v) {
     var s = +(v.dataset.start || 0), e = v.dataset.end ? +v.dataset.end : 0;
-    if (e) v.addEventListener('timeupdate', function () { if (v.currentTime >= e) v.currentTime = s; });
+    v.addEventListener('loadedmetadata', function () { if (v.currentTime < s) v.currentTime = s; });
+    v.addEventListener('timeupdate', function () {
+      if (v.seeking) return;
+      if ((e && v.currentTime >= e) || v.currentTime < s - 0.5) v.currentTime = s;
+    });
     v.addEventListener('ended', function () { v.currentTime = s; v.play().catch(function () {}); });
   });
   if ('IntersectionObserver' in window) {
