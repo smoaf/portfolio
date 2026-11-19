@@ -31,6 +31,10 @@
   body { margin: 0; background: var(--stage); color: var(--ink); font-family: var(--font-display); overflow: hidden; }
   #stage { position: fixed; inset: 0; }
   #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  /* BUG-032: the still of the last view while the model loads; fades into the live model */
+  #still { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; transition: opacity 0.6s ease-out; }
+  #still.out { opacity: 0; }
+  #still[hidden] { display: none; }
 
 
   .controls {
@@ -418,6 +422,11 @@
 </style>
 
 <div id="stage"></div>
+<img id="still" alt="" aria-hidden="true" hidden>
+<script>
+  // BUG-032: back on the 3D page, a still of the last view sits where the model goes until the model is ready
+  try { var stillSrc = sessionStorage.getItem('station-still'); if (stillSrc) { var st = document.getElementById('still'); st.src = stillSrc; st.hidden = false; } } catch (e) { /* no storage: background as before */ }
+</script>
 <header class="site" id="site">
   <div class="bar">
     <a class="name" href="#" id="home-link" aria-label="Simon Winkler"><span id="name-1">Simon</span><span id="name-2">Winkler</span></a>
@@ -503,6 +512,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { modelBuffer } from './modelcache.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -627,6 +637,14 @@ composer.addPass(new OutputPass());
 
 // --- model
 const status = document.getElementById('status');
+let stationShown = false;                // BUG-032: true once the model is drawn and the loading dots are gone
+// BUG-032: the still of the last view (set by the small script under #stage) fades out when the live model is there
+const still = document.getElementById('still');
+function fadeStill() {
+  if (still.hidden) return;
+  still.classList.add('out');
+  setTimeout(() => { still.hidden = true; still.removeAttribute('src'); }, 700);
+}
 let warming = false;                     // set while the station's shaders are compiled: no draw, the loading dots stay up
 const lightstrips = [];
 // a click on the turbine (from any view it is in) eases the rotor to a stop, the next one back up to speed
@@ -1631,9 +1649,14 @@ const onModel = (gltf) => {
   const ready = renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve();
   Promise.race([ready, new Promise((r) => setTimeout(r, 10000))]).catch(() => {}).then(() => {   // never wait more than 10 s
     warming = false;
+    setPaused(false);                                           // BUG-032: a panel that opened first paused the 3D: draw the model now
     requestAnimationFrame(() => requestAnimationFrame(() => {   // after the first drawn frame, so the screen never sits empty
       status.classList.add('out');
+      stationShown = true;
+      fadeStill();                                              // BUG-032: the still of the last view fades into the live model
       setTimeout(() => { status.hidden = true; tour.loaded(); }, 300);
+      // BUG-032: and pause again behind that panel once the model is on screen
+      setTimeout(() => { if (panel.classList.contains('open')) setPaused(true); }, 800);
     }));
   });
 };
@@ -1647,7 +1670,8 @@ if (window.MODULE_GLB_GZ) {             // preview: gzipped model packed as base
   const bin = Uint8Array.from(atob(window.MODULE_GLB), (c) => c.charCodeAt(0));
   loader.parse(bin.buffer, '', onModel, onFail);
 } else {
-  loader.load('arrangement_v7.glb', onModel, undefined, onFail);
+  // BUG-032: after the first visit the model is read from the device (modelcache.js), not downloaded again
+  modelBuffer('arrangement_v7.glb').then((buf) => loader.parse(buf, '', onModel, onFail)).catch(onFail);
 }
 
 // --- showroom roof: a jalousie of slats that turn open and closed in a wave
@@ -1888,16 +1912,20 @@ function enter(p) {
   setTip(null);
   showNav(p);
   if (p.onEnter) p.onEnter();
+  // BUG-032: arriving before the model is on screen (back from a sub page): no flight, the panel opens at once
+  const early = !stationShown;
+  const arrive = () => { if (!(early && panel.classList.contains('open'))) openPanel(p.id); };
   const v = p.view;
   if (v.type === 'inside') {
     const eye = new THREE.Vector3(...v.eye), at = new THREE.Vector3(...v.look);
     const d = at.clone().sub(eye).normalize();
     look.eye.copy(eye); look.yaw = Math.atan2(d.x, d.z); look.pitch = Math.asin(d.y); look.fov = portrait() ? (v.fovPortrait || v.fov + 8) : v.fov;
-    flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, () => openPanel(p.id));
+    flyTo(eye, eye.clone().add(d.multiplyScalar(0.5)), look.fov, arrive);
   } else {
     const f = fitPose(new THREE.Vector3(...v.pos), new THREE.Vector3(...v.target), v.fit);
-    flyTo(f.pos, f.target, portrait() ? 50 : 32, () => { placeControls(v); controls.maxDistance = Math.max(v.dist[1], f.d * 1.2); openPanel(p.id); });
+    flyTo(f.pos, f.target, portrait() ? 50 : 32, () => { placeControls(v); controls.maxDistance = Math.max(v.dist[1], f.d * 1.2); arrive(); });
   }
+  if (early) { tween.ms = 0; openPanel(p.id); }
 }
 function leave() {
   tour.entered(null);
@@ -3161,6 +3189,18 @@ const station = {
   timeOfDay, renderer, scene, camera,
 };
 renderer.setAnimationLoop(frame);
+// BUG-032: leaving the 3D page, the view on screen is kept as a small still for the way back
+window.addEventListener('pagehide', () => {
+  if (!stationShown || station.held) return;
+  try {
+    composer.render();                                 // drawn now, so the canvas can be read in this same task
+    const c = renderer.domElement, k = Math.min(1, 1280 / Math.max(c.width, c.height, 1));
+    const t = document.createElement('canvas');
+    t.width = Math.round(c.width * k); t.height = Math.round(c.height * k);
+    t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+    sessionStorage.setItem('station-still', t.toDataURL('image/jpeg', 0.75));
+  } catch (e) { /* no storage or no canvas read: no still next time */ }
+});
 
 // --- workshop stations (workshop/stations.js): what the framework may use of the page
 const wsHost = {

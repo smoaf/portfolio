@@ -15,6 +15,7 @@
 // The area pattern: setup(host), step(now), tap(ev), hover(ev), arrive(), reset(), resume(now).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { modelBuffer } from '../modelcache.js';
 import { buildRobot, R } from './robot-model.js';
 import { Motion, H } from './robot-motion.js';
 
@@ -80,30 +81,32 @@ const region = {
 };
 
 function load() {
-  new GLTFLoader().load('assets/robot/orbweaver.glb', (g) => {
-    const rig = buildRobot(g.scene);
-    const stage = new THREE.Group(); stage.name = 'robotstage';
-    stage.position.set(FLOOR.x, FLOOR.y, FLOOR.z); stage.scale.setScalar(SCALE);
-    stage.add(rig.root);
-    // the showroom's own darkening when its roof is closed, and the hover glow on the white shell
-    const made = new Map();
-    rig.root.traverse((o) => {
-      if (!o.isMesh) return;
-      o.castShadow = false; o.receiveShadow = true;
-      const wrap = (m) => { if (!made.has(m)) made.set(m, S.host.darken ? S.host.darken(m) : m); return made.get(m); };
-      o.material = Array.isArray(o.material) ? o.material.map(wrap) : wrap(o.material);
-    });
-    S.shell = [made.get(rig.mats.shell) || rig.mats.shell, made.get(rig.mats.inner) || rig.mats.inner];
-    S.blob = blobShadow(); stage.add(S.blob);
-    S.host.scene.add(stage);
-    S.rig = rig; S.stage = stage;
-    const M = new Motion(rig);
-    M.region = region;
-    S.M = M;
-    M.place((START.x - FLOOR.x) / SCALE, (START.z - FLOOR.z) / SCALE, Math.PI / 2, false);
-    S.ready = true;
-    if (S.host.inPlace()) arrive();
+  // BUG-032: kept on the device after the first visit (modelcache.js)
+  modelBuffer('assets/robot/orbweaver.glb').then((buf) => new GLTFLoader().parse(buf, '', onRobot, () => {})).catch(() => {});
+}
+function onRobot(g) {
+  const rig = buildRobot(g.scene);
+  const stage = new THREE.Group(); stage.name = 'robotstage';
+  stage.position.set(FLOOR.x, FLOOR.y, FLOOR.z); stage.scale.setScalar(SCALE);
+  stage.add(rig.root);
+  // the showroom's own darkening when its roof is closed, and the hover glow on the white shell
+  const made = new Map();
+  rig.root.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = false; o.receiveShadow = true;
+    const wrap = (m) => { if (!made.has(m)) made.set(m, S.host.darken ? S.host.darken(m) : m); return made.get(m); };
+    o.material = Array.isArray(o.material) ? o.material.map(wrap) : wrap(o.material);
   });
+  S.shell = [made.get(rig.mats.shell) || rig.mats.shell, made.get(rig.mats.inner) || rig.mats.inner];
+  S.blob = blobShadow(); stage.add(S.blob);
+  S.host.scene.add(stage);
+  S.rig = rig; S.stage = stage;
+  const M = new Motion(rig);
+  M.region = region;
+  S.M = M;
+  M.place((START.x - FLOOR.x) / SCALE, (START.z - FLOOR.z) / SCALE, Math.PI / 2, false);
+  S.ready = true;
+  if (S.host.inPlace()) arrive();
 }
 
 function blobShadow() {
