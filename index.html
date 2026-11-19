@@ -1649,12 +1649,13 @@ const onModel = (gltf) => {
   const ready = renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve();
   Promise.race([ready, new Promise((r) => setTimeout(r, 10000))]).catch(() => {}).then(() => {   // never wait more than 10 s
     warming = false;
+    setPaused(false);                                           // BUG-032: a panel that opened first paused the 3D: draw the model now
     requestAnimationFrame(() => requestAnimationFrame(() => {   // after the first drawn frame, so the screen never sits empty
       status.classList.add('out');
       stationShown = true;
       fadeStill();                                              // BUG-032: the still of the last view fades into the live model
       setTimeout(() => { status.hidden = true; tour.loaded(); }, 300);
-      // BUG-032: a panel that opened before the model was there: the 3D pauses only once the model is on screen
+      // BUG-032: and pause again behind that panel once the model is on screen
       setTimeout(() => { if (panel.classList.contains('open')) setPaused(true); }, 800);
     }));
   });
@@ -3036,7 +3037,7 @@ function openPanel(id) {
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false'); panel.scrollTop = 0; document.body.classList.add('panel-open');
   tour.relayout();
   closeDrop();
-  setTimeout(() => { if (panel.classList.contains('open') && stationShown) setPaused(true); }, 470);   // pause once the panel has slid in (BUG-032: and the model is on screen)
+  setTimeout(() => { if (panel.classList.contains('open')) setPaused(true); }, 470);              // pause once the panel has slid in
 }
 function closePanel() {
   if (!panel.classList.contains('open')) return;
