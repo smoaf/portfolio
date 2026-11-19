@@ -85,7 +85,7 @@
   .bar-left { display: flex; align-items: center; gap: 18px; flex: none; }
   .bar-back { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none; white-space: nowrap;
               font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; }
-  .site .bar-back:hover { background: var(--accent); color: var(--stage); }
+  .site .bar-back:hover, .site .bar-back:active { background: #fff; color: #000; }   /* BUG-035: header buttons invert to white with black on hover (computer) and press (phone) */
   .bar-back { justify-content: center; min-width: 34px; flex: none; }
   /* phones: where the bar would not fit (the page's own header button, Get it, Try it, …, needs its room), Back keeps only its arrow */
   @media (max-width: 720px) {
@@ -108,7 +108,7 @@
   .bar-try { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none;
              font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s; }
   .bar-try.show { opacity: 1; transform: none; pointer-events: auto; }
-  .bar-try:hover { background: var(--accent); color: var(--stage); }
+  .bar-try:hover, .bar-try:active { background: #fff; color: #000; }   /* BUG-035 */
 
   /* hero: the app's own clay world on its charcoal table, the name set over it */
   .hero { position: relative; height: min(100svh, 900px); min-height: 560px; overflow: hidden; background: #1f1f20; color: #f4f1ec; }
@@ -583,6 +583,7 @@
     s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
   }
   function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
+  site.addEventListener('touchstart', function () {}, { passive: true });   // BUG-035: lets iPhones show the pressed look (:active) of the header buttons
   fitName(); measure();
   if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
   addEventListener('resize', function () { fitName(); measure(); });
