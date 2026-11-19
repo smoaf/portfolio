@@ -419,6 +419,22 @@
     src: url(fonts/ibm-plex-mono-500-latin.woff2) format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
   }
+  /* FEAT-045: the startup loader (loader/engine.js, brandbook 4.13a): full screen over the station, always light.
+     html.ldr is set by the small script before the header on a fresh visit (not on the way back from a sub page,
+     not with reduce motion); the real header is laid out but hidden until the loader hands over to it. */
+  #ldr { display: none; }
+  html.ldr #ldr, #ldr.ldr-out { display: block; position: fixed; inset: 0; z-index: 40; overflow: hidden; transition: opacity 0.4s ease-out; }
+  #ldr.ldr-out { opacity: 0; pointer-events: none; }
+  #ldr > * { position: absolute; left: 0; top: 0; }
+  .ldr-bg { width: 100%; height: 100%; background: #E3E2DF; }
+  .ldr-gl { width: 100%; height: 85px; opacity: 0; background: rgba(246, 243, 238, 0.58); border-bottom: 1px solid rgba(255, 255, 255, 0.55); box-sizing: border-box;
+            -webkit-backdrop-filter: blur(10px) saturate(1.15); backdrop-filter: blur(10px) saturate(1.15); }
+  #ldr canvas { width: 100%; height: 100%; }
+  .ldr-tx { width: 100%; height: 100%; pointer-events: none; }
+  .ldr-tx span { position: absolute; transform: translate(-50%, -50%); white-space: pre; font-family: var(--font-display); line-height: 1; color: #1d1b18; }
+  #ldr .ldr-line { transform: translateY(-50%); opacity: 0; font: 400 10px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #5e5850; white-space: nowrap; pointer-events: none; }
+  html.ldr .status { display: none; }
+  html.ldr .site { visibility: hidden; }
 </style>
 
 <div id="stage"></div>
@@ -426,6 +442,16 @@
 <script>
   // BUG-032: back on the 3D page, a still of the last view sits where the model goes until the model is ready
   try { var stillSrc = sessionStorage.getItem('station-still'); if (stillSrc) { var st = document.getElementById('still'); st.src = stillSrc; st.hidden = false; } } catch (e) { /* no storage: background as before */ }
+</script>
+<script>
+  // FEAT-045: the startup loader plays on a fresh visit (new visit, reload, direct link), not when coming back
+  // from a sub page (BUG-032) and not with reduce motion (then only the end state: the page as it is)
+  try {
+    var nv = performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null, ty = nv ? nv.type : 'navigate';
+    var clean = function (u) { return u.replace(/[?#].*$/, '').replace(/index\.html$/, ''); }, here = clean(location.href), ref = document.referrer ? clean(document.referrer) : '';
+    var back = ty === 'back_forward' || (ty !== 'reload' && ref && ref !== here && ref.indexOf(here) === 0);
+    if (!back && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) document.documentElement.classList.add('ldr');
+  } catch (e) { /* no loader */ }
 </script>
 <header class="site" id="site">
   <div class="bar">
@@ -447,6 +473,14 @@
   <button class="btn ghost panel-close" id="panel-close" aria-label="Close">Close ✕</button>
   <div id="panel-body"></div>
 </aside>
+<div id="ldr">
+  <div class="ldr-bg"></div>
+  <div class="ldr-gl"></div>
+  <div class="ldr-line" role="status">Loading model…</div>
+  <canvas aria-hidden="true"></canvas>
+  <div class="ldr-tx" aria-hidden="true"></div>
+</div>
+<script type="module" src="loader/engine.js"></script>
 <div class="status" id="status" role="status"><div class="loading">
   <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
   <span>Loading model…</span>
@@ -536,6 +570,8 @@ import { media } from './media/media.js';
 import { robot } from './showroom/robot.js';
 import { worksite } from './newmodule/worksite.js';
 import { tour } from './camp/tour.js';
+import { intro } from './loader/engine.js';       // FEAT-045: the startup loader (null when it does not play)
+import './loader/menubits.js';                    // FEAT-045: the menu words fold into their bits on hover, press or focus
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -1653,6 +1689,7 @@ const onModel = (gltf) => {
     requestAnimationFrame(() => requestAnimationFrame(() => {   // after the first drawn frame, so the screen never sits empty
       status.classList.add('out');
       stationShown = true;
+      if (intro) intro.modelReady();                            // FEAT-045: tR, the loader may now finish in its styled way
       fadeStill();                                              // BUG-032: the still of the last view fades into the live model
       setTimeout(() => { status.hidden = true; tour.loaded(); }, 300);
       // BUG-032: and pause again behind that panel once the model is on screen
@@ -1660,7 +1697,7 @@ const onModel = (gltf) => {
     }));
   });
 };
-const onFail = () => { status.textContent = 'The model could not be loaded.'; };
+const onFail = () => { status.textContent = 'The model could not be loaded.'; if (intro) intro.fail(); };
 const loader = new GLTFLoader();
 if (window.MODULE_GLB_GZ) {             // preview: gzipped model packed as base64, unpacked in the browser
   const gz = Uint8Array.from(atob(window.MODULE_GLB_GZ), (c) => c.charCodeAt(0));
