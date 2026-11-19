@@ -913,3 +913,7 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 - The two 3e8 photos could not be downloaded (3e8.studio blocked from the cloud session) and are not in `portfolio-refs/refs/`, so, as the card says, the booklet photo is hero and tile and the Photos section is left out. `media/hero.webp` (832 px) and `media/card.webp` (600 px) are web copies of the booklet photo.
 - `index.html`: Inner State is the last entry in `PAGES.showroom.projects` (photo tile, no line); a project tile without a line no longer prints "undefined".
 - Tested headless (Chromium), desktop 1440×900 and phone (Pixel 7, touch taps), light and dark: no horizontal scroll, no request outside the site before the film click, the click loads the Vimeo player; the panel lists Inner State last and its tile opens the page; all places visited at night; no console errors besides CONNECT 2's outside pictures, which the cloud session can't reach.
+
+## 19 Nov 2026: FEAT-043, Mediadesign & Installations: new order, KLEX last, branch `feat/FEAT-043-mediadesign-order`
+- `index.html` `PAGES.showroom.projects`: 360° Screen, Photography, Experimental Audio & Video, Inner State, KLEX. The Work dropdown, the phone menu and the header copies on the sub pages list only the four categories, not their entries, so the panel is the only place with this list. Pages and links unchanged.
+- Tested headless, desktop 1440×900 and phone (Pixel 7, touch taps): the panel shows the five entries in this order, KLEX opens its page; all places visited at night, no console errors.
