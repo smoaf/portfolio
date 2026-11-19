@@ -2942,7 +2942,9 @@ const PAGES = {
                // FEAT-040: placeholder pages (name only)
                { title: '360° Screen', href: 'work/360-screen/' },
                { title: 'Photography', href: 'work/photography/' },
-               { title: 'Experimental Audio &amp; Video', href: 'work/experimental-audio-video/' }] },
+               { title: 'Experimental Audio &amp; Video', href: 'work/experimental-audio-video/' },
+               // FEAT-042: Inner State (photo served from the site; the film comes from Vimeo only after a click on its page)
+               { title: 'Inner State', href: 'work/inner-state/', img: 'work/inner-state/media/card.webp' }] },
   'new-module': { kicker: 'Work · In progress', title: 'Museum & curation', line: 'The module being built.', lead: 'Placeholder: what is being built next.' },
   hub: { kicker: 'About', title: 'Simon Winkler', line: 'Research, products, technology and media.', lead: 'Placeholder: a short bio, what connects the fields, and what is next.' },
   relay: { kicker: 'Contact', title: 'Get in touch', line: 'Email and links.', lead: 'Placeholder: email address, profiles and where to find more.', cards: 0 },
@@ -3028,7 +3030,7 @@ function openPanel(id) {
   const cards = Array.from({ length: n }, (_, i) => {
     const pr = c.projects && c.projects[i];
     if (pr && !pr.img) return `<a class="card project plain" href="${pr.href}"><div class="ph"></div><h3>${pr.title}</h3></a>`;   // FEAT-040: a placeholder page's tile, name only
-    if (pr) return `<a class="card project" href="${pr.href}"><img class="ph" src="${pr.img}" alt="" loading="lazy" referrerpolicy="no-referrer"><h3>${pr.title}</h3><p>${pr.line}</p></a>`;
+    if (pr) return `<a class="card project" href="${pr.href}"><img class="ph" src="${pr.img}" alt="" loading="lazy" referrerpolicy="no-referrer"><h3>${pr.title}</h3>${pr.line ? `<p>${pr.line}</p>` : ''}</a>`;   // FEAT-042: a tile with a photo but no line (Inner State)
     return `<div class="card"><div class="ph"></div><h3>Project ${i + 1}</h3><p>Placeholder: one line about the project.</p></div>`;
   }).join('');
   document.getElementById('panel-body').innerHTML = `<div class="kicker">${c.kicker}</div><h2>${c.title}</h2>${c.lead ? `<p class="lead">${c.lead}</p>` : ''}
