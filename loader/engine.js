@@ -115,7 +115,7 @@ class Loader {
     this.cv = root.querySelector('canvas'); this.bg = root.querySelector('.ldr-bg'); this.gl = root.querySelector('.ldr-gl');
     this.ld = root.querySelector('.ldr-line'); this.tx = root.querySelector('.ldr-tx');
     this.time = 0; this.last = performance.now(); this.vis = true;
-    this.loadReady = Infinity; this.tR = null; this.ldOp = 0; this.finished = false;
+    this.loadReady = Infinity; this.tR = null; this.mc = 0; this.ldOp = 0; this.finished = false;
     this.layout();
     addEventListener('resize', () => this.layout());
     if (document.fonts) document.fonts.ready.then(() => { this.siteOk = false; });
@@ -124,7 +124,7 @@ class Loader {
     const loop = (n) => {
       if (this.finished) return;
       const dt = Math.min(0.05, Math.max(0, (n - this.last) / 1000)); this.last = n;
-      if (!this.siteOk) this.measureSite();
+      if (!this.siteOk || ++this.mc % 15 === 0) this.measureSite();   // again now and then: the page fits the name (fitName) after this starts
       if (this.vis) {
         if (!this.held) this.time += dt;
         const S = this.compute(this.time);

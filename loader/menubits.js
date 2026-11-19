@@ -33,7 +33,7 @@ function draw(it) {
 }
 
 function tick(now) {
-  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
   let busy = false;
   items.forEach((it) => {
     const want = it.hover || it.press || it.focus ? 1 : 0;
