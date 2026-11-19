@@ -917,3 +917,8 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 ## 19 Nov 2026: FEAT-043, Mediadesign & Installations: new order, KLEX last, branch `feat/FEAT-043-mediadesign-order`
 - `index.html` `PAGES.showroom.projects`: 360° Screen, Photography, Experimental Audio & Video, Inner State, KLEX. The Work dropdown, the phone menu and the header copies on the sub pages list only the four categories, not their entries, so the panel is the only place with this list. Pages and links unchanged.
 - Tested headless, desktop 1440×900 and phone (Pixel 7, touch taps): the panel shows the five entries in this order, KLEX opens its page; all places visited at night, no console errors.
+
+## 19 Nov 2026: FEAT-044, Channel Concepts page, branch `feat/FEAT-044-channel-concepts`
+- New page `work/channel-concepts/` built from the case study page (header copy, Back, fonts, colours, light and dark). No picture yet: the hero is the placeholder pages' plain hero with "Mediadesign & Installations", title and claim. Then The idea, The concepts (three cards: a plain grey image box and "Details coming soon", stacked on phones), How it would grow ("Details coming soon"), The business check, The decision. Texts as on the card; every empty slot is marked `<!-- FILL: … -->` and listed in `docs/open-items.md`. No platform name, no money figures.
+- `index.html`: Channel Concepts in `PAGES.showroom.projects` after Inner State, before KLEX, as a name-only tile (plain box).
+- Tested headless, desktop 1440×900 and phone (Pixel 7, touch taps), light and dark: no horizontal scroll, no outside request, no platform name or currency in the page source; the panel lists Channel Concepts after Inner State and its tile opens the page; all places visited at night; no console errors.
