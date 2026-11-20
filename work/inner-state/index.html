@@ -87,7 +87,6 @@
   .bar-left { display: flex; align-items: center; gap: 18px; flex: none; }
   .bar-back { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none; white-space: nowrap;
               font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; }
-  .site .bar-back:hover, .site .bar-back:active { background: #fff; color: #000; }   /* BUG-035: header buttons invert to white with black on hover (computer) and press (phone) */
   .bar-back { justify-content: center; min-width: 34px; flex: none; }
   /* phones: where the bar would not fit (the page's own header button, Get it, Try it, …, needs its room), Back keeps only its arrow */
   @media (max-width: 720px) {
@@ -165,6 +164,11 @@
     * { transition: none !important; }
     .beat path { animation: none; stroke-dashoffset: 0; opacity: 1; }
   }
+  /* BUG-037: every button inverts to a black fill with white text and icon on hover (computer), while pressed (phone)
+     and on keyboard focus; a film's cover shows it on its play ring. Not the menu words, the Menu button and the name. */
+  @media (hover: hover) { .site .bar-back:hover, .bar-buy:hover, .bar-try:hover, .buy:hover, .read:hover, .spec-tabs button:hover, .line button:hover, .sources button:hover, .cue:hover .ring { background: #000 !important; color: #fff !important; border-color: #000 !important; } }
+  .site .bar-back:active, .bar-buy:active, .bar-try:active, .buy:active, .read:active, .spec-tabs button:active, .line button:active, .sources button:active, .cue:active .ring, .site .bar-back:focus-visible, .bar-buy:focus-visible, .bar-try:focus-visible, .buy:focus-visible, .read:focus-visible, .spec-tabs button:focus-visible, .line button:focus-visible, .sources button:focus-visible, .cue:focus-visible .ring { background: #000 !important; color: #fff !important; border-color: #000 !important; }
+  .sources button:hover, .sources button:active, .sources button:focus-visible { opacity: 1; }
 </style>
 </head>
 <body>
@@ -317,7 +321,7 @@
     s.style.letterSpacing = 'calc(0.02em + ' + extra + 'px)'; s.style.marginRight = '-' + extra + 'px';
   }
   function measure() { document.documentElement.style.setProperty('--hh', site.querySelector('.bar').offsetHeight + 1 + 'px'); }
-  site.addEventListener('touchstart', function () {}, { passive: true });   // BUG-035: lets iPhones show the pressed look (:active) of the header buttons
+  document.addEventListener('touchstart', function () {}, { passive: true });   // BUG-035, BUG-037: lets iPhones show the pressed look (:active) of the buttons
   fitName(); measure();
   if (document.fonts) document.fonts.ready.then(function () { fitName(); measure(); });
   addEventListener('resize', function () { fitName(); measure(); });
