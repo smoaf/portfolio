@@ -974,3 +974,7 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 - Resting looks unchanged everywhere (checked by computed colours before and after).
 - Left as they are: the image thumbnails (OHRGUSS) and the KLEX app inside its page (its own app design).
 - Tested headless (Chromium): connect-2, klex, ohrguss, mrs-01, hrtf, inner-state, steel-materials, about and the 3D page (day and night, workshop panel open), computer 1280 px hover and phone 390 px with touch plus `:active` forced through DevTools (headless touch does not set it). Reproduced on main first (Back turned white with black text). Every area visited day and night, a safari route started; no console errors.
+
+## 20 Nov 2026: BUG-038, Work dropdown: no extra space below the subtitles, branch `bug/BUG-038-work-dropdown-space`
+- `.drop-list` bottom padding 26 → 1 px on the computer and 18 → 2 px in the phone sheet (3D page and all 18 sub pages). From the last line of text to the dropdown's edge is now 13 px, the same as from the divider line to the titles (was 38 px on the computer, 29 px on phones). Top spacing, titles, subtitles, columns, fonts, glass and lines unchanged; rows on narrower screens keep their spacing (the item padding is untouched). The Play dropdown is the same element and gets the same bottom.
+- Tested headless (Chromium): connect-2 and about, 3D page day and night, computer 1280 px and phone 390 px (touch on MENU); gaps measured on the text boxes before (main) and after. Every area visited, no console errors.
