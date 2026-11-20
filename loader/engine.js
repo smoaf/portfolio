@@ -179,8 +179,7 @@ class Loader {
       G.bits.forEach((el) => R(T.ax + el.x * T.s, T.ay + el.y * T.s, el.w * T.s, el.h * T.s, el.rf, el.rot, bc, el.op * alpha));
       G.marks.forEach((el) => { if (el) R(T.ax + el.x * T.s, T.ay + el.y * T.s, el.w * T.s, el.h * T.s, el.rf, el.rot, ckc(INK), el.op * alpha); });
       G.circ.forEach((c) => sh.push({ k: 'c', x: T.ax + c.x * T.s, y: T.ay + c.y * T.s, r: c.r * T.s, c: ckc(INK), a: c.op * alpha }));
-      const fo = G.pl * alpha;
-      if (fo > 0.003) { const a0 = 150 - B.FAR - 16, bx = B.LX + K * a0, by = B.LY + K * a0, sz = K * (300 - 2 * a0); sh.push({ k: 'f', x: T.ax + bx * T.s, y: T.ay + by * T.s, w: sz * T.s, h: sz * T.s, r: 60 * K * T.s, lw: 6 * K * T.s, c: INKs, a: fo }); }
+      // BUG-039: the plate's outline (a stroke along its edge) is no longer drawn; the plate itself is the filled 'F' shape
     };
     const emitMenu = (j, q, T, alpha) => {
       const M = menuFold(P.words[j], q);
