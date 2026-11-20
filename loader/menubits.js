@@ -2,7 +2,7 @@
 // (phone) or giving it keyboard focus folds it into its bits over 0.9 s; it opens again on leave. The items stay
 // real buttons and links: their letters are only wrapped in spans (so each can fade), the bits are drawn on a
 // small canvas inside the item. The name has no fold. With reduce motion the fold switches without animation.
-import { menuFold, wordTransform, letterBoxes } from './bits.js';
+import { menuFold, refTransform, letterBoxes } from './bits.js';
 
 const RIDGE = '#798072';
 const reduce = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -10,8 +10,17 @@ const items = [];
 let raf = 0, last = 0;
 
 const css = document.createElement('style');
-css.textContent = '.mb-c { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }';
+css.textContent = '.mb-c { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }'
+  + ' .mb-ref { position: absolute; left: 0; top: 0; visibility: hidden; white-space: nowrap; pointer-events: none; }'
+  + ' [data-mb]::after { opacity: var(--mb-line, 1); }';   // BUG-036: the underline of the open or current item goes with the letters
 document.head.appendChild(css);
+
+// BUG-036: WORK set in the item's own font, measured for a moment (the fold of every word takes its size from it)
+function workBoxes(el) {
+  const pr = document.createElement('span'); pr.className = 'mb-ref'; pr.setAttribute('aria-hidden', 'true'); pr.textContent = 'Work';
+  el.appendChild(pr); const R = letterBoxes(pr); pr.remove();
+  return R;
+}
 
 function draw(it) {
   const { el, cv, spans } = it, r = el.getBoundingClientRect();
@@ -19,10 +28,12 @@ function draw(it) {
   const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, r.width, r.height);
-  if (it.p <= 0) { spans.forEach((s) => { s.style.opacity = ''; }); return; }
+  if (it.p <= 0) { spans.forEach((s) => { s.style.opacity = ''; }); el.style.removeProperty('--mb-line'); return; }
   const L = letterBoxes(el).map((q) => ({ x: q.x - r.left, y: q.y - r.top }));
   if (L.length !== it.word.length) return;
-  const T = wordTransform(L), M = menuFold(it.word, 1 - it.p), ink = getComputedStyle(el).color;
+  const R = workBoxes(el).map((q) => ({ x: q.x - r.left, y: q.y - r.top }));
+  if (R.length !== 4) return;
+  const T = refTransform(L, R), M = menuFold(it.word, 1 - it.p), ink = getComputedStyle(el).color;
   M.cells.forEach((c) => {
     if (!(c.o > 0.003)) return;
     g.globalAlpha = Math.min(1, c.o); g.fillStyle = c.mk ? ink : RIDGE;
@@ -30,6 +41,7 @@ function draw(it) {
   });
   g.globalAlpha = 1;
   M.letters.forEach((l, k) => { if (spans[k]) spans[k].style.opacity = l.o.toFixed(3); });
+  el.style.setProperty('--mb-line', Math.min(...M.letters.map((l) => l.o)).toFixed(3));
 }
 
 function tick(now) {

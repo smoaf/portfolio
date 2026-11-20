@@ -10,15 +10,16 @@ export const eo = (x) => { x = cl(x); return 1 - Math.pow(1 - x, 3); };
 export const lerp = (a, b, k) => a + (b - a) * k;
 export const MS = { cs: 6, rp: 7, cp: 7, mw: 6, mh: 2.4 };
 
-// the 1.6c menu fold: q = 0 compact bits, 1 the word
-export function menuFold(w, q) {
+// the 1.6c menu fold: q = 0 compact bits, 1 the word. BUG-036: the marker bars below the bits are no longer
+// drawn (marks: false leaves them out; the bits keep their place, the block is still centred as before)
+export function menuFold(w, q, marks = false) {
   const n = w.length, off = (n * 14 - n * MS.cp) / 2, top = 22 - (5 * MS.rp + MS.mh) / 2;
   const spread = e(q / 0.45), cells = [], letters = [];
   for (let k = 0; k < n; k++) {
     const lt = e((q - 0.4 - k * 0.045) / 0.3);
     const cx0 = off + k * MS.cp + MS.cp / 2, cx1 = k * 14 + 7, cx = cx0 + (cx1 - cx0) * spread;
     const code = val(w[k]);
-    for (let r = 0; r < 6; r++) {
+    for (let r = 0; r < (marks ? 6 : 5); r++) {
       const isM = r === 5;
       if (!isM && !(code & W5[r])) continue;
       let bw, bh, yc;
@@ -51,4 +52,12 @@ export function wordTransform(L) {
   const n = L.length, s = n > 1 ? (L[n - 1].x - L[0].x) / ((n - 1) * 14) : 0.78;
   let cy = 0; L.forEach((q) => { cy += q.y; }); cy /= n;
   return { ax: L[0].x - 7 * s, ay: cy - 22 * s, s };
+}
+
+// BUG-036: every menu word folds at the size of WORK's fold. R: the letter boxes of WORK set in the same font,
+// L: the word's own letters. The scale is WORK's; the block is centred on the word's letters as WORK's is on its own.
+export function refTransform(L, R) {
+  const s = wordTransform(R).s, n = L.length;
+  let cy = 0; L.forEach((q) => { cy += q.y; }); cy /= n;
+  return { ax: (L[0].x + L[n - 1].x) / 2 - n * 7 * s, ay: cy - 22 * s, s };
 }
