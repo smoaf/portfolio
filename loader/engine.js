@@ -58,7 +58,7 @@ const B = (() => {
 })();
 
 // ------------------------------------------------------------------ the stage for this screen
-function geometry() {
+export function geometry() {
   const W = Math.max(320, window.innerWidth || 1440), H = Math.max(320, window.innerHeight || 779);
   const phone = !!(window.matchMedia && matchMedia('(max-width: 720px)').matches);
   const gs = phone ? Math.min(0.8, Math.max(0.45, W / 700)) : Math.max(W / 1440, H / 779);   // galaxy scale
@@ -73,7 +73,7 @@ function geometry() {
   };
 }
 
-function prep(g) {
+export function prep(g) {
   const { W, H, gs, G0 } = g, P = { words: g.phone ? ['MENU'] : ['WORK', 'PLAY', 'ABOUT', 'CONTACT'] };
   const dust = [];
   for (let i = 0; i < 4600; i++) {

@@ -182,7 +182,7 @@ async function enter() {
   host.flyTo(o.eye, o.at, host.portrait() ? 50 : 36, async () => {
     if (tok !== S.seq) return;
     await host.fade(true);
-    const m = await ready;
+    const m = await host.loading(ready, !!(S.mods && S.mods.room));   // FEAT-046: the short loader until the room has loaded
     if (tok !== S.seq) { host.fade(false); return; }
     if (!S.room) {
       S.room = m.room.buildRoom(); S.room.root.position.copy(HUT); host.scene.add(S.room.root);
@@ -464,6 +464,7 @@ export const relay = {
     loadMods();
     say((matchMedia('(hover: hover)').matches ? 'Click' : 'Tap') + ' the hut to go into the radio room', 6000);
   },
+  warm() { return loadMods(); },                       // FEAT-046: preloaded while the visitor is near the relay
   // leaving the place some other way (menu, browser back, another place): everything back at once
   reset() {
     if (!S.ready) return;

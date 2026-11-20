@@ -440,6 +440,15 @@
   .ldr-tx span { position: absolute; transform: translate(-50%, -50%); white-space: pre; font-family: var(--font-display); line-height: 1; color: #1d1b18; }
   #ldr .ldr-line { transform: translateY(-50%); opacity: 0; font: 400 10px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #5e5850; white-space: nowrap; pointer-events: none; }
   html.ldr .status { display: none; }
+  /* FEAT-046: the short loader (loader/quick.js), over the fade while a place finishes loading; light like the startup loader */
+  #ldq { position: fixed; inset: 0; z-index: 45; overflow: hidden; opacity: 1; transition: opacity 0.3s ease-out; }
+  #ldq[hidden] { display: none; }
+  #ldq.ldq-out { opacity: 0; pointer-events: none; }
+  #ldq > * { position: absolute; left: 0; top: 0; }
+  #ldq .ldq-bg { width: 100%; height: 100%; background: #E3E2DF; }
+  #ldq canvas { width: 100%; height: 100%; }
+  #ldq .ldq-line { transform: translateY(-50%); opacity: 0; font: 400 10px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #5e5850; white-space: nowrap; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { #ldq { transition: none; } }
   html.ldr .site { visibility: hidden; }
 </style>
 
@@ -578,6 +587,8 @@ import { worksite } from './newmodule/worksite.js';
 import { tour } from './camp/tour.js';
 import { intro } from './loader/engine.js';       // FEAT-045: the startup loader (null when it does not play)
 import './loader/menubits.js';                    // FEAT-045: the menu words fold into their bits on hover, press or focus
+import { loadingWhile, quickState, quickCovers } from './loader/quick.js';   // FEAT-046: the short loader when a place is not loaded yet
+import { createPreloader } from './preload.js';                // FEAT-046: places load in the background while the visitor is near
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
 const host = document.getElementById('stage');
@@ -2833,7 +2844,7 @@ function goVan() {
   flyTo(out, door, camp.fov, async () => {
     if (tok !== camp.seq) return;
     await fade(true);
-    const v = await ready;
+    const v = await loadingWhile(ready, !!camp.van);   // FEAT-046: not loaded yet: the short loader until it is
     if (tok !== camp.seq) { fade(false); return; }
     inVan(true);
     const s = vanSeat();
@@ -2895,11 +2906,16 @@ async function startExploration(route, tod) {
   const tok = ++camp.seq;
   await fade(true);
   try {
-    const { startSafari } = await import('./safari/index.js');
-    if (tok !== camp.seq) { camp.safariStarting = false; fade(false); return; }
-    station.pause();
-    document.body.classList.add('safari-on');
-    camp.safari = await startSafari({ renderer, route, tod, host, onExit: endSafari });
+    // FEAT-046: loaded in the background at the camp; if not yet, the short loader plays until the route is built
+    const s = await loadingWhile((async () => {
+      const { startSafari } = await import('./safari/index.js');
+      if (tok !== camp.seq) return null;
+      station.pause();
+      document.body.classList.add('safari-on');
+      return startSafari({ renderer, route, tod, host, onExit: endSafari });
+    })(), preload.done('safari'));
+    if (!s) { camp.safariStarting = false; fade(false); return; }
+    camp.safari = s;
   } catch (err) {
     console.error('The safari could not start', err);
     document.body.classList.remove('safari-on');
@@ -3182,6 +3198,7 @@ window.addEventListener('resize', resize);
 resize();
 function frame(now) {
   if (warming) return;                                              // the station's shaders are still compiling
+  if (quickCovers()) return;                                        // FEAT-046: the short loader hides the 3D: no drawing behind it
   const away = !!workshop.focused || relay.inside || library.zoomed;  // a workshop station, the radio room or the cat close up: nothing else runs
   if (!away) { stepRoof(now); stepFire(now); stepBeacon(now); stepProjectors(now); stepTurbine(now); }
   stepPlaces(now); stepSky(now);
@@ -3279,6 +3296,7 @@ const tsHost = {
 const rlHost = {
   scene, camera, el, ray, setRay, flyTo, portrait, reduceMotion, closePanel, telescope,
   fade: (on) => fade(on),
+  loading: (p, ready) => loadingWhile(p, ready),       // FEAT-046: the short loader while the room is not loaded yet
   jump(pos, target, fov) { camera.position.copy(pos); controls.target.copy(target); camera.fov = fov; camera.updateProjectionMatrix(); camera.lookAt(target); },
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'relay',
@@ -3327,6 +3345,32 @@ const rbHost = {
   darken: (m) => showDarkMaterial(m),
 };
 
+// --- FEAT-046: preloading (preload.js). Near a place (it is the open place, or the overview camera is close to
+// it), what going in needs loads in the background: the radio room's modules at the relay, the van's interior
+// and the safari's code at the camp, and each place's panel pictures (only the site's own files). The buildings
+// themselves are in the station model, already loaded. Nothing starts before the station is on screen and the
+// startup loader is gone; nothing loads during a safari or in a hidden tab.
+const preload = createPreloader({
+  canStart: () => stationShown && (!intro || intro.finished) && !camp.safari && !camp.safariStarting && !document.hidden,
+});
+function nearPlace(id) {
+  if (nav.place) return nav.place.id === id;
+  const i = PLACES.findIndex((p) => p.id === id), s = zoneSpheres[i];
+  return nav.mode === 'overview' && !tween.active && controls.target.distanceTo(s.center) < s.radius * 2 && camera.position.distanceTo(s.center) < s.radius * 6;
+}
+const pictures = (urls) => () => Promise.all(urls.map((u) => new Promise((res) => {
+  const im = new Image(); im.decoding = 'async'; im.referrerPolicy = 'no-referrer'; im.onload = im.onerror = res; im.src = u;
+})));
+PLACES.forEach((p) => {
+  const urls = ((PAGES[p.id] && PAGES[p.id].projects) || []).map((q) => q.img).filter((u) => u && !/^[a-z]+:|^\/\//i.test(u));
+  if (urls.length) preload.add('pictures:' + p.id, () => nearPlace(p.id), [pictures(urls)]);
+});
+preload.add('relay', () => nearPlace('relay'), [() => relay.warm()]);
+preload.add('van', () => nearPlace('camp'), [() => loadVan()]);
+preload.add('safari', () => nearPlace('camp'), [() => import('./safari/index.js'), () => import('./safari/routes/canyon.js'),
+  () => import('./safari/routes/jungle.js'), () => fetch('safari/safari.css').then((r) => r.text())]);
+setInterval(() => preload.tick(performance.now()), 500);   // its own clock: the 3D rests while a panel is open
+
 // hooks used for test renders: only with ?test in the address (http://localhost:8000/?test)
 if (new URLSearchParams(location.search).has('test')) {
   window.__set = (s) => { if (s.mode) jumpTo(s.mode === 'night' ? 0.93 : 0.42); if (s.time !== undefined) jumpTo(s.time); if (s.playing !== undefined) SKY.playing = s.playing; if (s.roof) setRoof(s.roof === 'closed', false); markShadows(); };
@@ -3369,6 +3413,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__tour = tour;
   window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
   window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
+  window.__preload = { state: () => preload.state(), quick: () => quickState(), done: (id) => preload.done(id) };   // FEAT-046
   window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 }
 </script>
