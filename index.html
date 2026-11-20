@@ -587,7 +587,6 @@ import { worksite } from './newmodule/worksite.js';
 import { tour } from './camp/tour.js';
 import { intro } from './loader/engine.js';       // FEAT-045: the startup loader (null when it does not play)
 import './loader/menubits.js';                    // FEAT-045: the menu words fold into their bits on hover, press or focus
-import { loadingWhile, quickState, quickCovers } from './loader/quick.js';   // FEAT-046: the short loader when a place is not loaded yet
 import { createPreloader } from './preload.js';                // FEAT-046: places load in the background while the visitor is near
 
 const GHOST_LAYER = 1;   // cut-away parts: seen by shadow cameras only
@@ -3351,6 +3350,15 @@ const rbHost = {
 // and the safari's code at the camp, and each place's panel pictures (only the site's own files). The buildings
 // themselves are in the station model, already loaded. Nothing starts before the station is on screen and the
 // startup loader is gone; nothing loads during a safari or in a hidden tab.
+// the short loader (loader/quick.js) when a place is not loaded yet: fetched after the first load, not with it
+var quick = null;                                      // var: frame() may ask before this line has run
+function quickMod() { return import('./loader/quick.js').then((m) => { quick = m; return m; }); }
+function quickCovers() { return !!quick && quick.quickCovers(); }
+async function loadingWhile(p, ready) {
+  if (ready) return p;
+  const m = quick || await Promise.race([quickMod(), p.then(() => null, () => null)]);   // the place may be ready first
+  return m ? m.loadingWhile(p, false) : p;
+}
 const preload = createPreloader({
   canStart: () => stationShown && (!intro || intro.finished) && !camp.safari && !camp.safariStarting && !document.hidden,
 });
@@ -3383,7 +3391,7 @@ preload.add('van', () => nearPlace('camp'), [() => loadVan(),
   () => camp.van && !camp.van.outer.visible && precompile(camp.van.outer)]);
 preload.add('safari', () => nearPlace('camp'), [() => import('./safari/index.js'), () => import('./safari/routes/canyon.js'),
   () => import('./safari/routes/jungle.js'), () => fetch('safari/safari.css').then((r) => r.text())]);
-setInterval(() => preload.tick(performance.now()), 500);   // its own clock: the 3D rests while a panel is open
+setInterval(() => { if (!quick && stationShown && (!intro || intro.finished)) quickMod().catch(() => {}); preload.tick(performance.now()); }, 500);   // its own clock: the 3D rests while a panel is open
 
 // hooks used for test renders: only with ?test in the address (http://localhost:8000/?test)
 if (new URLSearchParams(location.search).has('test')) {
@@ -3428,7 +3436,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__tour = tour;
   window.__turbine = () => ({ on: turbine.on, ramp: +turbine.ramp.toFixed(3), angle: +turbine.angle.toFixed(3) });
   window.__explore = (route, tod) => startExploration(route, tod);   // tests: straight into a route
-  window.__preload = { state: () => preload.state(), quick: () => quickState(), done: (id) => preload.done(id) };   // FEAT-046
+  window.__preload = { state: () => preload.state(), quick: () => (quick ? quick.quickState() : { shown: false }), done: (id) => preload.done(id) };   // FEAT-046
   window.__state = () => ({ place: nav.place ? nav.place.id : null, mode: nav.mode, hash: location.hash, tween: tween.active, fov: camera.fov });
 }
 </script>
