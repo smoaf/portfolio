@@ -108,15 +108,20 @@
 
   .bar-right { display: flex; align-items: center; gap: 18px; }
 
-  /* hero: the shell large on its light ground, the name set over it, as on CONNECT 2 */
-  .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #b6b6b6; color: #f4f1ec; }
-  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 100% 60%; padding-top: var(--hh, 77px); }
-  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,14,18,0) 45%, rgba(20,14,18,.72) 100%); pointer-events: none; }
+  /* hero (FEAT-048): the exploded-view film large on its light ground, the name set over it, as on CONNECT 2.
+     The hero's ground is the film's own as browsers draw it (#e6e8ea), so the film has no visible edge. The film is cut to a 6:5 window round the
+     part of the frame where the shell and its parts move (x 15–79 %), as large as fits under the header, to the right like the old still */
+  .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #e6e8ea; color: #f4f1ec; }
+  .hero-stage { position: absolute; inset: var(--hh, 77px) 0 0 0; container-type: size; }
+  .hero video { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: min(100cqw, 120cqh); height: min(100cqh, 83.333cqw);
+                object-fit: cover; object-position: 41% 50%; }
+  /* the film's ground is lighter than the old still's (#b6b6b6), so the gradient is deeper: the name keeps the contrast it had over the still */
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,14,18,0) 40%, rgba(20,14,18,.44) 65%, rgba(20,14,18,.79) 100%); pointer-events: none; }
   .hero-text { position: absolute; left: 0; right: 0; bottom: clamp(28px, 6vw, 72px); z-index: 2; }
   h1 { margin: 0 0 0 -0.085em; white-space: nowrap; font: 300 clamp(54px, 12vw, 168px)/0.84 var(--font); font-stretch: 125%; font-variation-settings: 'wdth' 125; letter-spacing: -0.03em; }
   h1 b { font-weight: 800; }
   .claim { margin: clamp(10px, 1.6vw, 18px) 0 0; font: 400 clamp(20px, 2.6vw, 34px)/1.2 var(--font); font-stretch: 104%; font-variation-settings: 'wdth' 104; }
-  @media (max-width: 720px) { .hero img { object-position: 50% 40%; padding-bottom: 150px; } }
+  @media (max-width: 720px) { .hero-stage { bottom: 150px; } }   /* phones: the film above the name, full width */
 
   /* the idea, as "My role" on CONNECT 2: text left, picture and sizes right */
   .role { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(28px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
@@ -189,7 +194,10 @@
 
 <main>
   <section class="hero" aria-label="MRS-01">
-    <img alt="The MRS-01 shell with its foam inlay and front plate, seen from the front at an angle" src="media/hero.webp">
+    <div class="hero-stage">
+      <video id="hero-film" muted loop playsinline preload="none" poster="media/hero-film-poster.webp" data-src="media/hero-film.mp4"
+             aria-label="Exploded view of MRS-01: the front plate, the foam inlay and the lattice shell come apart into their parts, the inlay opens into its flat sheet, and everything goes back together"></video>
+    </div>
     <div class="wrap hero-text">
       <h1>MRS-<b>01</b></h1>
       <p class="claim">Modular Recording Shell. A small recording booth you print at home.</p>
@@ -385,6 +393,18 @@
     var onSite = from && from.origin === root.origin && from.pathname.indexOf(root.pathname) === 0 && from.pathname !== location.pathname;
     if (onSite && history.length > depth() + 1) { e.preventDefault(); history.go(-(depth() + 1)); }
   });
+})();
+
+// FEAT-048: the hero film loads with the page and loops, muted; it pauses while scrolled out of view.
+// With reduce motion it is not loaded, and its first frame (the poster) stands as a still.
+(function () {
+  var film = document.getElementById('hero-film');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  film.preload = 'auto'; film.src = film.dataset.src;
+  function play() { film.play().catch(function () {}); }
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) play(); else film.pause(); }); }).observe(film);
+  } else play();
 })();
 
 // printer bed tabs: swap the exploded view
