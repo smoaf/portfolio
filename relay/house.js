@@ -182,7 +182,7 @@ async function enter() {
   host.flyTo(o.eye, o.at, host.portrait() ? 50 : 36, async () => {
     if (tok !== S.seq) return;
     await host.fade(true);
-    const m = await ready;
+    const m = await host.loading(ready, !!(S.mods && S.mods.room));   // FEAT-046: the short loader until the room has loaded
     if (tok !== S.seq) { host.fade(false); return; }
     if (!S.room) {
       S.room = m.room.buildRoom(); S.room.root.position.copy(HUT); host.scene.add(S.room.root);
@@ -463,6 +463,16 @@ export const relay = {
     if (!S.ready) { S.early = true; return; }
     loadMods();
     say((matchMedia('(hover: hover)').matches ? 'Click' : 'Tap') + ' the hut to go into the radio room', 6000);
+  },
+  // FEAT-046: preloaded while the visitor is near the relay, one step at a time: the modules, the room (built
+  // hidden), and the shaders for the room's light set made beforehand (its two lamps join the
+  // scene's lights)
+  warm(step) {
+    if (step === 'mods') return loadMods();
+    if (!S.mods || !S.mods.room) return null;
+    if (step === 'room' && !S.room) { S.room = S.mods.room.buildRoom(); S.room.root.position.copy(HUT); S.room.root.visible = false; host.scene.add(S.room.root); }
+    if (step === 'shaders' && S.room && !S.inside) return host.precompile(S.room.root);
+    return null;
   },
   // leaving the place some other way (menu, browser back, another place): everything back at once
   reset() {
