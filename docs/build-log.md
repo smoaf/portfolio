@@ -965,3 +965,4 @@ Scripts and .glb files are sent to Smo in the chat with each study.
 
 ## 20 Nov 2026: FEAT-047 follow-up, new icon addresses so Safari fetches the new icon, branch `claude/sharp-johnson-2vn8qv`
 - After the filled box went live, Mac Safari still showed the old icon (and none on the 3D page): it keeps site icons in its own store and the files kept their addresses. Every icon link on all 20 pages and the two manifest icons now carry `?v=2`, so the browser has to fetch them again. The files themselves are unchanged. For a later icon change, raise the number.
+- Black always (Smo): the icon is the black box with white dots in light and dark mode. `favicon.svg` no longer switches (same as `black/mark-black.svg`); each page links the SVG, the black 32 px PNG (no mode), the black `.ico`, the apple-touch icon and the manifest (five links; the white 32 px link is gone). The white files stay in `favicon/white/`, unused by the pages.
