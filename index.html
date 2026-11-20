@@ -3297,6 +3297,7 @@ const rlHost = {
   scene, camera, el, ray, setRay, flyTo, portrait, reduceMotion, closePanel, telescope,
   fade: (on) => fade(on),
   loading: (p, ready) => loadingWhile(p, ready),       // FEAT-046: the short loader while the room is not loaded yet
+  precompile: (root) => precompile(root),
   jump(pos, target, fov) { camera.position.copy(pos); controls.target.copy(target); camera.fov = fov; camera.updateProjectionMatrix(); camera.lookAt(target); },
   tweening: () => tween.active,
   inPlace: () => !!nav.place && nav.place.id === 'relay',
@@ -3358,6 +3359,18 @@ function nearPlace(id) {
   const i = PLACES.findIndex((p) => p.id === id), s = zoneSpheres[i];
   return nav.mode === 'overview' && !tween.active && controls.target.distanceTo(s.center) < s.radius * 2 && camera.position.distanceTo(s.center) < s.radius * 6;
 }
+// a hidden room's lamps change the scene's light set, and with it every lit material's shader: all made the
+// first time the room shows, which froze the first frame inside. precompile() shows the room for one compile
+// call, so the shaders for that light set are made beforehand; browsers that compile in the background
+// (KHR_parallel_shader_compile: current Chrome, Edge, Safari) finish them there, others on first use as before.
+function precompile(root) {
+  if (!renderer.compileAsync) return null;
+  const was = root.visible, rt = renderer.getRenderTarget();
+  root.visible = true; renderer.setRenderTarget(composer.readBuffer);   // the station draws into the composer's buffer: the same shader variants
+  let p = null;
+  try { p = renderer.compileAsync(scene, camera); } catch (err) { p = null; } finally { root.visible = was; renderer.setRenderTarget(rt); }
+  return p && p.catch(() => {});
+}
 const pictures = (urls) => () => Promise.all(urls.map((u) => new Promise((res) => {
   const im = new Image(); im.decoding = 'async'; im.referrerPolicy = 'no-referrer'; im.onload = im.onerror = res; im.src = u;
 })));
@@ -3365,8 +3378,9 @@ PLACES.forEach((p) => {
   const urls = ((PAGES[p.id] && PAGES[p.id].projects) || []).map((q) => q.img).filter((u) => u && !/^[a-z]+:|^\/\//i.test(u));
   if (urls.length) preload.add('pictures:' + p.id, () => nearPlace(p.id), [pictures(urls)]);
 });
-preload.add('relay', () => nearPlace('relay'), [() => relay.warm()]);
-preload.add('van', () => nearPlace('camp'), [() => loadVan()]);
+preload.add('relay', () => nearPlace('relay'), [() => relay.warm('mods'), () => relay.warm('room'), () => relay.warm('shaders')]);
+preload.add('van', () => nearPlace('camp'), [() => loadVan(),
+  () => camp.van && !camp.van.outer.visible && precompile(camp.van.outer)]);
 preload.add('safari', () => nearPlace('camp'), [() => import('./safari/index.js'), () => import('./safari/routes/canyon.js'),
   () => import('./safari/routes/jungle.js'), () => fetch('safari/safari.css').then((r) => r.text())]);
 setInterval(() => preload.tick(performance.now()), 500);   // its own clock: the 3D rests while a panel is open
@@ -3390,6 +3404,7 @@ if (new URLSearchParams(location.search).has('test')) {
   window.__station = station;
   window.__otherAt = (x, y) => { const p = otherPlaceAt({ clientX: x, clientY: y }); return p ? p.id : null; };   // tests: the place a tap there would go to
   window.__scene = scene;
+  window.__renderer = renderer;   // FEAT-046 tests: renderer.info.programs
   const campScreen = (id) => {                           // tests: where on screen a camp target is
     const c = { figure: () => vTmp.copy(person.root.position).setY(person.root.position.y + (isSeated() ? 0.75 : 1.0)), fire: () => vTmp.copy(CAMP.fire).setY(0.35),
       poke: () => vTmp.copy(CAMP.fire).setY(0.35), van: () => vanAt(-0.6, 0, 2.0, vTmp), screen: () => camp.van.screen.centre(vTmp), album: () => camp.van.albumAt(vTmp) }[id]();
