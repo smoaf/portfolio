@@ -183,7 +183,7 @@ class Loader {
     };
     const emitMenu = (j, q, T, alpha) => {
       const M = menuFold(P.words[j], q);
-      M.cells.forEach((c) => R(T.ax + c.x * T.s, T.ay + c.y * T.s, c.w * T.s, c.h * T.s, 0, 0, c.mk ? INKs : RIDs, c.o * alpha));
+      M.cells.forEach((c) => R(T.ax + c.x * T.s, T.ay + c.y * T.s, c.w * T.s, c.h * T.s, 0, 0, INKs, c.o * alpha));   // BUG-040: the bits in the letters' colour (.ldr-tx span)
       M.letters.forEach((l, k) => { if (l.o * alpha < 0.003) return; const q5 = siteM[j][k]; out.tx.push({ t: l.t, x: q5.x, y: q5.y, fs: q5.fs, fw: 400, st: 108, ls: q5.ls, o: l.o * alpha }); });
     };
 
