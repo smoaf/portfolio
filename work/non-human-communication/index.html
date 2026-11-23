@@ -68,11 +68,10 @@
   .menu { display: flex; gap: 6px; }
   .menu button, .menu a, .menu-toggle { font: 400 12px/1 var(--font); font-stretch: 108%; font-variation-settings: 'wdth' 108; letter-spacing: 0.17em; text-transform: uppercase; color: inherit;
           padding: 12px 12px; min-height: 44px; position: relative; }
-  .menu button[aria-expanded="true"]::after, .menu button.current::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
-  /* FEAT-034: About and Contact are links to their own pages (underlined on their own page) */
+  /* BUG-040: the header menu words have no underline (not on hover, focus, press or on their own page) */
+  /* FEAT-034: About and Contact are links to their own pages */
   .menu a { display: inline-flex; align-items: center; text-decoration: none; }
   .site .menu a:hover { color: inherit; }
-  .menu a[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 1px; background: currentColor; }
   .menu-toggle { display: none; }
   .drop { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(.2,.7,.2,1); }
   .drop.open { grid-template-rows: 1fr; }
