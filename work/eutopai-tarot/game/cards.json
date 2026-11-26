@@ -1,0 +1,562 @@
+[
+ {
+  "id": 0,
+  "num": "0",
+  "name": "Der Narr",
+  "keywords": [
+   "Aufbruch",
+   "Vertrauen",
+   "Freiheit"
+  ],
+  "meaning": "Ein Anfang ohne Plan. Etwas Neues lockt, und gerade weil du noch nicht alles weißt, ist alles möglich.",
+  "question": "Wohin gehst du, wenn dich niemand vorhersagen kann?",
+  "text": "Du stehst am Rand der Karte und hältst sie für die Welt. Ein Schritt, und der Boden entsteht unter dem Fuß. Wer nichts weiß, sieht noch alles.",
+  "img": "cards/card_00.webp"
+ },
+ {
+  "id": 1,
+  "num": "I",
+  "name": "Der Magier",
+  "keywords": [
+   "Wille",
+   "Können",
+   "Anfang"
+  ],
+  "meaning": "Du hast mehr in der Hand, als du denkst. Es ist ein guter Moment, aus dem, was da ist, etwas zu machen.",
+  "question": "Was baust du heute?",
+  "text": "Auf dem Tisch liegt alles, was du brauchst, und nichts davon gehört dir allein. Über dem Kopf ein Zeichen ohne Ende. Wer erkennt, dass er träumt, beginnt zu gestalten.",
+  "img": "cards/card_01.webp"
+ },
+ {
+  "id": 2,
+  "num": "II",
+  "name": "Die Hohepriesterin",
+  "keywords": [
+   "Intuition",
+   "Stille",
+   "Wissen"
+  ],
+  "meaning": "Ein leises Wissen, das sich nicht erklären lässt. Hör auf das Bauchgefühl, bevor du nach Beweisen suchst.",
+  "question": "Was weißt du, ohne es beweisen zu können?",
+  "text": "Zwischen zwei Säulen hängt ein Vorhang aus Stille. Sie liest nicht die Daten, sie liest die Lücken dazwischen. Nicht jede Antwort will berechnet werden.",
+  "img": "cards/card_02.webp"
+ },
+ {
+  "id": 3,
+  "num": "III",
+  "name": "Die Herrscherin",
+  "keywords": [
+   "Fülle",
+   "Fürsorge",
+   "Wachstum"
+  ],
+  "meaning": "Etwas will gepflegt werden und wächst dann von selbst. Das kann ein Projekt, eine Freundschaft oder du selbst sein.",
+  "question": "Wem gibst du Raum?",
+  "text": "Sie sät, ohne den Ertrag zu zählen. Wachstum ist hier keine Kurve, sondern ein Garten, der Zeit braucht. Was genährt wird, wächst zurück.",
+  "img": "cards/card_03.webp"
+ },
+ {
+  "id": 4,
+  "num": "IV",
+  "name": "Der Herrscher",
+  "keywords": [
+   "Ordnung",
+   "Struktur",
+   "Halt"
+  ],
+  "meaning": "Es geht um Ordnung und Halt. Regeln und Routinen können tragen, sie können aber auch eng werden.",
+  "question": "Welche Struktur trägt dich, welche hält dich fest?",
+  "text": "Ein Quadrat in einem Quadrat in einem Quadrat. Ordnung schützt, und Ordnung sperrt ein. Wer die Regeln schreibt, schreibt die Welt.",
+  "img": "cards/card_04.webp"
+ },
+ {
+  "id": 5,
+  "num": "V",
+  "name": "Der Hierophant",
+  "keywords": [
+   "Tradition",
+   "Lehre",
+   "Gemeinschaft"
+  ],
+  "meaning": "Lernen von anderen, Teil von etwas Größerem sein. Bewährtes darf geprüft werden, bevor man es übernimmt.",
+  "question": "Von wem hast du gelernt, wie man sieht?",
+  "text": "Er übersetzt das Alte für die Gegenwart. Jede Lehre war einmal ein Gegenmodell, bevor sie Gesetz wurde. Höre zu, dann widersprich.",
+  "img": "cards/card_05.webp"
+ },
+ {
+  "id": 6,
+  "num": "VI",
+  "name": "Die Liebenden",
+  "keywords": [
+   "Wahl",
+   "Verbindung",
+   "Werte"
+  ],
+  "meaning": "Eine Entscheidung, die auch mit anderen zu tun hat. Wichtig ist weniger die Wahl selbst als das, wofür du stehst.",
+  "question": "Was wählst du, wenn niemand etwas empfiehlt?",
+  "text": "Zwei Formen, ein Zwischenraum. Die Wahl ist nicht entweder oder, sondern wer du in der Wahl wirst. Verbindung ist ein Entwurf zu zweit.",
+  "img": "cards/card_06.webp"
+ },
+ {
+  "id": 7,
+  "num": "VII",
+  "name": "Der Wagen",
+  "keywords": [
+   "Antrieb",
+   "Richtung",
+   "Sieg"
+  ],
+  "meaning": "Bewegung nach vorne. Du musst nicht alles kontrollieren, nur wissen, wohin du willst.",
+  "question": "Wer sitzt am Steuer deiner Tage?",
+  "text": "Zwei Räder, ein Stern in der Mitte. Wer lenkt, muss nicht alles kontrollieren, nur das Ziel kennen. Bewegung ist ein Versprechen.",
+  "img": "cards/card_07.webp"
+ },
+ {
+  "id": 8,
+  "num": "VIII",
+  "name": "Die Kraft",
+  "keywords": [
+   "Mut",
+   "Geduld",
+   "Sanftheit"
+  ],
+  "meaning": "Stärke, die nicht laut ist. Geduld und Freundlichkeit bringen hier weiter als Druck.",
+  "question": "Wo ist Sanftheit dein Mut?",
+  "text": "Die Hand liegt sanft auf dem Unbändigen. Stärke zeigt sich hier als Geduld. Was gezähmt wird, wird nicht gebrochen, sondern verstanden.",
+  "img": "cards/card_08.webp"
+ },
+ {
+  "id": 9,
+  "num": "IX",
+  "name": "Der Eremit",
+  "keywords": [
+   "Rückzug",
+   "Suche",
+   "Einsicht"
+  ],
+  "meaning": "Zeit für dich. Ein Schritt zurück aus dem Lärm hilft, das Wesentliche wieder zu sehen.",
+  "question": "Wann warst du zuletzt ganz ohne Signal?",
+  "text": "Ein einzelnes Licht in vielen Kreisen. Er zieht sich zurück, um besser zu sehen. Im Rauschen findet niemand, was er sucht.",
+  "img": "cards/card_09.webp"
+ },
+ {
+  "id": 10,
+  "num": "X",
+  "name": "Rad des Schicksals",
+  "keywords": [
+   "Wandel",
+   "Zyklus",
+   "Wendepunkt"
+  ],
+  "meaning": "Die Dinge drehen sich. Was gerade oben ist, kann wieder sinken, und umgekehrt.",
+  "question": "Was kehrt in deinem Leben wieder?",
+  "text": "Alles dreht sich, auch das, was festgeschrieben scheint. Das Rad kennt keine Absicht. Oben und unten tauschen die Plätze.",
+  "img": "cards/card_10.webp"
+ },
+ {
+  "id": 11,
+  "num": "XI",
+  "name": "Die Gerechtigkeit",
+  "keywords": [
+   "Fairness",
+   "Wahrheit",
+   "Ausgleich"
+  ],
+  "meaning": "Es geht um Fairness. Was ist gerecht, für andere und für dich selbst?",
+  "question": "Wessen Stimme fehlt in deiner Rechnung?",
+  "text": "Die Waage misst nicht Daten, sondern Gewicht. Wer entscheidet, was zählt? Ausgleich beginnt bei der eigenen Schale.",
+  "img": "cards/card_11.webp"
+ },
+ {
+  "id": 12,
+  "num": "XII",
+  "name": "Der Gehängte",
+  "keywords": [
+   "Hingabe",
+   "Perspektive",
+   "Pause"
+  ],
+  "meaning": "Eine Pause, die neue Sicht schenkt. Manchmal hilft es, die Dinge einmal anders herum zu betrachten.",
+  "question": "Was zeigt sich, wenn du nichts tust?",
+  "text": "Kopf nach unten, und die Welt ordnet sich neu. Stillstand ist hier keine Strafe, sondern ein anderer Blick. Lass los, damit du siehst.",
+  "img": "cards/card_12.webp"
+ },
+ {
+  "id": 13,
+  "num": "XIII",
+  "name": "Der Tod",
+  "keywords": [
+   "Ende",
+   "Übergang",
+   "Neubeginn"
+  ],
+  "meaning": "Etwas geht zu Ende, damit Platz für Neues entsteht. Das ist selten bequem, oft aber befreiend.",
+  "question": "Was darf aufhören, damit etwas beginnt?",
+  "text": "Die Sonne sinkt in die Linien des Horizonts. Nichts endet ganz, es wechselt nur den Zustand. Platz entsteht.",
+  "img": "cards/card_13.webp"
+ },
+ {
+  "id": 14,
+  "num": "XIV",
+  "name": "Die Mäßigkeit",
+  "keywords": [
+   "Balance",
+   "Maß",
+   "Mischung"
+  ],
+  "meaning": "Das richtige Maß finden. Nicht zu viel, nicht zu wenig, sondern eine Mischung, die passt.",
+  "question": "Wovon hast du zu viel, wovon zu wenig?",
+  "text": "Zwei Gefäße, eine Strömung. Das Maß liegt nicht in der Mitte, sondern im Fließen. Mische, bis es stimmt.",
+  "img": "cards/card_14.webp"
+ },
+ {
+  "id": 15,
+  "num": "XV",
+  "name": "Der Teufel",
+  "keywords": [
+   "Bindung",
+   "Verlockung",
+   "Schatten"
+  ],
+  "meaning": "Etwas hält dich fest, gerade weil es bequem ist. Es lohnt sich zu fragen, was dich wirklich bindet.",
+  "question": "Was bindet dich, weil es dir gefällt?",
+  "text": "Die Kette ist leicht, und doch trägst du sie gern. Komfort ist das bequemste Gefängnis. Alles ist kostenlos, nur du nicht.",
+  "img": "cards/card_15.webp"
+ },
+ {
+  "id": 16,
+  "num": "XVI",
+  "name": "Der Turm",
+  "keywords": [
+   "Umbruch",
+   "Erkenntnis",
+   "Befreiung"
+  ],
+  "meaning": "Ein plötzlicher Umbruch. Was zu wackelig gebaut war, fällt, und darin steckt auch eine Chance.",
+  "question": "Welche Gewissheit darf einstürzen?",
+  "text": "Der Blitz trifft, was zu hoch gebaut wurde. Was fällt, war nie so fest, wie es schien. Im Bruch liegt Erkenntnis.",
+  "img": "cards/card_16.webp"
+ },
+ {
+  "id": 17,
+  "num": "XVII",
+  "name": "Der Stern",
+  "keywords": [
+   "Hoffnung",
+   "Inspiration",
+   "Ruhe"
+  ],
+  "meaning": "Hoffnung und Ruhe nach einer schwierigen Zeit. Ein kleines Licht reicht, um die Richtung zu finden.",
+  "question": "Woran orientierst du dich im Dunkeln?",
+  "text": "Viele kleine Lichter über einer ruhigen Fläche. Hoffnung ist kein Plan, aber ohne sie beginnt keiner. Nach dem Turm kommt der Atem.",
+  "img": "cards/card_17.webp"
+ },
+ {
+  "id": 18,
+  "num": "XVIII",
+  "name": "Der Mond",
+  "keywords": [
+   "Traum",
+   "Täuschung",
+   "Unbewusstes"
+  ],
+  "meaning": "Nicht alles ist, wie es scheint. Träume, Ahnungen und Unsicherheit mischen sich, schau genau hin.",
+  "question": "Welcher Schatten sagt die Wahrheit?",
+  "text": "Das Spiegelbild im Wasser zeigt mehr als das Original. Hier verschwimmen Traum und Täuschung. Wer genau hinsieht, sieht beides.",
+  "img": "cards/card_18.webp"
+ },
+ {
+  "id": 19,
+  "num": "XIX",
+  "name": "Die Sonne",
+  "keywords": [
+   "Freude",
+   "Klarheit",
+   "Erfolg"
+  ],
+  "meaning": "Klarheit und Freude. Etwas wird sichtbar und darf einfach gut sein.",
+  "question": "Was freut dich ohne Grund?",
+  "text": "Zwölf Strahlen, ein klarer Kern. Alles wird sichtbar, auch das, was man lieber übersehen hätte. Klarheit wärmt und blendet.",
+  "img": "cards/card_19.webp"
+ },
+ {
+  "id": 20,
+  "num": "XX",
+  "name": "Das Gericht",
+  "keywords": [
+   "Erwachen",
+   "Ruf",
+   "Bilanz"
+  ],
+  "meaning": "Ein Weckruf. Zeit, Bilanz zu ziehen und bewusst neu anzufangen.",
+  "question": "Welchem Ruf bist du bisher ausgewichen?",
+  "text": "Ein Ruf geht durch die Linien, drei Formen erheben sich. Erwachen heißt Bilanz ziehen und neu anfangen.",
+  "img": "cards/card_20.webp"
+ },
+ {
+  "id": 21,
+  "num": "XXI",
+  "name": "Die Welt",
+  "keywords": [
+   "Vollendung",
+   "Ganzheit",
+   "Ankunft"
+  ],
+  "meaning": "Etwas rundet sich ab. Ein Ziel ist erreicht, und von hier aus beginnt der nächste Weg.",
+  "question": "Was ist für dich ganz?",
+  "text": "Ein Kreis schließt sich um ein Auge. Vollendung ist kein Stillstand, sondern ein Ort, an dem man ankommt, um wieder aufzubrechen.",
+  "img": "cards/card_21.webp"
+ },
+ {
+  "id": 22,
+  "num": "XXII",
+  "name": "Der Rebell",
+  "keywords": [
+   "Widerstand",
+   "Eigensinn",
+   "Umkehr"
+  ],
+  "meaning": "Nicht mitmachen, nur weil alle es tun. Ein kleiner Widerspruch kann viel verändern.",
+  "question": "Wo sagst du Nein, damit ein anderes Ja möglich wird?",
+  "text": "Ein Tropfen gegen die Reihe. Er fällt nicht aus dem Muster, er ist ein anderes. Widerstand beginnt klein.",
+  "img": "cards/card_22.webp"
+ },
+ {
+  "id": 23,
+  "num": "XXIII",
+  "name": "Die Entdeckerin",
+  "keywords": [
+   "Neugier",
+   "Versuch",
+   "Weite"
+  ],
+  "meaning": "Neugier führt weiter als Sicherheit. Ausprobieren, scheitern, nochmal probieren gehört dazu.",
+  "question": "Was versuchst du, wenn Scheitern erlaubt ist?",
+  "text": "Ein Stern über dem Horizont, der Weg noch ungezeichnet. Sie probiert, scheitert, probiert weiter. Jeder Fehler ist eine Koordinate.",
+  "img": "cards/card_23.webp"
+ },
+ {
+  "id": 24,
+  "num": "XXIV",
+  "name": "Die Kartografin",
+  "keywords": [
+   "Deutung",
+   "Grenze",
+   "Entwurf"
+  ],
+  "meaning": "Jede Karte zeigt nur einen Ausschnitt. Was fehlt in deinem Bild, und wer hat es gezeichnet?",
+  "question": "Was fehlt auf deiner Landkarte?",
+  "text": "Sie zeichnet nicht, was ist, sondern was gesehen wird. Jede Karte ist ein Modell, und jedes Modell lässt etwas aus.",
+  "img": "cards/card_24.webp"
+ },
+ {
+  "id": 25,
+  "num": "XXV",
+  "name": "Das Orakel",
+  "keywords": [
+   "Vorhersage",
+   "Rätsel",
+   "Wahrscheinlichkeit"
+  ],
+  "meaning": "Eine Vorhersage ist keine Gewissheit. Was wahrscheinlich ist, muss nicht passieren.",
+  "question": "Welche Zukunft wurde dir schon vorausgesagt?",
+  "text": "Die Kugel sagt nur, was wahrscheinlich ist. Wahrscheinlich ist nicht dasselbe wie wahr. Wer der Vorhersage folgt, macht sie wahr.",
+  "img": "cards/card_25.webp"
+ },
+ {
+  "id": 26,
+  "num": "XXVI",
+  "name": "Der Automat",
+  "keywords": [
+   "Nachahmung",
+   "Regel",
+   "Fremdbestimmung"
+  ],
+  "meaning": "Dinge laufen weiter, nur weil sie immer so liefen. Es ist ein guter Moment, Gewohnheiten zu hinterfragen.",
+  "question": "Was tust du nur, weil es immer so lief?",
+  "text": "Zahnräder, die einander antreiben, ohne zu fragen wohin. Er ahmt nach, perfekt und leer. Regeln ohne Sinn laufen einfach weiter.",
+  "img": "cards/card_26.webp"
+ },
+ {
+  "id": 27,
+  "num": "XXVII",
+  "name": "Die Weberin",
+  "keywords": [
+   "Netz",
+   "Muster",
+   "Verbindung"
+  ],
+  "meaning": "Zusammen entsteht mehr. Viele einzelne Fäden werden zu etwas, das trägt.",
+  "question": "Mit wem webst du?",
+  "text": "Kette und Schuss, Faden um Faden. Aus vielen Linien wird ein Stoff, der trägt. Kein Muster entsteht allein.",
+  "img": "cards/card_27.webp"
+ },
+ {
+  "id": 28,
+  "num": "XXVIII",
+  "name": "Die Baumeisterin",
+  "keywords": [
+   "Mut",
+   "Prototyp",
+   "Gestaltung"
+  ],
+  "meaning": "Einfach anfangen, bevor alles fertig geplant ist. Ein erster Versuch zeigt mehr als jede Überlegung.",
+  "question": "Was kannst du heute schon bauen?",
+  "text": "Stufe auf Stufe, oben ein Dach aus Mut. Sie baut, bevor der Plan fertig ist. Der Prototyp ist eine Frage in Form.",
+  "img": "cards/card_28.webp"
+ },
+ {
+  "id": 29,
+  "num": "XXIX",
+  "name": "Der Riss",
+  "keywords": [
+   "Fehler",
+   "Bruch",
+   "Öffnung"
+  ],
+  "meaning": "Ein Fehler, der etwas sichtbar macht. Durch den Riss kommt Licht und manchmal auch eine Idee.",
+  "question": "Welcher Fehler hat dir etwas gezeigt?",
+  "text": "Ein Kreis, nicht mehr ganz. Durch den Riss fällt Licht, durch den Fehler zeigt sich das System.",
+  "img": "cards/card_29.webp"
+ },
+ {
+  "id": 30,
+  "num": "XXX",
+  "name": "Das Labyrinth",
+  "keywords": [
+   "Umweg",
+   "Prozess",
+   "Mitte"
+  ],
+  "meaning": "Der Weg ist nicht gerade, und das ist in Ordnung. Umwege gehören zum Ziel.",
+  "question": "Welchen Umweg gehst du gerade?",
+  "text": "Der Weg zur Mitte führt immer wieder hinaus. Ein Labyrinth hat keine Sackgassen, nur Umwege. Der Prozess ist das Ziel.",
+  "img": "cards/card_30.webp"
+ },
+ {
+  "id": 31,
+  "num": "XXXI",
+  "name": "Die Maske",
+  "keywords": [
+   "Identität",
+   "Spiel",
+   "Verwandlung"
+  ],
+  "meaning": "Mal jemand anders sein. Rollen und Spiel zeigen Seiten, die sonst verborgen bleiben.",
+  "question": "Welche Rolle spielst du gern?",
+  "text": "Zwei Augen hinter einer fremden Form. Wer sich verwandelt, wird nicht unecht, sondern vielfältig. Spiel ist eine Weise, wahr zu sein.",
+  "img": "cards/card_31.webp"
+ },
+ {
+  "id": 32,
+  "num": "XXXII",
+  "name": "Der Spiegel",
+  "keywords": [
+   "Abbild",
+   "Täuschung",
+   "Zweite Welt"
+  ],
+  "meaning": "Bild und Wirklichkeit beeinflussen sich. Wie du gesehen wirst, verändert, wer du bist, und umgekehrt.",
+  "question": "Welche Version von dir sieht die Maschine?",
+  "text": "Oben die Form, unten ihr Echo im Wasser. Das Abbild verändert das Original. Zwei Welten sehen einander an.",
+  "img": "cards/card_32.webp"
+ },
+ {
+  "id": 33,
+  "num": "XXXIII",
+  "name": "Die Tänzerin",
+  "keywords": [
+   "Körper",
+   "Gegenwart",
+   "Ausdruck"
+  ],
+  "meaning": "Ganz im Moment sein. Der Körper weiß oft schon, was der Kopf erst noch verstehen muss.",
+  "question": "Wann warst du ganz im Jetzt?",
+  "text": "Drei Formen drehen sich um eine Mitte. Der Körper weiß, bevor der Kopf versteht. Gegenwart lässt sich nicht speichern.",
+  "img": "cards/card_33.webp"
+ },
+ {
+  "id": 34,
+  "num": "XXXIV",
+  "name": "Das Echo",
+  "keywords": [
+   "Klang",
+   "Resonanz",
+   "Antwort"
+  ],
+  "meaning": "Was du aussendest, kommt verändert zurück. Achte darauf, was in dir nachhallt.",
+  "question": "Was hallt in dir nach?",
+  "text": "Was du hinausrufst, kehrt verändert zurück. Jede Stimme wird zum Raum, den sie füllt. Resonanz ist Antwort ohne Worte.",
+  "img": "cards/card_34.webp"
+ },
+ {
+  "id": 35,
+  "num": "XXXV",
+  "name": "Der Schwarm",
+  "keywords": [
+   "Vielheit",
+   "Gemeinschaft",
+   "Bewegung"
+  ],
+  "meaning": "Gemeinsam bewegt sich etwas, auch ohne dass jemand führt. Du bist Teil einer größeren Bewegung.",
+  "question": "Wem folgst du, ohne es zu merken?",
+  "text": "Viele kleine Körper, eine Bewegung. Niemand führt, und doch weiß der Schwarm, wohin. Gemeinschaft ist Intelligenz ohne Zentrum.",
+  "img": "cards/card_35.webp"
+ },
+ {
+  "id": 36,
+  "num": "XXXVI",
+  "name": "Die Stadt",
+  "keywords": [
+   "Raum",
+   "Begegnung",
+   "Öffentlichkeit"
+  ],
+  "meaning": "Begegnung im offenen Raum. Neue Menschen und Orte bringen neue Möglichkeiten.",
+  "question": "Wo begegnest du Fremden?",
+  "text": "Türme um einen offenen Platz. Die Stadt gehört denen, die sie betreten. Öffentlicher Raum ist ein Versprechen, das man einlösen muss.",
+  "img": "cards/card_36.webp"
+ },
+ {
+  "id": 37,
+  "num": "XXXVII",
+  "name": "Die Schwelle",
+  "keywords": [
+   "Übergang",
+   "Einlass",
+   "Wandel"
+  ],
+  "meaning": "Du stehst an einem Übergang. Hindurchgehen ist eine Entscheidung, und danach ist manches anders.",
+  "question": "Vor welcher Tür stehst du gerade?",
+  "text": "Ein Tor, Linie für Linie. Wer hindurchgeht, kommt verändert an. Einlass ist eine Entscheidung.",
+  "img": "cards/card_37.webp"
+ },
+ {
+  "id": 38,
+  "num": "XXXVIII",
+  "name": "Die Seherin",
+  "keywords": [
+   "Ahnung",
+   "Zukunft",
+   "Weitblick"
+  ],
+  "meaning": "Eine Ahnung, die schon lange da ist. Du siehst weiter, als du gerade sagen kannst.",
+  "question": "Was ahnst du schon lange?",
+  "text": "Das Auge steht aufrecht, nach innen gewandt. Sie sieht nicht voraus, sie sieht weiter. Ahnung ist Wissen ohne Sprache.",
+  "img": "cards/card_38.webp"
+ },
+ {
+  "id": 39,
+  "num": "XXXIX",
+  "name": "Der Klartraum",
+  "keywords": [
+   "Erwachen",
+   "Erkenntnis",
+   "Gestaltung"
+  ],
+  "meaning": "Du erkennst, dass du gestalten kannst. Was würdest du ändern, wenn alles möglich wäre?",
+  "question": "Was änderst du, jetzt wo du wach im Traum bist?",
+  "text": "Mond, Sterne und ein offenes Auge. Du träumst und weißt es. Von hier aus ist die Welt gestaltbar.",
+  "img": "cards/card_39.webp"
+ }
+]
