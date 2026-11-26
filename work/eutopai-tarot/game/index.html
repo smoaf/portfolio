@@ -10,29 +10,27 @@
 <main class="eg" id="eg">
   <header class="eg-head">
     <div class="eg-brand">EUTOPAI <span>Tarot der Klarträume</span></div>
-    <div class="eg-mode" role="group" aria-label="Ansicht">
-      <button id="btn-view" class="eg-ghost" type="button">Schachtel ansehen</button>
+    <div class="eg-mode" role="group" aria-label="Spiel">
+      <button id="btn-view" class="eg-ghost" type="button" aria-pressed="true">Spiel ansehen</button>
+      <button id="btn-draw" class="eg-ghost" type="button" aria-pressed="false" disabled>Karten ziehen</button>
     </div>
   </header>
 
   <section class="eg-stage" id="stage" aria-label="Die Schachtel mit den Karten">
     <canvas id="scene"></canvas>
     <div class="eg-loading" id="loading">Die Karten werden gemischt …</div>
-    <p class="eg-hint" id="hint">Ziehen zum Drehen</p>
   </section>
 
   <section class="eg-panel" id="intro">
     <h1 class="eg-title">Drei Zeichen</h1>
     <p class="eg-lead">Denk an etwas, das dich gerade beschäftigt. Du musst es nicht aufschreiben. Dann zieh drei Karten aus der Schachtel.</p>
-    <button id="btn-draw" class="eg-btn" type="button" disabled>Drei Karten ziehen</button>
-    <p class="eg-small">oder tippe auf die Schachtel</p>
+    <p class="eg-small">Oben auf „Karten ziehen“ oder auf die Schachtel tippen.</p>
   </section>
 
   <section class="eg-panel eg-result" id="result" hidden aria-live="polite">
     <p class="eg-sentence" id="sentence"></p>
     <div class="eg-cols" id="cols"></div>
     <div class="eg-actions">
-      <button id="btn-again" class="eg-btn" type="button">Neu ziehen</button>
       <p class="eg-small">Die Karten sind ein Modell, kein Urteil. Baue dein Gegenmodell.</p>
     </div>
   </section>

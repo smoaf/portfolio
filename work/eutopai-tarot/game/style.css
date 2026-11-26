@@ -33,11 +33,23 @@ button { font: inherit; }
 .eg-lead { max-width: 640px; margin: 0 0 18px; color: var(--paper); }
 .eg-small { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
 
-.eg-btn { background: var(--lime); color: var(--navy); border: 0; border-radius: 999px; padding: 12px 22px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; cursor: pointer; transition: transform .15s, background .2s; }
-.eg-btn:hover:not(:disabled) { transform: translateY(-1px); background: #e3ec6c; }
+/* portfolio: the buttons in the deck's headline type (Syne ExtraBold); hover, press and keyboard focus swap fill and text (lime and navy), like the site's buttons */
+.eg-btn { font-family: "Syne", sans-serif; font-weight: 800; background: var(--lime); color: var(--navy); border: 1px solid var(--lime); border-radius: 999px; padding: 12px 22px; letter-spacing: .06em; text-transform: uppercase; font-size: 13px; cursor: pointer; transition: background .2s, color .2s; }
+.eg-btn:not(:disabled):active, .eg-btn:not(:disabled):focus-visible { background: var(--navy); color: var(--lime); }
+@media (hover: hover) { .eg-btn:hover:not(:disabled) { background: var(--navy); color: var(--lime); } }
 .eg-btn:disabled { opacity: .45; cursor: default; }
-.eg-ghost { background: transparent; color: var(--lime); border: 1px solid rgba(213, 224, 77, .5); border-radius: 999px; padding: 7px 14px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.eg-ghost { font-family: "Syne", sans-serif; font-weight: 800; background: transparent; color: var(--lime); border: 1px solid rgba(213, 224, 77, .5); border-radius: 999px; padding: 7px 14px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; }
 .eg-ghost[aria-pressed="true"] { background: var(--lime); color: var(--navy); }
+.eg-ghost:active, .eg-ghost:focus-visible { background: var(--lime); color: var(--navy); border-color: var(--lime); }
+.eg-ghost[aria-pressed="true"]:active, .eg-ghost[aria-pressed="true"]:focus-visible { background: transparent; color: var(--lime); }
+@media (hover: hover) { .eg-ghost:hover { background: var(--lime); color: var(--navy); border-color: var(--lime); } .eg-ghost[aria-pressed="true"]:hover { background: transparent; color: var(--lime); } }
+/* portfolio: draw and view side by side in the head, the same height */
+.eg-mode { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.eg-mode .eg-ghost { white-space: nowrap; }
+.embed .eg-brand { display: none; }
+.embed .eg-head { justify-content: flex-end; }
+@media (max-width: 440px) { .eg-head { padding-left: 10px; padding-right: 10px; } .eg-mode { gap: 6px; } .eg-mode .eg-ghost { padding: 7px 9px; font-size: 10px; letter-spacing: 0; } }
+@media (max-width: 345px) { .eg-head { padding-left: 8px; padding-right: 8px; } .eg-mode .eg-ghost { padding: 7px 7px; font-size: 9.5px; } }   /* small phones: both on one row */
 .eg-btn:focus-visible, .eg-ghost:focus-visible, .eg-card:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
 
 .eg-sentence { font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(20px, 3vw, 30px); line-height: 1.2; margin: 0 0 22px; color: var(--paper); }

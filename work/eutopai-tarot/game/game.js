@@ -255,8 +255,9 @@ function pick3() {
 
 async function draw() {
   if (state !== "idle") return;
+  autoDrawn = true; press("draw");
   if (viewing) await toggleView(false);
-  state = "busy"; $("btn-draw").disabled = true;
+  state = "busy";   // portfolio: the button stays usable (it draws again after a reading)
   const picks = pick3();
   const meshes = await Promise.all(picks.map(makeCard));
   await setTray(true);
@@ -289,15 +290,16 @@ async function reset() {
 
 // look at the packaging: the closed box rises and turns, so every side and the varnish catch the light
 let spin = 0;
-const IDLE_RZ = THREE.MathUtils.degToRad(-14), LOOK_RZ = THREE.MathUtils.degToRad(28), LOOK_RX = 0.32;
+// portfolio: the box is shown end for end (turned 180°, its tilt and turn mirrored): the same pose and motion on screen, but the side print reads upright
+const IDLE_RZ = THREE.MathUtils.degToRad(-14), LOOK_RZ = THREE.MathUtils.degToRad(28 - 180), LOOK_RX = -0.32;
 async function toggleView(on = !viewing) {
   if (state === "busy" || state === "loading") return;
   if (on && state === "drawn") await reset();
-  viewing = on; $("btn-view").setAttribute("aria-pressed", String(on));
-  $("btn-view").textContent = on ? "Zurück zum Spiel" : "Schachtel ansehen";
+  viewing = on; if (on) press("view");
+  const was = state; state = "busy";   // portfolio: no draw while the box is still moving
   const z0 = box.position.z, z1 = on ? 7.5 : SH / 2;
   const rx0 = box.rotation.x, rx1 = on ? LOOK_RX : 0, rz0 = box.rotation.z, rz1 = on ? LOOK_RZ : IDLE_RZ;
-  const ry0 = box.rotation.y % (2 * Math.PI), ry1 = on ? ry0 : (ry0 > Math.PI ? 2 * Math.PI : 0);
+  const ry0 = box.rotation.y % (2 * Math.PI), ry1 = on ? ry0 : (ry0 > Math.PI ? 2 * Math.PI : ry0 < -Math.PI ? -2 * Math.PI : 0);
   spinning = false;
   moveCamera(on ? VIEWS.look : VIEWS.idle, 1200);
   await tween(1200, (k) => {
@@ -306,6 +308,7 @@ async function toggleView(on = !viewing) {
   });
   if (!on) box.rotation.y = 0;
   spinning = on;
+  state = was;
 }
 let spinning = false;
 
@@ -355,9 +358,18 @@ canvas.addEventListener("pointerup", (e) => {
   else if (hit.object.userData.box && state === "idle") draw();
 });
 
-$("btn-draw").addEventListener("click", draw);
-$("btn-again").addEventListener("click", async () => { await reset(); draw(); });
-$("btn-view").addEventListener("click", () => toggleView());
+// portfolio: two buttons with fixed names; the pressed one is the mode the game is in.
+// "Spiel ansehen" (the box rises and turns) is on at the start; "Karten ziehen" draws three cards (again, after a reading).
+function press(m) { $("btn-view").setAttribute("aria-pressed", String(m === "view")); $("btn-draw").setAttribute("aria-pressed", String(m === "draw")); }
+$("btn-draw").addEventListener("click", async () => { if (state === "drawn") await reset(); draw(); });
+$("btn-view").addEventListener("click", () => { if (!viewing) toggleView(true); });
+document.addEventListener("touchstart", () => {}, { passive: true });   // lets iPhones show the pressed look (:active) of the buttons
+// embedded on a page: once the visitor scrolls on until the text under the box is in view, the cards are drawn (once; after that only the buttons)
+let autoDrawn = false, autoWaiting = false;
+function autoDraw() { if (autoDrawn) return; if (state === "idle") draw(); else autoWaiting = true; }
+if (document.body.classList.contains("embed") && "IntersectionObserver" in window) {
+  new IntersectionObserver((es) => { if (es[0].isIntersecting) autoDraw(); }, { threshold: 0.5 }).observe($("intro"));
+}
 
 // ---------- loop and sizing ----------
 function resize() {
@@ -372,7 +384,7 @@ new ResizeObserver(postHeight).observe(document.body);
 
 renderer.setAnimationLoop((now) => {
   stepTweens(now);
-  if (spinning) box.rotation.y += REDUCED ? 0.002 : 0.006;   // turn around the long axis: top, side, bottom, side
+  if (spinning) box.rotation.y -= REDUCED ? 0.002 : 0.006;   // turn around the long axis: top, side, bottom, side
   controls.update(); renderer.render(scene, camera);
 });
 
@@ -383,4 +395,6 @@ renderer.setAnimationLoop((now) => {
   CARDS = data;
   $("loading").classList.add("done");
   state = "idle"; $("btn-draw").disabled = false; postHeight();
+  await toggleView(true);   // portfolio: starts on "Spiel ansehen"
+  if (autoWaiting) autoDraw();
 })().catch((e) => { $("loading").textContent = "Die Karten konnten nicht geladen werden."; console.error(e); });

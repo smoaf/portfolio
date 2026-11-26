@@ -109,6 +109,8 @@
   .bar-buy { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none; white-space: nowrap;
              font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s; }
   .bar-buy.show { opacity: 1; transform: none; pointer-events: auto; }
+  @media (max-width: 400px) { .bar-right { gap: 10px; } .bar-buy { padding: 0 12px; } }   /* small phones: name, Back, Go to festival and Menu still fit */
+  @media (max-width: 370px) { .bar-buy { font-size: 12px; padding: 0 10px; } }
 
   /* FEAT-048: EUTOPAI Tarot, built on the case study page (work/inner-state/); the project's colours come in only through its images and the game */
   .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #070d2c; color: #f4f1ec; }
