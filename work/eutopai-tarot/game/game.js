@@ -42,7 +42,7 @@ controls.minDistance = 18; controls.maxDistance = 130;
 controls.minPolarAngle = 0.15; controls.maxPolarAngle = 1.35;
 const VIEWS = {
   idle: { pos: new THREE.Vector3(-7, -17, 22), tgt: new THREE.Vector3(0.5, 7, 1.2) },
-  drawn: { pos: new THREE.Vector3(-2, -33, 33), tgt: new THREE.Vector3(0, -2, 0) },
+  drawn: { pos: new THREE.Vector3(-2, -33.7, 33), tgt: new THREE.Vector3(0, -2.7, 0) },   // portfolio: follows the slots half way
   look: { pos: new THREE.Vector3(-12, -16, 22), tgt: new THREE.Vector3(0.5, 8, 6) },
 };
 camera.position.copy(VIEWS.idle.pos); controls.target.copy(VIEWS.idle.tgt);
@@ -206,7 +206,8 @@ function moveCamera(v, ms = 1400) {
 
 // ---------- game flow ----------
 let state = "loading", drawn = [], viewing = false;
-const SLOTS = [new THREE.Vector3(-8.9, -9.2, 0), new THREE.Vector3(0, -9.8, 0), new THREE.Vector3(8.9, -9.2, 0)];
+// portfolio: the slots sit 1.4 cm further from the box, so the pulled-out drawer no longer lies over the middle card
+const SLOTS = [new THREE.Vector3(-8.9, -10.6, 0), new THREE.Vector3(0, -11.2, 0), new THREE.Vector3(8.9, -10.6, 0)];
 const SLOT_ROT = [6, 0, -6];
 
 async function setTray(open) {
