@@ -105,6 +105,12 @@
   }
 
   .bar-right { display: flex; align-items: center; gap: 18px; }
+  /* the festival link, as CONNECT 2's "Get it": a button in the hero, and a small copy in the header strip once that one has scrolled away */
+  .bar-buy { display: inline-flex; align-items: center; min-height: 34px; padding: 0 18px; border-radius: 999px; background: var(--ink); color: var(--stage); text-decoration: none; white-space: nowrap;
+             font: 650 13px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .25s, transform .25s; }
+  .bar-buy.show { opacity: 1; transform: none; pointer-events: auto; }
+  @media (max-width: 400px) { .bar-right { gap: 10px; } .bar-buy { padding: 0 12px; } }   /* small phones: name, Back, Go to festival and Menu still fit */
+  @media (max-width: 370px) { .bar-buy { font-size: 12px; padding: 0 10px; } }
 
   /* FEAT-048: EUTOPAI Tarot, built on the case study page (work/inner-state/); the project's colours come in only through its images and the game */
   .hero { position: relative; height: min(100svh, 980px); min-height: 560px; overflow: hidden; background: #070d2c; color: #f4f1ec; }
@@ -116,9 +122,10 @@
   h1 .h1-de { display: block; margin: clamp(8px, 1.2vw, 14px) 0 0 0.05em; font: 400 clamp(20px, 2.6vw, 34px)/1.2 var(--font); font-stretch: 104%; font-variation-settings: 'wdth' 104; font-style: italic; letter-spacing: 0; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .claim { margin: clamp(12px, 1.8vw, 20px) 0 0; max-width: 44rem; font: 400 clamp(16px, 1.5vw, 19px)/1.45 var(--font); color: rgba(244,241,236,.92); }
+  .actions { margin: clamp(18px, 2.4vw, 28px) 0 0; }
+  .buy { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; padding: 0 44px; border-radius: 999px;
+         background: #f4f1ec; color: #1d1b18; text-decoration: none; font: 650 17px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; transition: background .2s; }
   .meta { margin: 12px 0 0; font: 500 12px/1.5 var(--font-data); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(244,241,236,.75); }
-  /* text Smo still has to supply: left visible, marked */
-  .todo { font-style: italic; outline: 1px dashed currentColor; outline-offset: 1px; padding: 0 3px; border-radius: 2px; }
 
   /* content parts: heading left, text right (as on the case studies) */
   .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
@@ -175,6 +182,7 @@
       <a class="bar-back" id="bar-back" href="../../" aria-label="Back"><span aria-hidden="true">←</span><span class="bar-back-t" aria-hidden="true">&nbsp;Back</span></a>
     </div>
     <div class="bar-right">
+      <a class="bar-buy" id="bar-buy" href="https://www.lucid-dreams.eu/" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">Go to festival</a>
       <nav class="menu" id="menu" aria-label="Main">
         <button type="button" data-cat="work" aria-expanded="false">Work</button>
         <button type="button" data-cat="play" aria-expanded="false">Play</button>
@@ -195,7 +203,8 @@
       <p class="kicker">Mediadesign &amp; Installations</p>
       <h1 id="h-title">EUTOPAI Tarot<span class="vh"> · </span><span class="h1-de" lang="de">Tarot der Klarträume</span></h1>
       <p class="claim">A 40-card tarot deck in a slide-out box, designed as promotion, programme guide and small ritual for Lucid Dreams · EUTOPAI, a festival for digital art in St. Pölten (4–5 June 2027).</p>
-      <p class="meta"><span class="todo" title="To do: Smo's input">[Year]</span> · <span class="todo" title="To do: Smo's input">[Context, e.g. course or self-initiated]</span> · Corporate design, packaging, print production, interactive</p>
+      <p class="meta">Corporate design, packaging, print production, interactive</p>
+      <div class="actions" id="main-actions"><a class="buy" href="https://www.lucid-dreams.eu/" target="_blank" rel="noopener">Go to festival</a></div>
     </div>
   </section>
 
@@ -243,7 +252,7 @@
     <section class="part" aria-labelledby="h-booklet">
       <h2 id="h-booklet">The booklet</h2>
       <div>
-        <p>A small A7 booklet explains what tarot is and how to read it, lists all 40 cards with a short text and a question, and introduces the festival. <span class="todo" title="To do: Smo's input">[Sample pages are designed, the full booklet follows.]</span></p>
+        <p>A small A7 booklet explains what tarot is and how to read it, lists all 40 cards with a short text and a question, and introduces the festival.</p>
         <div class="pics one">
           <figure><img src="media/light_booklet_1200.webp" srcset="media/light_booklet_1200.webp 1200w, media/light_booklet.webp 1800w" sizes="(max-width: 720px) 100vw, 46rem" loading="lazy" width="1800" height="1200" alt="A small blue and lime booklet, closed and open on three spreads."></figure>
         </div>
@@ -326,12 +335,6 @@
       </div>
     </section>
 
-    <section class="part" aria-labelledby="h-credits">
-      <h2 id="h-credits">Credits</h2>
-      <div>
-        <p><span class="todo" title="To do: Smo's input">[Name, context, year]</span>. Festival: Lucid Dreams · EUTOPAI, Bühne im Hof, St. Pölten, 4–5 June 2027. Typefaces: Syne, IBM Plex Mono (SIL Open Font License). 3D in the game: three.js (MIT).</p>
-      </div>
-    </section>
     <div class="end"></div>
   </div>
 </main>
@@ -451,6 +454,18 @@
     var h = Number(e.data.height);
     if (h > 0 && h < 20000) f.style.height = Math.ceil(h) + 'px';
   });
+})();
+</script>
+<script>
+// the small "Go to festival" in the header strip, once the hero's button has scrolled away (as CONNECT 2's "Get it")
+(function () {
+  var mainActions = document.getElementById('main-actions'), barBuy = document.getElementById('bar-buy');
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      var away = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+      barBuy.classList.toggle('show', away); barBuy.tabIndex = away ? 0 : -1; barBuy.setAttribute('aria-hidden', String(!away));
+    }).observe(mainActions);
+  }
 })();
 </script>
 <script type="module" src="../../loader/menubits.js"></script>   <!-- FEAT-045: menu words fold into their bits -->

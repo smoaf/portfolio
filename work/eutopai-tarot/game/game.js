@@ -42,7 +42,7 @@ controls.minDistance = 18; controls.maxDistance = 130;
 controls.minPolarAngle = 0.15; controls.maxPolarAngle = 1.35;
 const VIEWS = {
   idle: { pos: new THREE.Vector3(-7, -17, 22), tgt: new THREE.Vector3(0.5, 7, 1.2) },
-  drawn: { pos: new THREE.Vector3(-2, -33, 33), tgt: new THREE.Vector3(0, -2, 0) },
+  drawn: { pos: new THREE.Vector3(-2, -33.7, 33), tgt: new THREE.Vector3(0, -2.7, 0) },   // portfolio: follows the slots half way
   look: { pos: new THREE.Vector3(-12, -16, 22), tgt: new THREE.Vector3(0.5, 8, 6) },
 };
 camera.position.copy(VIEWS.idle.pos); controls.target.copy(VIEWS.idle.tgt);
@@ -128,7 +128,8 @@ async function buildBox() {
     quad([[-hw, -hl, hh], [hw, -hl, hh], [hw, hl, hh], [-hw, hl, hh]], (x, y) => [(x + hw) / SW, vy(y)], await printMat("s_top", true)),
     quad([[-hw, -hl, -hh], [-hw, hl, -hh], [hw, hl, -hh], [hw, -hl, -hh]], (x, y) => [(hw - x) / SW, vy(y)], await printMat("s_bottom", true)),
     quad([[hw, -hl, -hh], [hw, -hl, hh], [hw, hl, hh], [hw, hl, -hh]], (x, y, z) => [(hh - z) / SH, vy(y)], sideA),
-    quad([[-hw, -hl, -hh], [-hw, hl, -hh], [-hw, hl, hh], [-hw, -hl, hh]], (x, y, z) => [(z + hh) / SH, vy(y)], sideB),
+    // portfolio: the side with the date is printed turned 180°, so it reads upright as the box turns
+    quad([[-hw, -hl, -hh], [-hw, hl, -hh], [-hw, hl, hh], [-hw, -hl, hh]], (x, y, z) => [(hh - z) / SH, 1 - vy(y)], sideB),
     // inside of the board
     quad([[-hw + T, -hl, hh - T], [hw - T, -hl, hh - T], [hw - T, hl, hh - T], [-hw + T, hl, hh - T]], () => [0, 0], white),
     quad([[-hw + T, -hl, -hh + T], [hw - T, -hl, -hh + T], [hw - T, hl, -hh + T], [-hw + T, hl, -hh + T]], () => [0, 0], white),
@@ -206,7 +207,8 @@ function moveCamera(v, ms = 1400) {
 
 // ---------- game flow ----------
 let state = "loading", drawn = [], viewing = false;
-const SLOTS = [new THREE.Vector3(-8.9, -9.2, 0), new THREE.Vector3(0, -9.8, 0), new THREE.Vector3(8.9, -9.2, 0)];
+// portfolio: the slots sit 1.4 cm further from the box, so the pulled-out drawer no longer lies over the middle card
+const SLOTS = [new THREE.Vector3(-8.9, -10.6, 0), new THREE.Vector3(0, -11.2, 0), new THREE.Vector3(8.9, -10.6, 0)];
 const SLOT_ROT = [6, 0, -6];
 
 async function setTray(open) {
@@ -254,8 +256,9 @@ function pick3() {
 
 async function draw() {
   if (state !== "idle") return;
+  autoDrawn = true; press("draw");
   if (viewing) await toggleView(false);
-  state = "busy"; $("btn-draw").disabled = true;
+  state = "busy";   // portfolio: the button stays usable (it draws again after a reading)
   const picks = pick3();
   const meshes = await Promise.all(picks.map(makeCard));
   await setTray(true);
@@ -292,8 +295,8 @@ const IDLE_RZ = THREE.MathUtils.degToRad(-14), LOOK_RZ = THREE.MathUtils.degToRa
 async function toggleView(on = !viewing) {
   if (state === "busy" || state === "loading") return;
   if (on && state === "drawn") await reset();
-  viewing = on; $("btn-view").setAttribute("aria-pressed", String(on));
-  $("btn-view").textContent = on ? "Zurück zum Spiel" : "Schachtel ansehen";
+  viewing = on; if (on) press("view");
+  const was = state; state = "busy";   // portfolio: no draw while the box is still moving
   const z0 = box.position.z, z1 = on ? 7.5 : SH / 2;
   const rx0 = box.rotation.x, rx1 = on ? LOOK_RX : 0, rz0 = box.rotation.z, rz1 = on ? LOOK_RZ : IDLE_RZ;
   const ry0 = box.rotation.y % (2 * Math.PI), ry1 = on ? ry0 : (ry0 > Math.PI ? 2 * Math.PI : 0);
@@ -305,6 +308,7 @@ async function toggleView(on = !viewing) {
   });
   if (!on) box.rotation.y = 0;
   spinning = on;
+  state = was;
 }
 let spinning = false;
 
@@ -354,9 +358,18 @@ canvas.addEventListener("pointerup", (e) => {
   else if (hit.object.userData.box && state === "idle") draw();
 });
 
-$("btn-draw").addEventListener("click", draw);
-$("btn-again").addEventListener("click", async () => { await reset(); draw(); });
-$("btn-view").addEventListener("click", () => toggleView());
+// portfolio: two buttons with fixed names; the pressed one is the mode the game is in.
+// "Spiel ansehen" (the box rises and turns) is on at the start; "Karten ziehen" draws three cards (again, after a reading).
+function press(m) { $("btn-view").setAttribute("aria-pressed", String(m === "view")); $("btn-draw").setAttribute("aria-pressed", String(m === "draw")); }
+$("btn-draw").addEventListener("click", async () => { if (state === "drawn") await reset(); draw(); });
+$("btn-view").addEventListener("click", () => { if (!viewing) toggleView(true); });
+document.addEventListener("touchstart", () => {}, { passive: true });   // lets iPhones show the pressed look (:active) of the buttons
+// embedded on a page: once the visitor scrolls on until the text under the box is in view, the cards are drawn (once; after that only the buttons)
+let autoDrawn = false, autoWaiting = false;
+function autoDraw() { if (autoDrawn) return; if (state === "idle") draw(); else autoWaiting = true; }
+if (document.body.classList.contains("embed") && "IntersectionObserver" in window) {
+  new IntersectionObserver((es) => { if (es[0].isIntersecting) autoDraw(); }, { threshold: 0.5 }).observe($("intro"));
+}
 
 // ---------- loop and sizing ----------
 function resize() {
@@ -382,4 +395,6 @@ renderer.setAnimationLoop((now) => {
   CARDS = data;
   $("loading").classList.add("done");
   state = "idle"; $("btn-draw").disabled = false; postHeight();
+  await toggleView(true);   // portfolio: starts on "Spiel ansehen"
+  if (autoWaiting) autoDraw();
 })().catch((e) => { $("loading").textContent = "Die Karten konnten nicht geladen werden."; console.error(e); });
