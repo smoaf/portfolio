@@ -37,7 +37,7 @@ scene.environmentIntensity = 0.22;
 const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 600);
 camera.up.set(0, 0, 1);
 const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true; controls.enablePan = false;
+controls.enableDamping = true; controls.enablePan = false; controls.enableZoom = false;   // portfolio: drag only, no pinch or wheel zoom
 controls.minDistance = 18; controls.maxDistance = 130;
 controls.minPolarAngle = 0.15; controls.maxPolarAngle = 1.35;
 const VIEWS = {
@@ -128,8 +128,9 @@ async function buildBox() {
     quad([[-hw, -hl, hh], [hw, -hl, hh], [hw, hl, hh], [-hw, hl, hh]], (x, y) => [(x + hw) / SW, vy(y)], await printMat("s_top", true)),
     quad([[-hw, -hl, -hh], [-hw, hl, -hh], [hw, hl, -hh], [hw, -hl, -hh]], (x, y) => [(hw - x) / SW, vy(y)], await printMat("s_bottom", true)),
     quad([[hw, -hl, -hh], [hw, -hl, hh], [hw, hl, hh], [hw, hl, -hh]], (x, y, z) => [(hh - z) / SH, vy(y)], sideA),
-    // portfolio: the side with the date is printed turned 180°, so it reads upright as the box turns
-    quad([[-hw, -hl, -hh], [-hw, hl, -hh], [-hw, hl, hh], [-hw, -hl, hh]], (x, y, z) => [(hh - z) / SH, 1 - vy(y)], sideB),
+    // portfolio: the side with the date is printed turned 180°, so it reads upright as the box turns;
+    // its last 9 px columns (a lighter strip and a dotted fold line from the print file) are left out, they would now show on the edge
+    quad([[-hw, -hl, -hh], [-hw, hl, -hh], [-hw, hl, hh], [-hw, -hl, hh]], (x, y, z) => [(hh - z) / SH * (214 / 223), 1 - vy(y)], sideB),
     // inside of the board
     quad([[-hw + T, -hl, hh - T], [hw - T, -hl, hh - T], [hw - T, hl, hh - T], [-hw + T, hl, hh - T]], () => [0, 0], white),
     quad([[-hw + T, -hl, -hh + T], [hw - T, -hl, -hh + T], [hw - T, hl, -hh + T], [-hw + T, hl, -hh + T]], () => [0, 0], white),
@@ -361,14 +362,31 @@ canvas.addEventListener("pointerup", (e) => {
 // portfolio: two buttons with fixed names; the pressed one is the mode the game is in.
 // "Spiel ansehen" (the box rises and turns) is on at the start; "Karten ziehen" draws three cards (again, after a reading).
 function press(m) { $("btn-view").setAttribute("aria-pressed", String(m === "view")); $("btn-draw").setAttribute("aria-pressed", String(m === "draw")); }
-$("btn-draw").addEventListener("click", async () => { if (state === "drawn") await reset(); draw(); });
-$("btn-view").addEventListener("click", () => { if (!viewing) toggleView(true); });
+// only the clicked one is pressed, at once; a button that cannot act right now (a move is going on, or "Spiel ansehen" while on show) has no hover look
+$("btn-draw").addEventListener("click", async () => { if (state !== "idle" && state !== "drawn") return; press("draw"); if (state === "drawn") await reset(); draw(); });
+$("btn-view").addEventListener("click", () => { if (viewing || (state !== "idle" && state !== "drawn")) return; press("view"); toggleView(true); });
+function syncButtons() {
+  const busy = state !== "idle" && state !== "drawn";
+  const v = String(busy || viewing), d = String(busy);
+  if ($("btn-view").getAttribute("aria-disabled") !== v) $("btn-view").setAttribute("aria-disabled", v);
+  if ($("btn-draw").getAttribute("aria-disabled") !== d) $("btn-draw").setAttribute("aria-disabled", d);
+}
 document.addEventListener("touchstart", () => {}, { passive: true });   // lets iPhones show the pressed look (:active) of the buttons
-// embedded on a page: once the visitor scrolls on until the text under the box is in view, the cards are drawn (once; after that only the buttons)
-let autoDrawn = false, autoWaiting = false;
-function autoDraw() { if (autoDrawn) return; if (state === "idle") draw(); else autoWaiting = true; }
+// embedded on a page: once the visitor has scrolled on until the text under the box is wholly in view and stays there
+// for a moment (so scrolling past does not set it off), the cards are drawn (once; after that only the buttons)
+let autoDrawn = false, autoWaiting = false, autoTimer = 0;
+function introInView() {   // checked again when the timer fires: the page's own view, when the frame can see it
+  try {
+    const fr = frameElement.getBoundingClientRect(), r = $("intro").getBoundingClientRect();
+    return fr.top + r.top >= 0 && fr.top + r.bottom <= parent.innerHeight + 1;
+  } catch (e) { return true; }
+}
+function autoDraw() { if (autoDrawn || !introInView()) return; if (state === "idle") draw(); else autoWaiting = true; }
 if (document.body.classList.contains("embed") && "IntersectionObserver" in window) {
-  new IntersectionObserver((es) => { if (es[0].isIntersecting) autoDraw(); }, { threshold: 0.5 }).observe($("intro"));
+  new IntersectionObserver((es) => {
+    clearTimeout(autoTimer);
+    if (es[0].intersectionRatio >= 0.98) autoTimer = setTimeout(autoDraw, 900);
+  }, { threshold: [0, 0.98] }).observe($("intro"));
 }
 
 // ---------- loop and sizing ----------
@@ -386,15 +404,21 @@ renderer.setAnimationLoop((now) => {
   stepTweens(now);
   if (spinning) box.rotation.y += REDUCED ? 0.002 : 0.006;   // turn around the long axis: top, side, bottom, side
   controls.update(); renderer.render(scene, camera);
+  syncButtons();   // portfolio
 });
 
 // ---------- start ----------
 (async () => {
   resize(); const v0 = fitted(VIEWS.idle); camera.position.copy(v0.pos); controls.target.copy(v0.tgt);
+  box.visible = false;   // portfolio: shown only once built and in its pose
   const [data] = await Promise.all([fetch("cards.json").then((r) => r.json()), buildBox()]);
   CARDS = data;
+  // portfolio: starts on "Spiel ansehen", already raised and turning (no lift at the start; it glitched in Safari)
+  viewing = true; press("view");
+  box.position.z = 7.5; box.rotation.x = LOOK_RX; box.rotation.z = LOOK_RZ; box.rotation.y = 0;
+  const vl = fitted(VIEWS.look); camera.position.copy(vl.pos); controls.target.copy(vl.tgt); controls.update();
+  spinning = true; box.visible = true;
   $("loading").classList.add("done");
   state = "idle"; $("btn-draw").disabled = false; postHeight();
-  await toggleView(true);   // portfolio: starts on "Spiel ansehen"
   if (autoWaiting) autoDraw();
 })().catch((e) => { $("loading").textContent = "Die Karten konnten nicht geladen werden."; console.error(e); });

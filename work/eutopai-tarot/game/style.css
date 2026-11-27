@@ -40,12 +40,15 @@ button { font: inherit; }
 .eg-btn:disabled { opacity: .45; cursor: default; }
 .eg-ghost { font-family: "Syne", sans-serif; font-weight: 800; background: transparent; color: var(--lime); border: 1px solid rgba(213, 224, 77, .5); border-radius: 999px; padding: 7px 14px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; }
 .eg-ghost[aria-pressed="true"] { background: var(--lime); color: var(--navy); }
-.eg-ghost:active, .eg-ghost:focus-visible { background: var(--lime); color: var(--navy); border-color: var(--lime); }
-.eg-ghost[aria-pressed="true"]:active, .eg-ghost[aria-pressed="true"]:focus-visible { background: transparent; color: var(--lime); }
-@media (hover: hover) { .eg-ghost:hover { background: var(--lime); color: var(--navy); border-color: var(--lime); } .eg-ghost[aria-pressed="true"]:hover { background: transparent; color: var(--lime); } }
+.eg-ghost:not([aria-disabled="true"]):active, .eg-ghost:not([aria-disabled="true"]):focus-visible { background: var(--lime); color: var(--navy); border-color: var(--lime); }
+.eg-ghost[aria-pressed="true"]:not([aria-disabled="true"]):active, .eg-ghost[aria-pressed="true"]:not([aria-disabled="true"]):focus-visible { background: var(--navy); color: var(--lime); border-color: var(--lime); }
+@media (hover: hover) { .eg-ghost:not([aria-disabled="true"]):hover { background: var(--lime); color: var(--navy); border-color: var(--lime); } .eg-ghost[aria-pressed="true"]:not([aria-disabled="true"]):hover { background: var(--navy); color: var(--lime); border-color: var(--lime); } }
+.eg-ghost[aria-disabled="true"] { cursor: default; }
 /* portfolio: draw and view side by side in the head, the same height */
 .eg-mode { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .eg-mode .eg-ghost { white-space: nowrap; }
+.embed .eg-stage { height: clamp(380px, 56vw, 620px); }
+@media (max-width: 760px) { .embed .eg-stage { height: clamp(380px, 130vw, 520px); } }
 .embed .eg-brand { display: none; }
 .embed .eg-head { justify-content: flex-end; }
 @media (max-width: 440px) { .eg-head { padding-left: 10px; padding-right: 10px; } .eg-mode { gap: 6px; } .eg-mode .eg-ghost { padding: 7px 9px; font-size: 10px; letter-spacing: 0; } }
