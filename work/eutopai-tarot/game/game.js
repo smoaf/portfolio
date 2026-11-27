@@ -128,7 +128,8 @@ async function buildBox() {
     quad([[-hw, -hl, hh], [hw, -hl, hh], [hw, hl, hh], [-hw, hl, hh]], (x, y) => [(x + hw) / SW, vy(y)], await printMat("s_top", true)),
     quad([[-hw, -hl, -hh], [-hw, hl, -hh], [hw, hl, -hh], [hw, -hl, -hh]], (x, y) => [(hw - x) / SW, vy(y)], await printMat("s_bottom", true)),
     quad([[hw, -hl, -hh], [hw, -hl, hh], [hw, hl, hh], [hw, hl, -hh]], (x, y, z) => [(hh - z) / SH, vy(y)], sideA),
-    quad([[-hw, -hl, -hh], [-hw, hl, -hh], [-hw, hl, hh], [-hw, -hl, hh]], (x, y, z) => [(z + hh) / SH, vy(y)], sideB),
+    // portfolio: the side with the date is printed turned 180°, so it reads upright as the box turns
+    quad([[-hw, -hl, -hh], [-hw, hl, -hh], [-hw, hl, hh], [-hw, -hl, hh]], (x, y, z) => [(hh - z) / SH, 1 - vy(y)], sideB),
     // inside of the board
     quad([[-hw + T, -hl, hh - T], [hw - T, -hl, hh - T], [hw - T, hl, hh - T], [-hw + T, hl, hh - T]], () => [0, 0], white),
     quad([[-hw + T, -hl, -hh + T], [hw - T, -hl, -hh + T], [hw - T, hl, -hh + T], [-hw + T, hl, -hh + T]], () => [0, 0], white),
@@ -290,8 +291,7 @@ async function reset() {
 
 // look at the packaging: the closed box rises and turns, so every side and the varnish catch the light
 let spin = 0;
-// portfolio: the box is shown end for end (turned 180°, its tilt and turn mirrored): the same pose and motion on screen, but the side print reads upright
-const IDLE_RZ = THREE.MathUtils.degToRad(-14), LOOK_RZ = THREE.MathUtils.degToRad(28 - 180), LOOK_RX = -0.32;
+const IDLE_RZ = THREE.MathUtils.degToRad(-14), LOOK_RZ = THREE.MathUtils.degToRad(28), LOOK_RX = 0.32;
 async function toggleView(on = !viewing) {
   if (state === "busy" || state === "loading") return;
   if (on && state === "drawn") await reset();
@@ -299,7 +299,7 @@ async function toggleView(on = !viewing) {
   const was = state; state = "busy";   // portfolio: no draw while the box is still moving
   const z0 = box.position.z, z1 = on ? 7.5 : SH / 2;
   const rx0 = box.rotation.x, rx1 = on ? LOOK_RX : 0, rz0 = box.rotation.z, rz1 = on ? LOOK_RZ : IDLE_RZ;
-  const ry0 = box.rotation.y % (2 * Math.PI), ry1 = on ? ry0 : (ry0 > Math.PI ? 2 * Math.PI : ry0 < -Math.PI ? -2 * Math.PI : 0);
+  const ry0 = box.rotation.y % (2 * Math.PI), ry1 = on ? ry0 : (ry0 > Math.PI ? 2 * Math.PI : 0);
   spinning = false;
   moveCamera(on ? VIEWS.look : VIEWS.idle, 1200);
   await tween(1200, (k) => {
@@ -384,7 +384,7 @@ new ResizeObserver(postHeight).observe(document.body);
 
 renderer.setAnimationLoop((now) => {
   stepTweens(now);
-  if (spinning) box.rotation.y -= REDUCED ? 0.002 : 0.006;   // turn around the long axis: top, side, bottom, side
+  if (spinning) box.rotation.y += REDUCED ? 0.002 : 0.006;   // turn around the long axis: top, side, bottom, side
   controls.update(); renderer.render(scene, camera);
 });
 
