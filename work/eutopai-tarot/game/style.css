@@ -42,7 +42,8 @@ button { font: inherit; }
 .eg-ghost[aria-pressed="true"] { background: var(--lime); color: var(--navy); }
 .eg-ghost:not([aria-disabled="true"]):active, .eg-ghost:not([aria-disabled="true"]):focus-visible { background: var(--lime); color: var(--navy); border-color: var(--lime); }
 .eg-ghost[aria-pressed="true"]:not([aria-disabled="true"]):active, .eg-ghost[aria-pressed="true"]:not([aria-disabled="true"]):focus-visible { background: var(--navy); color: var(--lime); border-color: var(--lime); }
-@media (hover: hover) { .eg-ghost:not([aria-disabled="true"]):hover { background: var(--lime); color: var(--navy); border-color: var(--lime); } .eg-ghost[aria-pressed="true"]:not([aria-disabled="true"]):hover { background: var(--navy); color: var(--lime); border-color: var(--lime); } }
+@media (hover: hover) { .eg-ghost:not([aria-disabled="true"]):not(.eg-quiet):hover { background: var(--lime); color: var(--navy); border-color: var(--lime); } .eg-ghost[aria-pressed="true"]:not([aria-disabled="true"]):not(.eg-quiet):hover { background: var(--navy); color: var(--lime); border-color: var(--lime); } }
+.eg-mode .eg-ghost { transition: none; }   /* portfolio: states switch at once, no fade between them */
 .eg-ghost[aria-disabled="true"] { cursor: default; }
 /* portfolio: draw and view side by side in the head, the same height */
 .eg-mode { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }

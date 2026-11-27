@@ -19,7 +19,7 @@ const PULL = 7.2;
 
 // ---------- renderer, scene, camera ----------
 const canvas = $("scene");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });   // portfolio: opaque (the scene has its own background); calmer in Safari
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -62,7 +62,7 @@ floor.receiveShadow = true; scene.add(floor);
 const hemi = new THREE.HemisphereLight(0x4c5fd0, 0x03050f, 0.35); hemi.position.set(0, 0, 1); scene.add(hemi);
 const beam = new THREE.SpotLight(0xfff0dc, 6.5, 0, 0.32, 0.6, 0);
 beam.position.set(-42, -36, 30); beam.castShadow = true;
-beam.shadow.mapSize.set(2048, 2048); beam.shadow.bias = -0.0004; beam.shadow.radius = 4;
+beam.shadow.mapSize.set(2048, 2048); beam.shadow.bias = -0.0004; beam.shadow.radius = 4; beam.shadow.normalBias = 0.03;   // portfolio: no shimmer on the thin cards
 beam.target.position.set(0, 0, 0); scene.add(beam, beam.target);
 const rim = new THREE.DirectionalLight(0xc4ff3a, 1.4); rim.position.set(22, 30, 12); scene.add(rim);
 const fill = new THREE.DirectionalLight(0x7088ff, 0.4); fill.position.set(10, -60, 70); scene.add(fill);
@@ -170,28 +170,51 @@ async function buildBox() {
 
   box.rotation.order = "ZXY"; box.position.set(0.5, 8, SH / 2); box.rotation.z = THREE.MathUtils.degToRad(-14);
   box.traverse((o) => { if (o.isMesh) o.userData.box = true; });
+  // portfolio: the box's shadow comes from two invisible solid stand-ins (sleeve and tray), drawn into the shadow map from the
+  // side facing the lamp. The printed panels drawn from their back side (three.js's default) left a shadow with a light
+  // window in it. On the floor an open tray under this lamp casts the same shadow as a solid one (its walls block every ray).
+  // The printed panels neither cast nor receive the lamp's shadow, so the stand-ins never darken the box's own print.
+  const shadowOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }); shadowOnly.shadowSide = THREE.FrontSide;
+  box.traverse((o) => { if (o.isMesh && o !== booklet) { o.castShadow = false; o.receiveShadow = false; } });
+  const sp = new THREE.Mesh(new THREE.BoxGeometry(SW, SL, SH), shadowOnly); sleeve.add(sp);
+  const tp = new THREE.Mesh(new THREE.BoxGeometry(TW, TL, TH), shadowOnly); tp.position.z = TH / 2; tray.add(tp);
+  for (const m of [sp, tp]) { m.castShadow = true; m.receiveShadow = false; m.userData.box = true; }
+  booklet.material.forEach((m) => { m.shadowSide = THREE.FrontSide; });
 }
 
 // ---------- cards ----------
 let CARDS = [];
-const backMat = () => tex("cards/card_back.webp").then((t) => new THREE.MeshStandardMaterial({ map: t, roughness: 0.5 }));
+let backShared = null;   // portfolio: one back for all cards
+const backMat = () => backShared || (backShared = tex("cards/card_back.webp").then((t) => new THREE.MeshStandardMaterial({ map: t, roughness: 0.5 })));
+// portfolio: after the start, every card picture is loaded and uploaded to the GPU, one at a time, so a draw has nothing to wait for
+async function preloadCards() {
+  const urls = ["cards/card_back.webp", ...CARDS.map((c) => `cards/card_${String(c.id).padStart(2, "0")}.webp`)];
+  const all = await Promise.allSettled(urls.map((u) => tex(u)));   // downloads in parallel
+  for (const r of all) {   // then one upload per short pause, so the turning box keeps its pace
+    if (r.status === "fulfilled") renderer.initTexture(r.value);
+    await new Promise((res) => setTimeout(res, 30));
+  }
+}
 async function makeCard(c) {
   const front = await tex(`cards/card_${String(c.id).padStart(2, "0")}.webp`);
   const m = new THREE.Mesh(new THREE.BoxGeometry(CW, CH, CT), [paperEdge, paperEdge, paperEdge, paperEdge,
     new THREE.MeshStandardMaterial({ map: front, roughness: 0.5 }), await backMat()]);
-  m.rotation.order = "ZYX"; m.castShadow = m.receiveShadow = true; m.userData.card = c; return m;
+  m.rotation.order = "ZYX"; m.castShadow = m.receiveShadow = true; m.userData.card = c;
+  [].concat(m.material).forEach((x) => { x.shadowSide = THREE.FrontSide; });   // portfolio: solid shadow (see the box's stand-ins)
+  return m;
 }
 
 // ---------- tiny tween engine ----------
 const tweens = new Set();
 const ease = { io: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, out: (t) => 1 - Math.pow(1 - t, 3) };
 function tween(ms, fn, e = ease.io) {
-  return new Promise((res) => tweens.add({ t0: performance.now(), ms: ms * SPEED, fn, e, res }));
+  return new Promise((res) => tweens.add({ t0: null, ms: ms * SPEED, fn, e, res }));   // portfolio: t0 set on the first frame it runs
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms * SPEED));
 function stepTweens(now) {
   for (const tw of [...tweens]) {
-    const k = Math.min(1, (now - tw.t0) / tw.ms); tw.fn(tw.e(k));
+    if (tw.t0 === null) tw.t0 = now;
+    const k = Math.min(1, Math.max(0, (now - tw.t0) / tw.ms)); tw.fn(tw.e(k));
     if (k >= 1) { tweens.delete(tw); tw.res(); }
   }
 }
@@ -363,6 +386,10 @@ canvas.addEventListener("pointerup", (e) => {
 // "Spiel ansehen" (the box rises and turns) is on at the start; "Karten ziehen" draws three cards (again, after a reading).
 function press(m) { $("btn-view").setAttribute("aria-pressed", String(m === "view")); $("btn-draw").setAttribute("aria-pressed", String(m === "draw")); }
 // only the clicked one is pressed, at once; a button that cannot act right now (a move is going on, or "Spiel ansehen" while on show) has no hover look
+for (const b of [$("btn-draw"), $("btn-view")]) {
+  b.addEventListener("click", () => b.classList.add("eg-quiet"));
+  b.addEventListener("pointerleave", () => b.classList.remove("eg-quiet"));
+}
 $("btn-draw").addEventListener("click", async () => { if (state !== "idle" && state !== "drawn") return; press("draw"); if (state === "drawn") await reset(); draw(); });
 $("btn-view").addEventListener("click", () => { if (viewing || (state !== "idle" && state !== "drawn")) return; press("view"); toggleView(true); });
 function syncButtons() {
@@ -397,14 +424,20 @@ function resize() {
 }
 new ResizeObserver(resize).observe(canvas.parentElement);
 // tell a parent page how tall the game is, so an iframe can fit it without scrollbars
-function postHeight() { if (parent !== window) parent.postMessage({ type: "eutopai-game-height", height: document.documentElement.scrollHeight }, "*"); }
+let heightDue = false;   // portfolio: sent only at rest (no move, no tween), so the page never re-lays out round the game mid-move
+function postHeight() { heightDue = true; }
+function sendHeight() {
+  if (!heightDue || tweens.size || (state !== "idle" && state !== "drawn")) return;
+  heightDue = false;
+  if (parent !== window) parent.postMessage({ type: "eutopai-game-height", height: document.documentElement.scrollHeight }, "*");
+}
 new ResizeObserver(postHeight).observe(document.body);
 
 renderer.setAnimationLoop((now) => {
   stepTweens(now);
   if (spinning) box.rotation.y += REDUCED ? 0.002 : 0.006;   // turn around the long axis: top, side, bottom, side
   controls.update(); renderer.render(scene, camera);
-  syncButtons();   // portfolio
+  syncButtons(); sendHeight();   // portfolio
 });
 
 // ---------- start ----------
@@ -421,4 +454,5 @@ renderer.setAnimationLoop((now) => {
   $("loading").classList.add("done");
   state = "idle"; $("btn-draw").disabled = false; postHeight();
   if (autoWaiting) autoDraw();
+  preloadCards();
 })().catch((e) => { $("loading").textContent = "Die Karten konnten nicht geladen werden."; console.error(e); });
