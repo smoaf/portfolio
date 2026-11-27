@@ -127,49 +127,70 @@
          background: #f4f1ec; color: #1d1b18; text-decoration: none; font: 650 17px/1 var(--font); font-stretch: 112%; font-variation-settings: 'wdth' 112; transition: background .2s; }
   .meta { margin: 12px 0 0; font: 500 12px/1.5 var(--font-data); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(244,241,236,.75); }
 
-  /* content parts: heading left, text right (as on the case studies) */
-  .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px); padding: clamp(56px, 8vw, 104px) 0 0; }
+  /* facts under the hero */
+  .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 clamp(16px, 2.4vw, 32px); margin: 0; padding: clamp(28px, 4vw, 44px) 0 0; }
+  .facts > div { border-top: 1px solid var(--ink); padding-top: 12px; }
+  .facts dt { font: 500 11px/1.3 var(--font-data); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+  .facts dd { margin: 0; font: 600 17px/1.35 var(--font); }
+
+  /* content parts: a rule, the numbered heading left, the text right; pictures under them over the whole width */
+  .part { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 12px clamp(24px, 5vw, 72px);
+          margin-top: clamp(64px, 9vw, 120px); padding-top: clamp(20px, 2.4vw, 28px); border-top: 1px solid var(--rule); }
   .part h2 { margin: 0; font: 700 clamp(26px, 2.8vw, 34px)/1.1 var(--font); font-stretch: 110%; font-variation-settings: 'wdth' 110; }
+  .part h2::before { content: attr(data-n); display: block; margin-bottom: 10px; font: 500 12px/1 var(--font-data); letter-spacing: 0.12em; color: var(--ink-soft); }
   .part h3 { margin: 0 0 10px; font: 650 19px/1.3 var(--font); }
   .part p { margin: 0 0 14px; max-width: 40rem; }
   .part ul, .part ol { margin: 0 0 14px; padding-left: 1.2em; max-width: 40rem; }
   .part li { margin: 0 0 8px; }
+  .part > div > :last-child { margin-bottom: 0; }
 
-  /* pictures: two side by side in the text column, one under the other on phones */
-  .pics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 10px 0 4px; }
-  .pics img, .wide img { width: 100%; height: auto; border-radius: 10px; background: var(--rule); }
-  .pics figure, .wide { margin: 0; }
+  /* pictures: large, two side by side (one under the other on phones); they grow a little under the pointer */
+  .pics { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 1.6vw, 20px); margin: clamp(20px, 3vw, 36px) 0 0; }
   .pics.one { grid-template-columns: minmax(0, 1fr); }
   .pics.nets { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); align-items: start; }   /* the wide sleeve and the tall tray at about one height */
-  .wide { padding: clamp(28px, 4vw, 48px) 0 0; }
+  .pics figure { margin: 0; border-radius: 14px; overflow: hidden; background: var(--rule); transition: transform .5s cubic-bezier(.2,.7,.2,1), box-shadow .5s; }
+  .pics .span { grid-column: 1 / -1; }
+  .pics img { display: block; width: 100%; height: auto; }
+  @media (hover: hover) { .pics figure:hover { transform: scale(1.025); box-shadow: 0 18px 44px rgba(0,0,0,.22); position: relative; z-index: 1; } }
+
+  /* the print lessons: four blocks, two by two */
+  .points { list-style: none; padding: 0 !important; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px clamp(20px, 3vw, 36px); max-width: none !important; margin-top: 18px !important; }
+  .points li { margin: 0; padding-top: 12px; border-top: 1px solid var(--rule); font-size: 16px; color: var(--ink-soft); }
+  .points b { display: block; margin-bottom: 4px; font: 650 17px/1.3 var(--font); color: var(--ink); }
 
   /* the game: full content width; it reports its height, so the frame has no scrollbar of its own */
-  .play { padding: clamp(56px, 8vw, 104px) 0 0; }
-  .play .part { padding: 0 0 clamp(20px, 3vw, 32px); }
-  .game { max-width: 1180px; margin: 0 auto; background: #070d2c; border-radius: 12px; overflow: hidden; }
+  .play .part { margin-bottom: clamp(24px, 3vw, 36px); }
+  .game { max-width: 1180px; margin: 0 auto; background: #070d2c; border-radius: 14px; overflow: hidden; }
   .game iframe { display: block; width: 100%; height: 980px; border: 0; }
-  .game-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; max-width: 1180px; margin: 12px auto 0; font-size: 14px; color: var(--ink-soft); }
+  .game-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 20px; max-width: 1180px; margin: 14px auto 0; font-size: 14px; color: var(--ink-soft); }
 
-  /* two ways to make it: two columns on a computer, stacked on a phone */
-  .ways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px clamp(20px, 3vw, 40px); }
-  .ways > div { border-top: 1px solid var(--rule); padding-top: 14px; }
-  .ways ol { font-size: 17px; }
-  .dl { margin: 18px 0 0; font-size: 16px; }
-  .dl a { margin-right: 18px; white-space: nowrap; }
+  /* two ways to make it: two panels on a computer, stacked on a phone; numbered steps */
+  .ways { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 2vw, 24px); margin-top: clamp(8px, 1.4vw, 16px); }
+  .ways > div { border: 1px solid var(--rule); border-radius: 14px; padding: clamp(20px, 2.4vw, 28px); background: var(--glass); }
+  .ways h3 { margin-bottom: 16px; }
+  .ways ol { list-style: none; padding: 0; margin: 0; counter-reset: step; font-size: 16px; }
+  .ways ol li { counter-increment: step; position: relative; padding-left: 38px; margin: 0 0 14px; }
+  .ways ol li::before { content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: 3px; font: 500 12px/1.3 var(--font-data); letter-spacing: 0.06em; color: var(--ink-soft); }
+  .dl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 0 !important; font-size: 14px; color: var(--ink-soft); }
+  .dl > span:first-child { font: 500 11px/1 var(--font-data); letter-spacing: 0.12em; text-transform: uppercase; margin-right: 4px; }
+  .dl-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 16px; border: 1px solid var(--ink); border-radius: 999px; color: var(--ink); text-decoration: none; white-space: nowrap;
+            font: 600 14px/1 var(--font); transition: background .2s, color .2s; }
 
   .end { height: clamp(64px, 9vw, 120px); }
 
   @media (max-width: 720px) {
     .part { grid-template-columns: minmax(0, 1fr); }
-    .pics, .pics.nets, .ways { grid-template-columns: minmax(0, 1fr); }
+    .pics, .pics.nets, .ways, .points { grid-template-columns: minmax(0, 1fr); }
+    .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 16px; }
+    .facts dd { font-size: 15px; }
   }
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
   /* BUG-037: every button inverts to a black fill with white text and icon on hover (computer), while pressed (phone)
      and on keyboard focus; a film's cover shows it on its play ring. Not the menu words, the Menu button and the name. */
-  @media (hover: hover) { .site .bar-back:hover, .bar-buy:hover, .bar-try:hover, .buy:hover, .read:hover, .spec-tabs button:hover, .line button:hover, .sources button:hover, .cue:hover .ring { background: #000 !important; color: #fff !important; border-color: #000 !important; } }
-  .site .bar-back:active, .bar-buy:active, .bar-try:active, .buy:active, .read:active, .spec-tabs button:active, .line button:active, .sources button:active, .cue:active .ring, .site .bar-back:focus-visible, .bar-buy:focus-visible, .bar-try:focus-visible, .buy:focus-visible, .read:focus-visible, .spec-tabs button:focus-visible, .line button:focus-visible, .sources button:focus-visible, .cue:focus-visible .ring { background: #000 !important; color: #fff !important; border-color: #000 !important; }
+  @media (hover: hover) { .dl-btn:hover, .site .bar-back:hover, .bar-buy:hover, .bar-try:hover, .buy:hover, .read:hover, .spec-tabs button:hover, .line button:hover, .sources button:hover, .cue:hover .ring { background: #000 !important; color: #fff !important; border-color: #000 !important; } }
+  .dl-btn:active, .dl-btn:focus-visible, .site .bar-back:active, .bar-buy:active, .bar-try:active, .buy:active, .read:active, .spec-tabs button:active, .line button:active, .sources button:active, .cue:active .ring, .site .bar-back:focus-visible, .bar-buy:focus-visible, .bar-try:focus-visible, .buy:focus-visible, .read:focus-visible, .spec-tabs button:focus-visible, .line button:focus-visible, .sources button:focus-visible, .cue:focus-visible .ring { background: #000 !important; color: #fff !important; border-color: #000 !important; }
   .sources button:hover, .sources button:active, .sources button:focus-visible { opacity: 1; }
 </style>
 </head>
@@ -209,8 +230,15 @@
   </section>
 
   <div class="wrap">
+    <dl class="facts">
+      <div><dt>Deck</dt><dd>40 cards, A7, 74 × 105 mm</dd></div>
+      <div><dt>Box</dt><dd>Printed sleeve and slide-out tray</dd></div>
+      <div><dt>Finish</dt><dd>Raised 3D spot varnish</dd></div>
+      <div><dt>For</dt><dd>Lucid Dreams · EUTOPAI, St. Pölten, 4–5 June 2027</dd></div>
+    </dl>
+
     <section class="part" aria-labelledby="h-idea">
-      <h2 id="h-idea">The idea</h2>
+      <h2 id="h-idea" data-n="01">The idea</h2>
       <div>
         <h3>Where it came from</h3>
         <p>The festival is called Lucid Dreams. A lucid dream is a dream in which you realise you are dreaming, and from that moment you can start to shape it. That idea became the starting point: a festival object that does not just announce dates, but invites people to look at their own situation and imagine it differently.</p>
@@ -224,7 +252,7 @@
 
     <section class="play" id="play" aria-labelledby="h-play">
       <div class="part">
-        <h2 id="h-play">Play: <span lang="de">Drei Zeichen</span></h2>
+        <h2 id="h-play" data-n="02">Play: <span lang="de">Drei Zeichen</span></h2>
         <div>
           <h3>Draw three cards</h3>
           <p>Think of something that's on your mind, then pull the drawer. Three cards land on the table: what was, what is, and what can become. Each card comes with a keyword, a short meaning and a question to take with you. No tarot knowledge needed, and no right answers. <i>(The game is in German, like the printed deck.)</i></p>
@@ -233,74 +261,74 @@
       <div class="game"><iframe id="eutopai-game" src="game/index.html?embed=1" title="Drei Zeichen: draw three cards from the EUTOPAI tarot box (German)" loading="lazy"></iframe></div>
       <div class="game-foot">
         <span></span>
-        <a href="game/index.html" target="_blank" rel="noopener">Play full screen</a>
+        <a class="dl-btn" href="game/index.html" target="_blank" rel="noopener">Play full screen <span aria-hidden="true">↗</span></a>
       </div>
     </section>
 
     <section class="part" aria-labelledby="h-deck">
-      <h2 id="h-deck">The deck</h2>
+      <h2 id="h-deck" data-n="03">The deck</h2>
       <div>
         <p>The deck keeps the 22 classic images of the Major Arcana, redrawn in the festival's visual language, and adds 18 new signs for the present, such as <span lang="de">Der Rebell, Die Kartografin, Das Orakel, Der Automat, Die Weberin</span> and <span lang="de">Der Schwarm</span>. Each card carries a number from 0 to XXXIX, a name and three keywords. All cards share one back with the festival's eye-and-rings motif. Format: A7, 74 × 105 mm.</p>
-        <div class="pics">
-          <figure><img src="media/light_cards_1200.webp" srcset="media/light_cards_1200.webp 1200w, media/light_cards.webp 1800w" sizes="(max-width: 720px) 100vw, 30rem" loading="lazy" width="1800" height="1200" alt="Twelve tarot cards in lime and blue laid out in two rows."></figure>
-          <figure><img src="media/light_backs_1200.webp" srcset="media/light_backs_1200.webp 1200w, media/light_backs.webp 1800w" sizes="(max-width: 720px) 100vw, 30rem" loading="lazy" width="1800" height="1200" alt="A deck face down, a deck face up, a fan of card backs and four cards on light paper."></figure>
-        </div>
+      </div>
+      <div class="pics">
+        <figure><img src="media/light_cards_1200.webp" srcset="media/light_cards_1200.webp 1200w, media/light_cards.webp 1800w" sizes="(max-width: 720px) 100vw, 36rem" loading="lazy" width="1800" height="1200" alt="Twelve tarot cards in lime and blue laid out in two rows."></figure>
+        <figure><img src="media/light_backs_1200.webp" srcset="media/light_backs_1200.webp 1200w, media/light_backs.webp 1800w" sizes="(max-width: 720px) 100vw, 36rem" loading="lazy" width="1800" height="1200" alt="A deck face down, a deck face up, a fan of card backs and four cards on light paper."></figure>
+        <figure class="span"><img src="media/cards_all40_1200.webp" srcset="media/cards_all40_1200.webp 1200w, media/cards_all40.webp 3008w" sizes="(max-width: 1152px) 100vw, 1152px" loading="lazy" width="3008" height="1696" alt="All 40 card fronts of the deck in a grid, numbered 0 to XXXIX."></figure>
       </div>
     </section>
-    <figure class="wide"><img src="media/cards_all40_1200.webp" srcset="media/cards_all40_1200.webp 1200w, media/cards_all40.webp 3008w" sizes="(max-width: 1152px) 100vw, 1152px" loading="lazy" width="3008" height="1696" alt="All 40 card fronts of the deck in a grid, numbered 0 to XXXIX."></figure>
 
     <section class="part" aria-labelledby="h-booklet">
-      <h2 id="h-booklet">The booklet</h2>
+      <h2 id="h-booklet" data-n="04">The booklet</h2>
       <div>
         <p>A small A7 booklet explains what tarot is and how to read it, lists all 40 cards with a short text and a question, and introduces the festival.</p>
-        <div class="pics one">
-          <figure><img src="media/light_booklet_1200.webp" srcset="media/light_booklet_1200.webp 1200w, media/light_booklet.webp 1800w" sizes="(max-width: 720px) 100vw, 46rem" loading="lazy" width="1800" height="1200" alt="A small blue and lime booklet, closed and open on three spreads."></figure>
-        </div>
+      </div>
+      <div class="pics one">
+        <figure><img src="media/light_booklet_1200.webp" srcset="media/light_booklet_1200.webp 1200w, media/light_booklet.webp 1800w" sizes="(max-width: 1152px) 100vw, 72rem" loading="lazy" width="1800" height="1200" alt="A small blue and lime booklet, closed and open on three spreads."></figure>
       </div>
     </section>
 
     <section class="part" aria-labelledby="h-box">
-      <h2 id="h-box">The box</h2>
+      <h2 id="h-box" data-n="05">The box</h2>
       <div>
         <p>The box is a two-part construction: a printed sleeve, open at both ends with a thumb notch on each side, and a tray with a double front wall. The tray needs no glue: its walls fold up and lock with tabs. The sleeve has one glue flap. Inside: 40 cards and the booklet.</p>
         <p>Sizes: sleeve 80 × 27.5 × 111 mm inside, tray 78 × 109 × 26 mm inside.</p>
-        <div class="pics">
-          <figure><img src="media/light_all-sides_1200.webp" srcset="media/light_all-sides_1200.webp 1200w, media/light_all-sides.webp 1800w" sizes="(max-width: 720px) 100vw, 30rem" loading="lazy" width="1800" height="1200" alt="The slide-out box shown from every side: front, back, both sides and with the drawer pulled out."></figure>
-          <figure><img src="media/dark_all-sides_1200.webp" srcset="media/dark_all-sides_1200.webp 1200w, media/dark_all-sides.webp 1800w" sizes="(max-width: 720px) 100vw, 30rem" loading="lazy" width="1800" height="1200" alt="Three boxes standing and one lying open on dark velvet, with a candle and a glass orb."></figure>
-        </div>
+      </div>
+      <div class="pics">
+        <figure><img src="media/light_all-sides_1200.webp" srcset="media/light_all-sides_1200.webp 1200w, media/light_all-sides.webp 1800w" sizes="(max-width: 720px) 100vw, 36rem" loading="lazy" width="1800" height="1200" alt="The slide-out box shown from every side: front, back, both sides and with the drawer pulled out."></figure>
+        <figure><img src="media/dark_all-sides_1200.webp" srcset="media/dark_all-sides_1200.webp 1200w, media/dark_all-sides.webp 1800w" sizes="(max-width: 720px) 100vw, 36rem" loading="lazy" width="1800" height="1200" alt="Three boxes standing and one lying open on dark velvet, with a candle and a glass orb."></figure>
       </div>
     </section>
 
     <section class="part" aria-labelledby="h-varnish">
-      <h2 id="h-varnish">Varnish</h2>
+      <h2 id="h-varnish" data-n="06">Varnish</h2>
       <div>
         <p>The only finishing is a raised, glossy 3D varnish: on the word TAROT on the sleeve and on the logo on both ends of the tray. In the print file it is a separate spot colour called "3D-Lack", set to overprint, so the colours underneath still print. It keeps at least 3 mm from cuts and 1 mm from folds, because varnish cracks on an edge.</p>
-        <div class="pics">
-          <figure><img src="media/light_varnish_1200.webp" srcset="media/light_varnish_1200.webp 1200w, media/light_varnish.webp 1800w" sizes="(max-width: 720px) 100vw, 30rem" loading="lazy" width="1800" height="1200" alt="Close-up of the raised glossy varnish on the word TAROT."></figure>
-          <figure><img src="media/dark_varnish_1200.webp" srcset="media/dark_varnish_1200.webp 1200w, media/dark_varnish.webp 1800w" sizes="(max-width: 720px) 100vw, 30rem" loading="lazy" width="1800" height="1200" alt="The end of the drawer with the varnished logo, lit by a candle."></figure>
-        </div>
+      </div>
+      <div class="pics">
+        <figure><img src="media/light_varnish_1200.webp" srcset="media/light_varnish_1200.webp 1200w, media/light_varnish.webp 1800w" sizes="(max-width: 720px) 100vw, 36rem" loading="lazy" width="1800" height="1200" alt="Close-up of the raised glossy varnish on the word TAROT."></figure>
+        <figure><img src="media/dark_varnish_1200.webp" srcset="media/dark_varnish_1200.webp 1200w, media/dark_varnish.webp 1800w" sizes="(max-width: 720px) 100vw, 36rem" loading="lazy" width="1800" height="1200" alt="The end of the drawer with the varnished logo, lit by a candle."></figure>
       </div>
     </section>
 
     <section class="part" aria-labelledby="h-print">
-      <h2 id="h-print">From screen to print</h2>
+      <h2 id="h-print" data-n="07">From screen to print</h2>
       <div>
-        <div class="pics nets">
-          <figure><img src="media/net_sleeve_1200.webp" srcset="media/net_sleeve_1200.webp 1200w, media/net_sleeve.webp 1956w" sizes="(max-width: 720px) 100vw, 36rem" loading="lazy" width="1956" height="1070" alt="Flat print layout of the sleeve with cut, fold and safety lines."></figure>
-          <figure><img src="media/net_tray.webp" srcset="media/net_tray.webp 1156w, media/net_tray_1200.webp 1200w" sizes="(max-width: 720px) 100vw, 12rem" loading="lazy" width="1156" height="1860" alt="Flat print layout of the tray with cut, fold and safety lines."></figure>
-        </div>
         <p>What I learned making the print data:</p>
-        <ul>
+        <ul class="points">
           <li><b>Final size and bleed.</b> Every page stores its final size (TrimBox) and its print size with bleed (BleedBox). Backgrounds run 5 mm past the cut, so nothing white shows if the cut is slightly off. Text stays 3 mm inside.</li>
           <li><b>The lines are not printed.</b> Cut, fold and safety lines live on a template layer. The printer gets them as a separate die line; the print file contains only the artwork.</li>
           <li><b>Colour is defined, not guessed.</b> The file is PDF/X-4 with the output intent ISO Coated v2 300 % (ECI): CMYK only, total ink at most 300 %, text converted to outlines.</li>
           <li><b>Varnish is its own plate.</b> A spot colour, 100 %, overprinting, kept away from cuts and folds.</li>
         </ul>
       </div>
+      <div class="pics nets">
+        <figure><img src="media/net_sleeve_1200.webp" srcset="media/net_sleeve_1200.webp 1200w, media/net_sleeve.webp 1956w" sizes="(max-width: 720px) 100vw, 54rem" loading="lazy" width="1956" height="1070" alt="Flat print layout of the sleeve with cut, fold and safety lines."></figure>
+        <figure><img src="media/net_tray.webp" srcset="media/net_tray.webp 1156w, media/net_tray_1200.webp 1200w" sizes="(max-width: 720px) 100vw, 18rem" loading="lazy" width="1156" height="1860" alt="Flat print layout of the tray with cut, fold and safety lines."></figure>
+      </div>
     </section>
 
     <section class="part" aria-labelledby="h-ways">
-      <h2 id="h-ways">Two ways to make it</h2>
+      <h2 id="h-ways" data-n="08">Two ways to make it</h2>
       <div class="ways">
         <div>
           <h3>At a printer</h3>
@@ -320,18 +348,18 @@
             <li>No plotter? Cut by hand with a sharp knife along the 1:1 template and score the folds with a bone folder.</li>
             <li>Gloss at home: clear toner-reactive foil on laser prints, or a clear gloss pen, gets close to a spot gloss, but it is not raised like a printer's 3D varnish.</li>
           </ol>
-          <p class="dl">Downloads: <a href="media/dieline_sleeve.svg" download>dieline_sleeve.svg</a> <a href="media/dieline_tray.svg" download>dieline_tray.svg</a></p>
+          <p class="dl"><span>Downloads</span> <a class="dl-btn" href="media/dieline_sleeve.svg" download><span aria-hidden="true">↓</span> dieline_sleeve.svg</a> <a class="dl-btn" href="media/dieline_tray.svg" download><span aria-hidden="true">↓</span> dieline_tray.svg</a></p>
         </div>
       </div>
     </section>
 
     <section class="part" aria-labelledby="h-check">
-      <h2 id="h-check">Checking the files</h2>
+      <h2 id="h-check" data-n="09">Checking the files</h2>
       <div>
         <p>Before handing over, every print file was checked against a checklist: format and bleed, colour space and ink limit, fonts, line weights, no helper lines, varnish settings and distances, glue flap free of ink. Most checks were measured automatically from the exported PDF. To make sure those checks really catch mistakes, each one was also run on a copy with a deliberate error built in, and had to fail. Everything that can't be measured (Is the text inside the safety area? Does every side read the right way up after folding?) was checked by looking and written down.</p>
-        <div class="pics one">
-          <figure><img src="media/proof_checklist_1200.webp" srcset="media/proof_checklist_1200.webp 1200w, media/proof_checklist.webp 2401w" sizes="(max-width: 720px) 100vw, 46rem" loading="lazy" width="2401" height="1422" alt="A checklist table with green ticks for sleeve and tray."></figure>
-        </div>
+      </div>
+      <div class="pics one">
+        <figure><img src="media/proof_checklist_1200.webp" srcset="media/proof_checklist_1200.webp 1200w, media/proof_checklist.webp 2401w" sizes="(max-width: 1152px) 100vw, 72rem" loading="lazy" width="2401" height="1422" alt="A checklist table with green ticks for sleeve and tray."></figure>
       </div>
     </section>
 
